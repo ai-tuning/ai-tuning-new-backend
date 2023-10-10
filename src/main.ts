@@ -1,43 +1,58 @@
+import * as fs from 'fs';
+import * as path from 'path';
+import * as yaml from 'js-yaml';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { HttpStatus, UnprocessableEntityException, ValidationPipe } from '@nestjs/common';
-import * as fs from "fs"
-import * as path from "path"
+import {
+  BadRequestException,
+  HttpStatus,
+  ValidationPipe,
+} from '@nestjs/common';
 import { OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
-import * as yaml from "js-yaml"
-import { HttpExceptionFilter, convertError } from './features/config';
-import { ResponseInterceptor } from './features/common/interceptor/response/response.interceptor';
+import {
+  HttpExceptionFilter,
+  I18nInterceptor,
+  ErrorFormatter,
+} from './features/common';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(new ValidationPipe({
-    stopAtFirstError: true,
-    transform: true,
-    enableDebugMessages: true,
-    validationError: {
-      target: false,
-      value: false
-    },
-    validateCustomDecorators: true,
-    errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-    exceptionFactory: (errors) => {
-      const errorObject = convertError(errors); //convert validation error message
-      throw new UnprocessableEntityException(
-        errorObject,
-      );
-    },
-  }))
-  app.setGlobalPrefix("/api/v1")
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
+  app.enableCors({ origin: '*' });
+  app.setGlobalPrefix('api/v1'); //route prefix
+  app.useGlobalPipes(
+    new ValidationPipe({
+      stopAtFirstError: true,
+      transform: true,
+      enableDebugMessages: true,
+      forbidNonWhitelisted: true,
+      validationError: {
+        target: false,
+        value: false,
+      },
+      validateCustomDecorators: true,
+      errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
 
-  const yamlContent = fs.readFileSync(path.join(process.cwd(), 'docs.yaml'), 'utf-8');
+      exceptionFactory: (errors) => {
+        const errorObject = ErrorFormatter(errors); //convert validation error message
+        throw new BadRequestException(errorObject);
+      },
+    }),
+  );
+
+  const yamlContent = fs.readFileSync(
+    path.join(process.cwd(), 'docs.yaml'),
+    'utf-8',
+  );
   const document: OpenAPIObject = yaml.load(yamlContent) as OpenAPIObject;
 
-  SwaggerModule.setup(process.env.SWAGGER_PREFIX, app, document)
+  SwaggerModule.setup('/api-docs', app, document);
 
   app.useGlobalFilters(new HttpExceptionFilter());
-  app.useGlobalInterceptors(new ResponseInterceptor())
+  app.useGlobalInterceptors(new I18nInterceptor());
 
-  await app.listen(process.env.SERVER_PORT);
+  await app.listen(5050);
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap();
