@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { FastifyReply } from 'fastify';
 import {
   CallHandler,
   ExecutionContext,
@@ -22,7 +22,7 @@ export interface responseValue {
 export class I18nInterceptor<T> implements NestInterceptor<T, Response<T>> {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const ctx = context.switchToHttp();
-    const response = ctx.getResponse<express.Response>();
+    const response = ctx.getResponse<FastifyReply>();
     const i18n = I18nContext.current();
 
     return next.handle().pipe(

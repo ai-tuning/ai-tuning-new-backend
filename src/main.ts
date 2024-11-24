@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
-import { NestFactory } from '@nestjs/core';
+import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import {
   BadRequestException,
@@ -10,15 +10,20 @@ import {
 } from '@nestjs/common';
 import { OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import {
-  HttpExceptionFilter,
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
+import {
+  AllExceptionFilter,
   I18nInterceptor,
   ErrorFormatter,
 } from './features/common';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    bufferLogs: true,
-  });
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter(),
+  );
   app.enableCors({ origin: '*' });
   app.setGlobalPrefix('api/v1'); //route prefix
   app.useGlobalPipes(
@@ -48,8 +53,10 @@ async function bootstrap() {
   const document: OpenAPIObject = yaml.load(yamlContent) as OpenAPIObject;
 
   SwaggerModule.setup('/api-docs', app, document);
+  const httpAdapter = app.get(HttpAdapterHost);
 
-  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalFilters(new AllExceptionFilter(httpAdapter));
+
   app.useGlobalInterceptors(new I18nInterceptor());
 
   await app.listen(5050);

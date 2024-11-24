@@ -5,7 +5,6 @@ export const customValidationPipe = async (data: any[], dto: any) => {
     transform: true,
 
     exceptionFactory: (errors) => {
-      console.log(errors);
       throw new BadRequestException(errors);
     },
   });

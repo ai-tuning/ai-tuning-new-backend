@@ -7,18 +7,21 @@ import { UserModule } from '../user/user.module';
 import { JwtStrategy } from './jwt.strategy';
 
 @Module({
-  imports: [JwtModule.registerAsync({
-    useFactory() {
-      const config = appConfig()
-      return {
-        secret: config.jwt_secret,
-        signOptions: {
-          expiresIn: config.access_token_expiration_minute
-        }
-      }
-    },
-  }), UserModule],
+  imports: [
+    JwtModule.registerAsync({
+      useFactory() {
+        const config = appConfig();
+        return {
+          secret: config.jwt_secret,
+          signOptions: {
+            expiresIn: config.access_token_expiration_minute,
+          },
+        };
+      },
+    }),
+    UserModule,
+  ],
   controllers: [AuthController],
-  providers: [JwtStrategy, AuthService]
+  providers: [JwtStrategy, AuthService],
 })
-export class AuthModule { }
+export class AuthModule {}

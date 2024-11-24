@@ -3,7 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { appConfig } from './features/config/app.config';
 import { UserModule } from './features/user/user.module';
-import * as Joi from '@hapi/joi';
+import * as Joi from 'joi';
 import { CommonModule } from './features/common/config.module';
 import { AuthModule } from './features/auth/auth.module';
 import { AcceptLanguageResolver, I18nModule, QueryResolver } from 'nestjs-i18n';

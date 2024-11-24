@@ -39,6 +39,6 @@ lerna-debug.log*
 
 yarn.lock
 package-json.lock
-
+pnpm-lock.yaml
 #env
 .env

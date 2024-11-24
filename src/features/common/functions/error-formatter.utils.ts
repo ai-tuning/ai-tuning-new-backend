@@ -13,9 +13,7 @@ interface ValidationErrors {
 }
 
 // Format validation error message array to key-value pair object
-export function ErrorFormatter(
-  errors: ValidationError[],
-): ValidationErrors {
+export function ErrorFormatter(errors: ValidationError[]): ValidationErrors {
   const i18n = I18nContext.current();
 
   // Helper function to convert a single validation error to CustomError
