@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Observable, map } from 'rxjs';
 import { I18nContext } from 'nestjs-i18n';
-import { FastifyReply } from 'fastify';
+import { Response as ExpressResponse } from 'express';
 
 export interface Response<T> {
   data: T;
@@ -22,7 +22,7 @@ export interface responseValue {
 export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const ctx = context.switchToHttp();
-    const response = ctx.getResponse<FastifyReply>();
+    const response = ctx.getResponse<ExpressResponse>();
     const i18n = I18nContext.current();
 
     return next.handle().pipe(

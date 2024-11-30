@@ -1,0 +1,5 @@
+export enum SUPPORT_STATUS {
+  OPEN = 'OPEN',
+  PROGRESS = 'PROGRESS',
+  CLOSED = 'CLOSED',
+}

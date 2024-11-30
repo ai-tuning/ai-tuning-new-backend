@@ -10,7 +10,7 @@ import { MongooseError } from 'mongoose';
 import { CustomNotFound } from '../validation-helper/not-found-exception';
 import { CustomBadRequest } from '../validation-helper/bad-request.exception';
 import { AxiosError } from 'axios';
-import { FastifyReply } from 'fastify';
+import { Response } from 'express';
 
 @Catch()
 export class AllExceptionFilter implements ExceptionFilter {
@@ -20,7 +20,7 @@ export class AllExceptionFilter implements ExceptionFilter {
     const { httpAdapter } = this.httpAdapterHost;
 
     const ctx = host.switchToHttp();
-    const res = ctx.getResponse<FastifyReply>();
+    const res = ctx.getResponse<Response>();
 
     //default error object
     let error: any = {};

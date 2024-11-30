@@ -1,0 +1,5 @@
+export enum SLAVE_TYPE {
+  KESS3 = 'KESS3',
+  AUTO_TUNER = 'AUTO_TUNER',
+  AUTO_FLASHER = 'AUTO_FLASHER',
+}

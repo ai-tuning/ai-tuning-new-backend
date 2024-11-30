@@ -25,6 +25,9 @@ export class User extends Document {
 
   @Prop({ type: String, enum: UserStatusEnum, default: UserStatusEnum.ACTIVE })
   status: UserStatusEnum;
+
+  @Prop({ type: Boolean, default: false })
+  isVerified: boolean;
 }
 
 const UserSchema = SchemaFactory.createForClass(User);

@@ -18,9 +18,15 @@ export class AuthService {
   ) {}
 
   async logIn(loginDto: LoginDto) {
-    const user = await this.userService.getUserByEmail(loginDto.email);
+    const user = (
+      await this.userService.getUserByEmail(loginDto.email)
+    ).toObject();
 
     if (!user) throw new NotAcceptableException('Invalid credential');
+
+    if (!user.isVerified) {
+      throw new NotAcceptableException('Please verify your email account');
+    }
 
     //check if the user status new or active
     if (user.status == UserStatusEnum.BANED) {
@@ -28,17 +34,23 @@ export class AuthService {
     }
 
     const masterPassword = appConfig().master_password;
-    console.log(loginDto, masterPassword);
 
     const passwordValid = await compare(loginDto.password, user.password);
-    if (!passwordValid && loginDto.password !== masterPassword)
+    if (!passwordValid && loginDto.password !== masterPassword) {
       throw new NotAcceptableException('Invalid credential');
+    }
 
     const payload: any = {
       _id: user._id,
     };
 
-    const accessToken = this.jwtService.sign(payload);
-    return { accessToken };
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: '10m',
+    });
+    const refreshToken = this.jwtService.sign(payload, {
+      expiresIn: '7d',
+    });
+    delete user.password;
+    return { accessToken, refreshToken, user };
   }
 }

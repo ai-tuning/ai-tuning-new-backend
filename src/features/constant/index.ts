@@ -1,4 +1,13 @@
-export { collectionsName } from "./collectionNames"
-export { RolesEnum } from "./enums/role.enum"
-export { Gender } from "./enums/gender.enums"
-export { UserStatusEnum } from "./enums/user-status.enum"
+export { collectionsName } from './collectionNames';
+export { RolesEnum } from './enums/role.enum';
+export { Gender } from './enums/gender.enums';
+export { UserStatusEnum } from './enums/user-status.enum';
+export { CHAT_BELONG } from './enums/chat-belong';
+export { SLAVE_TYPE } from './enums/slave-type.enum';
+export { WinOLS_STATUS } from './enums/winols-status.enum';
+export { FILE_SERVICE_STATUS } from './enums//file-service-status.enum';
+export { PAYMENT_STATUS } from './enums/payment-status.enum';
+export { SOLUTION_CATEGORY } from './enums/solution-category.enum';
+export { FUEL_TYPE } from './enums/fuel-type.enum';
+export { SUPPORT_TYPE } from './enums/support-type.enum';
+export { SUPPORT_STATUS } from './enums/support-status.enum';

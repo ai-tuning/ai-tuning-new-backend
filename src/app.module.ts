@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { appConfig } from './features/config/app.config';
 import { UserModule } from './features/user/user.module';
@@ -8,6 +8,25 @@ import { CommonModule } from './features/common/config.module';
 import { AuthModule } from './features/auth/auth.module';
 import { AcceptLanguageResolver, I18nModule, QueryResolver } from 'nestjs-i18n';
 import * as path from 'path';
+import { SecurityModule } from './features/security/security.module';
+import { MailModule } from './features/mail/mail.module';
+import { ProfileModule } from './features/profile/profile.module';
+import { CustomerModule } from './features/customer/customer.module';
+import { AdminModule } from './features/admin/admin.module';
+import { EmployeeModule } from './features/employee/employee.module';
+import { SettingModule } from './features/setting/setting.module';
+import { CredentialModule } from './features/credential/credential.module';
+import { RoleModule } from './features/role/role.module';
+import { CarModule } from './features/car/car.module';
+import { ChatModule } from './features/chat/chat.module';
+import { CarControllerModule } from './features/car-controller/car-controller.module';
+import { DecodeEncodeModule } from './features/decode-encode/decode-encode.module';
+import { DtcModule } from './features/dtc/dtc.module';
+import { InvoiceModule } from './features/invoice/invoice.module';
+import { FileServiceModule } from './features/file-service/file-service.module';
+import { ScriptModule } from './features/script/script.module';
+import { SolutionModule } from './features/solution/solution.module';
+import { SupportTicketModule } from './features/support-ticket/support-ticket.module';
 
 @Module({
   imports: [
@@ -17,12 +36,54 @@ import * as path from 'path';
       validationSchema: Joi.object({
         MONGODB_URL: Joi.required(),
         JWT_SECRET: Joi.string().required(),
+        COOKIE_SECRET: Joi.string().required(),
         JWT_ACCESS_EXPIRATION_MINUTES: Joi.string().required(),
         JWT_REFRESH_EXPIRATION_DAYS: Joi.number().required(),
         MASTER_PASSWORD: Joi.string().required(),
+        SMTP_HOST: Joi.string().required(),
+        SMTP_PORT: Joi.number().required(),
+        SMTP_INVOICE_EMAIL: Joi.string().required(),
+        SMTP_INVOICE_PASSWORD: Joi.string().required(),
+        SMTP_INVOICE_SENDER_EMAIL: Joi.string().required(),
+        SMTP_SUPPORT_EMAIL: Joi.string().required(),
+        SMTP_SUPPORT_PASSWORD: Joi.string().required(),
+        SMTP_INFO_EMAIL: Joi.string().required(),
+        SMTP_INFO_PASSWORD: Joi.string().required(),
+        SMTP_AUTH_EMAIL: Joi.string().required(),
+        SMTP_AUTH_PASSWORD: Joi.string().required(),
+        PAYPAL_CLIENT_ID: Joi.string().required(),
+        PAYPAL_CLIENT_SECRET: Joi.string().required(),
+        ALIEN_TECH_CLIENT_ID: Joi.string().required(),
+        ALIEN_TECH_SECRET_KEY: Joi.string().required(),
+        EVC_API_ID: Joi.string().required(),
+        EVC_USERNAME: Joi.string().required(),
+        EVC_PASSWORD: Joi.string().required(),
+        CATAPUSH_APP_ID: Joi.string().required(),
+        CATAPUSH_MESSENGER_ID: Joi.string().required(),
+        CATAPUSH_APP_KEY: Joi.string().required(),
+        PERMANENT_TOKEN: Joi.string().required(),
+        CATAPUSH_CLIENT_ID: Joi.string().required(),
+        CATAPUSH_CLIENT_SECRET: Joi.string().required(),
+        AUTO_TUNER_API_KEY: Joi.string().required(),
+        AUTO_TUNER_ID: Joi.string().required(),
+        AUTO_FLASHER_API_KEY: Joi.string().required(),
+        SFTP_HOST: Joi.string().required(),
+        SFTP_PORT: Joi.number().required(),
+        SFTP_USER: Joi.string().required(),
+        SFTP_PASSWORD: Joi.string().required(),
+        REDIS_HOST: Joi.string().required(),
+        REDIS_PORT: Joi.number().required(),
       }),
     }),
-    MongooseModule.forRoot(process.env.MONGODB_URL),
+
+    MongooseModule.forRootAsync({
+      useFactory: () => {
+        const config = appConfig();
+        return {
+          uri: config.mongodb_url,
+        };
+      },
+    }),
     I18nModule.forRoot({
       fallbackLanguage: 'en',
       loaderOptions: {
@@ -38,9 +99,28 @@ import * as path from 'path';
         AcceptLanguageResolver,
       ],
     }),
+    SecurityModule,
     CommonModule,
     UserModule,
     AuthModule,
+    MailModule,
+    ProfileModule,
+    CustomerModule,
+    AdminModule,
+    EmployeeModule,
+    SettingModule,
+    CredentialModule,
+    RoleModule,
+    CarModule,
+    ChatModule,
+    CarControllerModule,
+    DecodeEncodeModule,
+    DtcModule,
+    InvoiceModule,
+    FileServiceModule,
+    ScriptModule,
+    SolutionModule,
+    SupportTicketModule,
   ],
   controllers: [],
   providers: [],
