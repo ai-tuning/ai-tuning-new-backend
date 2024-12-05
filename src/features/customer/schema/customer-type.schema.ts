@@ -1,7 +1,8 @@
-import { Prop, SchemaFactory } from '@nestjs/mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
 import { collectionsName } from 'src/features/constant';
 
+@Schema({ versionKey: false, timestamps: true })
 class CustomerType extends Document {
   @Prop({
     type: mongoose.Schema.Types.ObjectId,

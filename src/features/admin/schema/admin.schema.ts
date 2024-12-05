@@ -11,6 +11,12 @@ class Admin extends Document {
   })
   user: Types.ObjectId;
 
+  @Prop({ type: String })
+  username: string;
+
+  @Prop({ type: String })
+  companyName: string;
+
   @Prop({ type: String, required: true })
   name: string;
 

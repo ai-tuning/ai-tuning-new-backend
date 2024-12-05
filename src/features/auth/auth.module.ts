@@ -5,9 +5,20 @@ import { JwtModule } from '@nestjs/jwt';
 import { appConfig } from '../config';
 import { UserModule } from '../user/user.module';
 import { JwtStrategy } from './jwt.strategy';
+import { CustomerModule } from '../customer/customer.module';
+import { MongooseModule } from '@nestjs/mongoose';
+import { collectionsName } from '../constant';
+import { AdminSchema } from '../admin/schema/admin.schema';
+import { QueueManagerModule } from '../queue-manager/queue-manager.module';
 
 @Module({
   imports: [
+    MongooseModule.forFeature([
+      {
+        name: collectionsName.admin,
+        schema: AdminSchema,
+      },
+    ]),
     JwtModule.registerAsync({
       useFactory() {
         const config = appConfig();
@@ -20,6 +31,8 @@ import { JwtStrategy } from './jwt.strategy';
       },
     }),
     UserModule,
+    CustomerModule,
+    QueueManagerModule,
   ],
   controllers: [AuthController],
   providers: [JwtStrategy, AuthService],

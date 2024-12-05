@@ -41,6 +41,8 @@ const appConfig = () => ({
   sftp_password: process.env.SFTP_PASSWORD,
   redis_host: process.env.REDIS_HOST,
   redis_port: process.env.REDIS_PORT,
+  evc_base_url: process.env.EVC_BASE_URL,
+  encryption_key: process.env.ENCRYPTION_KEY,
 });
 
 type AppConfig = ReturnType<typeof appConfig>;

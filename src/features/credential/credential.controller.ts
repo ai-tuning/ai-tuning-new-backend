@@ -1,34 +1,45 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Types } from 'mongoose';
 import { CredentialService } from './credential.service';
-import { CreateCredentialDto } from './dto/create-credential.dto';
-import { UpdateCredentialDto } from './dto/update-credential.dto';
+import { Credential } from './schema/credential.schema';
+import {
+  AlienTechCredentialDto,
+  AutoFlasherCredentialDto,
+  AutoTunerCredentialDto,
+  EvcCredentialDto,
+  PaypalCredentialDto,
+} from './dto/create-credential.dto';
 
-@Controller('credential')
+@Controller('credentials')
 export class CredentialController {
   constructor(private readonly credentialService: CredentialService) {}
 
-  @Post()
-  create(@Body() createCredentialDto: CreateCredentialDto) {
-    return this.credentialService.create(createCredentialDto);
+  @Get(':adminId')
+  async findOneByAdmin(@Param('adminId') adminId: Types.ObjectId): Promise<Credential> {
+    return await this.credentialService.findByAdmin(adminId);
   }
 
-  @Get()
-  findAll() {
-    return this.credentialService.findAll();
+  @Patch('papal/:id')
+  updatePaypalCredential(@Param('id') id: Types.ObjectId, @Body() paypalCredentialDto: PaypalCredentialDto) {
+    return this.credentialService.updatePaypalCredential(id, paypalCredentialDto);
   }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.credentialService.findOne(+id);
+  @Patch('alien-tech/:id')
+  updateAlienTechCredential(@Param('id') id: Types.ObjectId, @Body() alienTechCredentialDto: AlienTechCredentialDto) {
+    return this.credentialService.updateAlienTechCredential(id, alienTechCredentialDto);
   }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCredentialDto: UpdateCredentialDto) {
-    return this.credentialService.update(+id, updateCredentialDto);
+  @Patch('auto-tuner/:id')
+  updateAutoTunerCredential(@Param('id') id: Types.ObjectId, @Body() autoTunerCredentialDto: AutoTunerCredentialDto) {
+    return this.credentialService.updateAutoTunerCredential(id, autoTunerCredentialDto);
   }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.credentialService.remove(+id);
+  @Patch('auto-flasher/:id')
+  updateAutoFlasherCredential(
+    @Param('id') id: Types.ObjectId,
+    @Body() autoFlasherCredentialDto: AutoFlasherCredentialDto,
+  ) {
+    return this.credentialService.updateAutoFlasherCredential(id, autoFlasherCredentialDto);
+  }
+  @Patch('evc/:id')
+  updateEvcCredential(@Param('id') id: Types.ObjectId, @Body() evcCredentialDto: EvcCredentialDto) {
+    return this.credentialService.updateEvcCredential(id, evcCredentialDto);
   }
 }

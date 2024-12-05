@@ -7,14 +7,12 @@ import { User } from './schema/user.schema';
 
 @Injectable()
 export class UserService {
-  constructor(
-    @InjectModel(collectionsName.user) private readonly userModel: Model<User>,
-  ) {}
+  constructor(@InjectModel(collectionsName.user) private readonly userModel: Model<User>) {}
 
-  async create(
-    createUserDto: CreateUserDto,
-    session: ClientSession,
-  ): Promise<User> {
+  async create(createUserDto: CreateUserDto, session: ClientSession): Promise<User> {
+    //check if email already exist
+    const emailExist = await this.userModel.exists({ email: createUserDto.email }).lean();
+    if (emailExist) throw new BadRequestException('Email already exist');
     const user = new this.userModel(createUserDto);
     return user.save({ session });
   }
@@ -23,22 +21,11 @@ export class UserService {
     return this.userModel.findById(userId);
   }
 
-  async getUserByEmail(email: string): Promise<User> {
-    return this.userModel.findOne({ email });
+  async getUserByEmail(email: string): Promise<any> {
+    return await this.userModel.findOne({ email }).lean();
   }
 
-  async createCustomer(createUserDto: CreateUserDto): Promise<User> {
-    //check if the customer already exist or not
-    const customer = await this.userModel.exists({
-      email: createUserDto.email,
-    });
-
-    if (customer) throw new BadRequestException('Customer already exist');
-
-    const admin = new this.userModel({
-      ...createUserDto,
-      role: RolesEnum.ADMIN,
-    });
-    return admin.save();
+  async updateUserEmail(userId: Types.ObjectId, email: string, session: ClientSession): Promise<User> {
+    return this.userModel.findOneAndUpdate({ _id: userId }, { $set: { email } }, { new: true, session });
   }
 }

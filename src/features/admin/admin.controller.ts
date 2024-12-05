@@ -1,15 +1,19 @@
+import { Types } from 'mongoose';
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
+import { Public } from '../common';
 
-@Controller('admin')
+@Controller('admins')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
+  @Public()
   @Post()
-  create(@Body() createAdminDto: CreateAdminDto) {
-    return this.adminService.create(createAdminDto);
+  async create(@Body() createAdminDto: CreateAdminDto) {
+    const admin = await this.adminService.create(createAdminDto);
+    return { message: 'Admin created successfully', data: admin };
   }
 
   @Get()
@@ -18,13 +22,14 @@ export class AdminController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.adminService.findOne(+id);
+  findOne(@Param('id') id: Types.ObjectId) {
+    return this.adminService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAdminDto: UpdateAdminDto) {
-    return this.adminService.update(+id, updateAdminDto);
+  async update(@Param('id') id: Types.ObjectId, @Body() updateAdminDto: UpdateAdminDto) {
+    const updatedAdmin = await this.adminService.update(id, updateAdminDto);
+    return { message: 'Admin updated successfully', data: updatedAdmin };
   }
 
   @Delete(':id')

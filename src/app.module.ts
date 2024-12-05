@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { appConfig } from './features/config/app.config';
 import { UserModule } from './features/user/user.module';
@@ -27,6 +27,10 @@ import { FileServiceModule } from './features/file-service/file-service.module';
 import { ScriptModule } from './features/script/script.module';
 import { SolutionModule } from './features/solution/solution.module';
 import { SupportTicketModule } from './features/support-ticket/support-ticket.module';
+import { EvcModule } from './features/evc/evc.module';
+import { SuperAdminModule } from './features/super-admin/super-admin.module';
+import { QueueManagerModule } from './features/queue-manager/queue-manager.module';
+import { BullModule } from '@nestjs/bull';
 
 @Module({
   imports: [
@@ -73,6 +77,8 @@ import { SupportTicketModule } from './features/support-ticket/support-ticket.mo
         SFTP_PASSWORD: Joi.string().required(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),
+        EVC_BASE_URL: Joi.string().required(),
+        ENCRYPTION_KEY: Joi.string().required(),
       }),
     }),
 
@@ -94,10 +100,18 @@ import { SupportTicketModule } from './features/support-ticket/support-ticket.mo
         'en-*': 'en',
         'bn-*': 'bn',
       },
-      resolvers: [
-        { use: QueryResolver, options: ['lang'] },
-        AcceptLanguageResolver,
-      ],
+      resolvers: [{ use: QueryResolver, options: ['lang'] }, AcceptLanguageResolver],
+    }),
+    BullModule.forRootAsync({
+      useFactory: () => {
+        const config = appConfig();
+        return {
+          redis: {
+            host: config.redis_host,
+            port: Number(config.redis_port),
+          },
+        };
+      },
     }),
     SecurityModule,
     CommonModule,
@@ -121,6 +135,9 @@ import { SupportTicketModule } from './features/support-ticket/support-ticket.mo
     ScriptModule,
     SolutionModule,
     SupportTicketModule,
+    EvcModule,
+    SuperAdminModule,
+    QueueManagerModule,
   ],
   controllers: [],
   providers: [],

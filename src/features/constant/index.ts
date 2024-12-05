@@ -1,4 +1,5 @@
-export { collectionsName } from './collectionNames';
+export { collectionsName } from './collection-names';
+export { queueNames } from './queue-names';
 export { RolesEnum } from './enums/role.enum';
 export { Gender } from './enums/gender.enums';
 export { UserStatusEnum } from './enums/user-status.enum';

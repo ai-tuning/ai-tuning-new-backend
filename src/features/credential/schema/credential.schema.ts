@@ -1,4 +1,4 @@
-import { Prop, Schema } from '@nestjs/mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
 
 export class PaypalCredential {
@@ -51,3 +51,5 @@ export class Credential extends Document {
   @Prop({ type: String })
   autoFlasher: string;
 }
+
+export const CredentialSchema = SchemaFactory.createForClass(Credential);

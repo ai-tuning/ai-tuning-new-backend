@@ -7,14 +7,14 @@ import { AccessPermission, AccessRole, CommonRoles, Public } from '../common';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post('')
-  @Public() //use it if you want to make the route public otherwise remove it
+  // @Post('')
+  // @Public() //use it if you want to make the route public otherwise remove it
   //use role guard and permission guard
   // @AccessPermission('CREATE_USER')
   // @AccessRole(CommonRoles)
-  async createCustomer(@Body() createUserDto: CreateUserDto) {
-    const customer = await this.userService.createCustomer(createUserDto);
-    delete customer.password;
-    return { data: customer, message: 'Customer created successfully' };
-  }
+  // async createCustomer(@Body() createUserDto: CreateUserDto) {
+  //   const customer = await this.userService.createCustomer(createUserDto);
+  //   delete customer.password;
+  //   return { data: customer, message: 'Customer created successfully' };
+  // }
 }

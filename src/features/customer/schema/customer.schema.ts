@@ -10,6 +10,12 @@ class Customer extends Document {
     required: true,
   })
   admin: Types.ObjectId;
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: collectionsName.admin,
+    required: true,
+  })
+  user: Types.ObjectId;
 
   @Prop({ type: String, required: true })
   firstName: string;

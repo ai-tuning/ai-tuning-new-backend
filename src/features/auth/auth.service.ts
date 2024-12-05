@@ -1,31 +1,36 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotAcceptableException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable, NotAcceptableException } from '@nestjs/common';
 import { compare } from 'bcrypt';
 import { UserService } from '../user/user.service';
 import { LoginDto } from './dto/login.dto';
-import { UserStatusEnum } from '../constant';
+import { collectionsName, UserStatusEnum } from '../constant';
 import { appConfig } from '../config';
 import { JwtService } from '@nestjs/jwt';
+import { RegistrationDto } from './dto/registration.dto';
+import { CustomerService } from '../customer/customer.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { Admin } from '../admin/schema/admin.schema';
+import { EmailQueueProducers } from '../queue-manager/producers/email-queue.producers';
+
+type AuthResponse = { accessToken: string; refreshToken: string; user: any } | { isVerified: false };
 
 @Injectable()
 export class AuthService {
   constructor(
+    @InjectModel(collectionsName.admin) private readonly adminModel: Model<Admin>,
     private readonly userService: UserService,
+    private readonly customerService: CustomerService,
     private readonly jwtService: JwtService,
+    private readonly emailQueueProducers: EmailQueueProducers,
   ) {}
 
-  async logIn(loginDto: LoginDto) {
-    const user = (
-      await this.userService.getUserByEmail(loginDto.email)
-    ).toObject();
-
+  async logIn(loginDto: LoginDto): Promise<AuthResponse> {
+    const user = await this.userService.getUserByEmail(loginDto.email);
     if (!user) throw new NotAcceptableException('Invalid credential');
 
     if (!user.isVerified) {
-      throw new NotAcceptableException('Please verify your email account');
+      // throw new NotAcceptableException('Please verify your email account');
+      return { isVerified: false };
     }
 
     //check if the user status new or active
@@ -52,5 +57,20 @@ export class AuthService {
     });
     delete user.password;
     return { accessToken, refreshToken, user };
+  }
+  //for customer only
+  async registration(registrationDto: RegistrationDto, username?: string) {
+    if (username) {
+      const admin = await this.adminModel.findOne({ username }).lean().select('_id');
+      registrationDto.admin = admin._id as Types.ObjectId;
+    }
+    const data = await this.customerService.create(registrationDto);
+
+    //send email to email queue
+    this.emailQueueProducers.sendMail({
+      receiver: registrationDto.email,
+      name: data.firstName + ' ' + data.lastName,
+    });
+    return registrationDto;
   }
 }

@@ -7,10 +7,7 @@ import { AppConfig } from '../config/app.config';
 
 @Injectable()
 export class MailService {
-  private readonly transporter: (
-    user: string,
-    password: string,
-  ) => nodemailer.Transporter;
+  private readonly transporter: (user: string, password: string) => nodemailer.Transporter;
   private readonly config: AppConfig;
   constructor() {
     const config = appConfig();
@@ -25,31 +22,19 @@ export class MailService {
   }
 
   private authTransporter() {
-    return this.transporter(
-      this.config.smtp_auth_email,
-      this.config.smtp_auth_password,
-    );
+    return this.transporter(this.config.smtp_auth_email, this.config.smtp_auth_password);
   }
 
   private infoTransporter() {
-    return this.transporter(
-      this.config.smtp_info_email,
-      this.config.smtp_info_password,
-    );
+    return this.transporter(this.config.smtp_info_email, this.config.smtp_info_password);
   }
 
   private supportTransporter() {
-    return this.transporter(
-      this.config.smtp_support_email,
-      this.config.smtp_support_password,
-    );
+    return this.transporter(this.config.smtp_support_email, this.config.smtp_support_password);
   }
 
   private invoiceTransporter() {
-    return this.transporter(
-      this.config.smtp_invoice_email,
-      this.config.smtp_invoice_password,
-    );
+    return this.transporter(this.config.smtp_invoice_email, this.config.smtp_invoice_password);
   }
 
   private emailTemplate(title: string, supportMail: string, content: string) {
@@ -199,7 +184,7 @@ export class MailService {
 `;
   }
 
-  async sendAuthMail(to: string, code: string) {
+  async sendLoginCode(to: string, code: string) {
     const mailOptions = {
       from: this.config.smtp_auth_email,
       to,
@@ -217,6 +202,26 @@ export class MailService {
                 </div>
                 <p>If you didn’t sign up for this account, please ignore this email or contact our support team.</p>
             </td>`,
+      ),
+    };
+    await this.authTransporter().sendMail(mailOptions);
+  }
+
+  async sendWelcomeMail(data: { receiver: string; name: string }) {
+    const mailOptions = {
+      from: `AI Tuning Files <${this.config.smtp_auth_email}>`, // this.config.smtp_auth_email,
+      to: data.receiver,
+      subject: 'Welcome to AI Tuning Files',
+      html: this.emailTemplate(
+        'Welcome to AI Tuning Files',
+        'support@ai-tuningfiles.com',
+        `<td class="email-content">
+                  <h2>Hello,${data.name}!</h2>
+                  <p>Thank you for signing up with AI Tuning Files. </p>
+                  <div class="highlight">
+                    <p>Enjoy the best service from AI Tuning Files</p>
+                </div>
+              </td>`,
       ),
     };
     await this.authTransporter().sendMail(mailOptions);

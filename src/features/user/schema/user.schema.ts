@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
 import { RolesEnum, UserStatusEnum } from 'src/features/constant';
-import { collectionsName } from 'src/features/constant/collectionNames';
+import { collectionsName } from 'src/features/constant/collection-names';
 import * as bcrypt from 'bcrypt';
 
 @Schema({ versionKey: false, timestamps: true })
@@ -21,7 +21,13 @@ export class User extends Document {
   role: RolesEnum;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: collectionsName.admin })
-  admin: Types.ObjectId;
+  admin?: Types.ObjectId;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: collectionsName.customer })
+  customer?: Types.ObjectId;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: collectionsName.employee })
+  employee?: Types.ObjectId;
 
   @Prop({ type: String, enum: UserStatusEnum, default: UserStatusEnum.ACTIVE })
   status: UserStatusEnum;
@@ -36,6 +42,14 @@ UserSchema.pre<User>('save', async function (next) {
   if (!this.isModified('password')) {
     return next();
   }
+  const saltRounds = 10;
+  const hashedPassword = await bcrypt.hash(this.password, saltRounds);
+  this.password = hashedPassword;
+  next();
+});
+
+UserSchema.pre<User>('findOneAndUpdate', async function (next) {
+  if (!this.isModified('password')) return next();
   const saltRounds = 10;
   const hashedPassword = await bcrypt.hash(this.password, saltRounds);
   this.password = hashedPassword;
