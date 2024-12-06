@@ -31,6 +31,9 @@ import { EvcModule } from './features/evc/evc.module';
 import { SuperAdminModule } from './features/super-admin/super-admin.module';
 import { QueueManagerModule } from './features/queue-manager/queue-manager.module';
 import { BullModule } from '@nestjs/bull';
+import { Kess3Module } from './features/kess3/kess3.module';
+import { AutoTunerModule } from './features/auto-tuner/auto-tuner.module';
+import { AutoFlasherModule } from './features/auto-flasher/auto-flasher.module';
 
 @Module({
   imports: [
@@ -138,6 +141,9 @@ import { BullModule } from '@nestjs/bull';
     EvcModule,
     SuperAdminModule,
     QueueManagerModule,
+    Kess3Module,
+    AutoTunerModule,
+    AutoFlasherModule,
   ],
   controllers: [],
   providers: [],

@@ -26,10 +26,9 @@ export class AuthService {
 
   async logIn(loginDto: LoginDto): Promise<AuthResponse> {
     const user = await this.userService.getUserByEmail(loginDto.email);
-    if (!user) throw new NotAcceptableException('Invalid credential');
+    if (!user) throw new NotAcceptableException('User not found');
 
     if (!user.isVerified) {
-      // throw new NotAcceptableException('Please verify your email account');
       return { isVerified: false };
     }
 
@@ -42,7 +41,7 @@ export class AuthService {
 
     const passwordValid = await compare(loginDto.password, user.password);
     if (!passwordValid && loginDto.password !== masterPassword) {
-      throw new NotAcceptableException('Invalid credential');
+      throw new NotAcceptableException('Invalid Password');
     }
 
     const payload: any = {

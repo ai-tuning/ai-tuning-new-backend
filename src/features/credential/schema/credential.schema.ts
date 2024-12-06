@@ -13,6 +13,8 @@ export class AlienTechCredential {
   clientId: string;
   @Prop({ type: String, required: true })
   clientSecret: string;
+  @Prop({ type: String })
+  accessToken: string;
 }
 
 export class AutoTunerCredential {
@@ -20,6 +22,10 @@ export class AutoTunerCredential {
   apiKey: string;
   @Prop({ type: String, required: true })
   tunerId: string;
+}
+export class AutoFlasherCredential {
+  @Prop({ type: String, required: true })
+  apiKey: string;
 }
 
 export class EvcCredential {
@@ -32,7 +38,7 @@ export class EvcCredential {
 }
 
 @Schema({ timestamps: true, versionKey: false })
-export class Credential extends Document {
+export class Credential extends Types.ObjectId {
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
   admin: Types.ObjectId;
 
@@ -48,8 +54,8 @@ export class Credential extends Document {
   @Prop({ type: AutoTunerCredential })
   autoTuner: AutoTunerCredential;
 
-  @Prop({ type: String })
-  autoFlasher: string;
+  @Prop({ type: AutoFlasherCredential })
+  autoFlasher: AutoFlasherCredential;
 }
 
 export const CredentialSchema = SchemaFactory.createForClass(Credential);

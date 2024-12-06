@@ -86,14 +86,24 @@ export class CredentialService {
     return credential;
   }
 
+  async updateAlienTechAccessToken(adminId: Types.ObjectId, alienTechAccessToken: string) {
+    const payload = { alienTech: { accessToken: this.encryptData(alienTechAccessToken) } };
+    const credential = await this.credentialModel.findOneAndUpdate(
+      { admin: adminId },
+      { $set: payload },
+      { new: true },
+    );
+    return credential;
+  }
+
   async updateAutoFlasherCredential(adminId: Types.ObjectId, autoFlasherDto: AutoFlasherCredentialDto) {
     const payload = { autoFlasher: this.encryptData(autoFlasherDto.autoFlasher) };
     const credential = this.updateCredential(adminId, payload);
     return credential;
   }
 
-  async findByAdmin(adminId: Types.ObjectId, select?: string): Promise<Credential> {
-    const credential = await this.credentialModel.findOne({ admin: adminId }).select(select);
+  async findByAdmin(adminId: Types.ObjectId, select?: keyof Credential): Promise<Credential> {
+    const credential = await this.credentialModel.findOne({ admin: adminId }).select(select).lean();
 
     //decrypt all before return
     if (credential.paypal) {
@@ -112,8 +122,9 @@ export class CredentialService {
     if (credential.alienTech) {
       credential.alienTech.clientId = this.decryptData(credential.alienTech.clientId);
       credential.alienTech.clientSecret = this.decryptData(credential.alienTech.clientSecret);
+      credential.alienTech.accessToken = this.decryptData(credential.alienTech.accessToken);
     }
-    if (credential.autoFlasher) credential.autoFlasher = this.decryptData(credential.autoFlasher);
+    if (credential.autoFlasher) credential.autoFlasher.apiKey = this.decryptData(credential.autoFlasher.apiKey);
 
     return credential;
   }
