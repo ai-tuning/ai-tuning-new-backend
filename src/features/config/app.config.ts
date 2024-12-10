@@ -43,6 +43,8 @@ const appConfig = () => ({
   redis_port: process.env.REDIS_PORT,
   evc_base_url: process.env.EVC_BASE_URL,
   encryption_key: process.env.ENCRYPTION_KEY,
+  mega_email: process.env.MEGA_EMAIL,
+  mega_password: process.env.MEGA_PASSWORD,
 });
 
 type AppConfig = ReturnType<typeof appConfig>;

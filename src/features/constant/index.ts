@@ -12,3 +12,4 @@ export { SOLUTION_CATEGORY } from './enums/solution-category.enum';
 export { FUEL_TYPE } from './enums/fuel-type.enum';
 export { SUPPORT_TYPE } from './enums/support-type.enum';
 export { SUPPORT_STATUS } from './enums/support-status.enum';
+export { DIRECTORY_NAMES, DIRECTORY_NAMES_TYPE } from './directory-names';

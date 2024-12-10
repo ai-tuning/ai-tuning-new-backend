@@ -34,6 +34,7 @@ import { BullModule } from '@nestjs/bull';
 import { Kess3Module } from './features/kess3/kess3.module';
 import { AutoTunerModule } from './features/auto-tuner/auto-tuner.module';
 import { AutoFlasherModule } from './features/auto-flasher/auto-flasher.module';
+import { StorageServiceModule } from './features/storage-service/storage-service.module';
 
 @Module({
   imports: [
@@ -82,6 +83,8 @@ import { AutoFlasherModule } from './features/auto-flasher/auto-flasher.module';
         REDIS_PORT: Joi.number().required(),
         EVC_BASE_URL: Joi.string().required(),
         ENCRYPTION_KEY: Joi.string().required(),
+        MEGA_EMAIL: Joi.string().required(),
+        MEGA_PASSWORD: Joi.string().required(),
       }),
     }),
 
@@ -144,6 +147,7 @@ import { AutoFlasherModule } from './features/auto-flasher/auto-flasher.module';
     Kess3Module,
     AutoTunerModule,
     AutoFlasherModule,
+    StorageServiceModule,
   ],
   controllers: [],
   providers: [],

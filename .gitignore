@@ -42,3 +42,5 @@ package-json.lock
 pnpm-lock.yaml
 #env
 .env
+
+public
