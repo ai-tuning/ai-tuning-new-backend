@@ -36,7 +36,7 @@ export class User extends Document {
   isVerified: boolean;
 }
 
-const UserSchema = SchemaFactory.createForClass(User);
+export const UserSchema = SchemaFactory.createForClass(User);
 
 UserSchema.pre<User>('save', async function (next) {
   if (!this.isModified('password')) {
@@ -48,12 +48,14 @@ UserSchema.pre<User>('save', async function (next) {
   next();
 });
 
-UserSchema.pre<User>('findOneAndUpdate', async function (next) {
-  if (!this.isModified('password')) return next();
-  const saltRounds = 10;
-  const hashedPassword = await bcrypt.hash(this.password, saltRounds);
-  this.password = hashedPassword;
-  next();
-});
-
-export { UserSchema };
+export class UserDocument {
+  _id: Types.ObjectId;
+  email: string;
+  password: string;
+  role: string;
+  admin: Types.ObjectId;
+  customer: Types.ObjectId;
+  employee: Types.ObjectId;
+  status: string;
+  isVerified: boolean;
+}

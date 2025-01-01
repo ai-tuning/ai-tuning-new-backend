@@ -8,4 +8,6 @@ export const collectionsName = {
   controller: 'Controller',
   setting: 'Setting',
   credential: 'Credential',
+  Schedule: 'Schedule',
+  verificationMail: 'verificationMail',
 };

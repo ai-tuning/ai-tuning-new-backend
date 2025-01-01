@@ -6,12 +6,14 @@ import { AdminSchema } from './schema/admin.schema';
 import { collectionsName } from '../constant';
 import { UserModule } from '../user/user.module';
 import { CredentialModule } from '../credential/credential.module';
+import { SettingModule } from '../setting/setting.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: collectionsName.admin, schema: AdminSchema }]),
     UserModule,
     CredentialModule,
+    SettingModule,
   ],
   controllers: [AdminController],
   providers: [AdminService],

@@ -4,7 +4,7 @@ import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { CredentialService } from '../credential/credential.service';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { collectionsName, RolesEnum } from '../constant';
-import { Customer } from './schema/customer.schema';
+import { Customer, CustomerDocument } from './schema/customer.schema';
 import { Connection, Model, Types } from 'mongoose';
 import { UserService } from '../user/user.service';
 import { EvcService } from '../evc/evc.service';
@@ -77,18 +77,18 @@ export class CustomerService {
     }
   }
 
-  async findCustomersByAdmin(adminId: Types.ObjectId): Promise<Customer[]> {
-    return this.customerModel.find({ admin: adminId });
+  async findCustomersByAdmin(adminId: Types.ObjectId): Promise<CustomerDocument[]> {
+    return this.customerModel.find({ admin: adminId }).lean<CustomerDocument[]>();
   }
 
-  async findById(id: Types.ObjectId): Promise<Customer> {
-    return this.customerModel.findById(id);
+  async findById(id: Types.ObjectId): Promise<CustomerDocument> {
+    return this.customerModel.findById(id).lean<CustomerDocument>();
   }
-  async findByUserId(userId: Types.ObjectId): Promise<Customer> {
-    return (await this.customerModel.findOne({ user: userId })).toObject();
+  async findByUserId(userId: Types.ObjectId, select?: string): Promise<CustomerDocument> {
+    return await this.customerModel.findOne({ user: userId }).select(select).lean<CustomerDocument>();
   }
 
-  async update(id: Types.ObjectId, updateCustomerDto: UpdateCustomerDto) {
+  async update(id: Types.ObjectId, updateCustomerDto: UpdateCustomerDto): Promise<CustomerDocument> {
     const session = await this.connection.startSession();
     try {
       session.startTransaction();
@@ -108,11 +108,9 @@ export class CustomerService {
         isNewEvcNumber = true;
       }
 
-      const updatedCustomer = await this.customerModel.findOneAndUpdate(
-        { _id: id },
-        { $set: updateCustomerDto },
-        { new: true, session },
-      );
+      const updatedCustomer = await this.customerModel
+        .findOneAndUpdate({ _id: id }, { $set: updateCustomerDto }, { new: true, session })
+        .lean<CustomerDocument>();
 
       if (updateCustomerDto.evcNumber) {
         await this.evcService.addCustomer(customer.admin, updateCustomerDto.evcNumber);
@@ -128,7 +126,6 @@ export class CustomerService {
   }
 
   async createCustomerType(createCustomerTypeDto: CreateCustomerTypeDto) {
-    console.log(createCustomerTypeDto);
     const customerType = new this.customerTypeModel({
       name: createCustomerTypeDto.name,
       admin: new Types.ObjectId(createCustomerTypeDto.admin),

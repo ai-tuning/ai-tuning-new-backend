@@ -10,6 +10,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { collectionsName } from '../constant';
 import { AdminSchema } from '../admin/schema/admin.schema';
 import { QueueManagerModule } from '../queue-manager/queue-manager.module';
+import { VerificationMailModule } from '../verification-mail/verification-mail.module';
+import { AdminModule } from '../admin/admin.module';
 
 @Module({
   imports: [
@@ -33,6 +35,7 @@ import { QueueManagerModule } from '../queue-manager/queue-manager.module';
     UserModule,
     CustomerModule,
     QueueManagerModule,
+    VerificationMailModule,
   ],
   controllers: [AuthController],
   providers: [JwtStrategy, AuthService],

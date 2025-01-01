@@ -8,12 +8,8 @@ import { IAuthUser } from '../interfaces/auth-user.interface';
 //     USER_ID = 'userId',
 // }
 
-export const AuthUser = createParamDecorator(
-  (_data, ctx: ExecutionContext): IAuthUser => {
-    const req = ctx.switchToHttp().getRequest();
-    req.user.ipAddress = req.headers['x-forwarded-for'] || req.ip;
-    req.user.userAgent = req.get('user-agent') || '';
-    req.user.device = req.get('device') || '';
-    return req.user;
-  },
-);
+export const AuthUser = createParamDecorator((_data, ctx: ExecutionContext): IAuthUser => {
+  const req = ctx.switchToHttp().getRequest();
+  req.user.ipAddress = req.headers['x-forwarded-for'] || req.ip;
+  return req.user;
+});

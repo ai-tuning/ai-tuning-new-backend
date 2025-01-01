@@ -5,6 +5,7 @@ import { UserService } from '../user/user.service';
 import { IAuthUser } from '../common';
 import { Types } from 'mongoose';
 import { appConfig } from '../config';
+import { RolesEnum } from '../constant';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -19,12 +20,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: IAuthUser) {
     const user = await this.userService.getUserById(payload._id);
-    if (!user) throw new UnauthorizedException();
+    if (!user) throw new UnauthorizedException('You are not authorized');
     return {
       _id: user._id,
       email: user.email,
       role: user.role,
       admin: new Types.ObjectId(payload.admin),
+      ...(user.role === RolesEnum.CUSTOMER && { customer: new Types.ObjectId(payload.customer) }),
+      ...(user.role === RolesEnum.EMPLOYEE && { employee: new Types.ObjectId(payload.employee) }),
     };
   }
 }

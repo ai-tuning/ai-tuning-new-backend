@@ -71,4 +71,24 @@ class Customer extends Document {
 
 const CustomerSchema = SchemaFactory.createForClass(Customer);
 
-export { CustomerSchema, Customer };
+class CustomerDocument {
+  _id: Types.ObjectId;
+  admin: Types.ObjectId;
+  user: Types.ObjectId;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  country: string;
+  city: string;
+  address: string;
+  postCode: string;
+  companyName: string;
+  credits: number;
+  avatar: string;
+  customerType: Types.ObjectId;
+  status: UserStatusEnum;
+  evcNumber: string;
+}
+
+export { CustomerSchema, Customer, CustomerDocument };

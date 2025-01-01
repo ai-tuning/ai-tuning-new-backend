@@ -232,7 +232,8 @@ export class AutoFlasherService {
       },
     });
     if (response.data.status === 'OK') {
-      await fs.promises.writeFile(encryptedFilePath, response.data.output_file_base64);
+      const mapsData = Buffer.from(response.data.output_file_base64, 'base64');
+      await fs.promises.writeFile(encryptedFilePath, mapsData);
       return encryptedFilePath;
     }
   }

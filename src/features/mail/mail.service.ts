@@ -186,7 +186,7 @@ export class MailService {
 
   async sendLoginCode(to: string, code: string) {
     const mailOptions = {
-      from: this.config.smtp_auth_email,
+      from: `AI Tuning Files <${this.config.smtp_auth_email}>`,
       to,
       subject: 'Verify your email address',
       html: this.emailTemplate(
@@ -209,7 +209,7 @@ export class MailService {
 
   async sendWelcomeMail(data: { receiver: string; name: string }) {
     const mailOptions = {
-      from: `AI Tuning Files <${this.config.smtp_auth_email}>`, // this.config.smtp_auth_email,
+      from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
       to: data.receiver,
       subject: 'Welcome to AI Tuning Files',
       html: this.emailTemplate(

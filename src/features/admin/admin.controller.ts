@@ -1,8 +1,8 @@
-import { Types } from 'mongoose';
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { AdminService } from './admin.service';
+import { Types } from 'mongoose';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
+import { AdminService } from './admin.service';
 import { Public } from '../common';
 
 @Controller('admins')

@@ -3,10 +3,11 @@ import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { collectionsName, RolesEnum } from '../constant';
-import { Admin } from './schema/admin.schema';
+import { Admin, AdminDocument } from './schema/admin.schema';
 import { UserService } from '../user/user.service';
 import { Connection, Model, Types } from 'mongoose';
 import { CredentialService } from '../credential/credential.service';
+import { ScheduleService } from '../setting/schedule.service';
 
 @Injectable()
 export class AdminService {
@@ -15,6 +16,7 @@ export class AdminService {
     @InjectConnection() private readonly connection: Connection,
     private readonly userService: UserService,
     private readonly credentialService: CredentialService,
+    private readonly scheduleService: ScheduleService,
   ) {}
 
   async create(createAdminDto: CreateAdminDto) {
@@ -24,7 +26,7 @@ export class AdminService {
       const { password, ...rest } = createAdminDto;
 
       //check the username already used or nt
-      const adminExist = await this.adminModel.exists({ username: createAdminDto.username });
+      const adminExist = await this.adminModel.exists({ username: createAdminDto.username }).lean<AdminDocument>();
       if (adminExist) {
         throw new BadRequestException('Username already exist');
       }
@@ -40,8 +42,12 @@ export class AdminService {
         },
         session,
       );
+
       admin.user = user._id as Types.ObjectId;
       const newAdmin = await admin.save({ session });
+
+      //create schedule
+      await this.scheduleService.createSchedule(newAdmin._id as Types.ObjectId, session);
 
       await this.credentialService.create(newAdmin._id as Types.ObjectId, session);
 
@@ -55,19 +61,23 @@ export class AdminService {
     }
   }
 
-  async findAll(): Promise<Admin[]> {
-    return this.adminModel.find();
+  async findAll(): Promise<AdminDocument[]> {
+    return this.adminModel.find().lean<AdminDocument[]>();
   }
 
-  async findOne(id: Types.ObjectId): Promise<Admin> {
-    return this.adminModel.findById(id);
+  async findOne(id: Types.ObjectId, select?: string): Promise<AdminDocument> {
+    return this.adminModel.findById(id).select(select).lean<AdminDocument>();
   }
 
-  async update(id: Types.ObjectId, updateAdminDto: UpdateAdminDto): Promise<Admin> {
+  async findByUserId(userId: Types.ObjectId, select?: string): Promise<AdminDocument> {
+    return this.adminModel.findOne({ user: userId }).select(select).lean<AdminDocument>();
+  }
+
+  async update(id: Types.ObjectId, updateAdminDto: UpdateAdminDto): Promise<AdminDocument> {
     const session = await this.connection.startSession();
     try {
       session.startTransaction();
-      const admin = await this.adminModel.findById(id);
+      const admin = await this.adminModel.findById(id).lean();
       if (!admin) throw new NotFoundException('Admin not found');
       if (admin.email !== updateAdminDto.email) {
         await this.userService.updateUserEmail(admin.user, updateAdminDto.email, session);
@@ -78,11 +88,9 @@ export class AdminService {
         const adminExist = await this.adminModel.exists({ username: updateAdminDto.username, _id: { $ne: id } });
         if (adminExist) throw new BadRequestException('Username already exist');
       }
-      const updatedAdmin = await this.adminModel.findOneAndUpdate(
-        { _id: id },
-        { $set: updateAdminDto },
-        { new: true, session },
-      );
+      const updatedAdmin = await this.adminModel
+        .findOneAndUpdate({ _id: id }, { $set: updateAdminDto }, { new: true, session })
+        .lean<AdminDocument>();
       await session.commitTransaction();
       return updatedAdmin;
     } catch (error) {
