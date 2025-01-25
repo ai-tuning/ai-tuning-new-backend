@@ -78,4 +78,12 @@ export class CreateCustomerDto {
   @IsOptional()
   @IsString()
   evcNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  countryCode?: string;
+
+  @IsOptional()
+  @IsString()
+  state?: string;
 }

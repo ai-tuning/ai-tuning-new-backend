@@ -2,38 +2,38 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
 
 export class PaypalCredential {
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: true, default: '' })
   clientId: string;
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: true, default: '' })
   clientSecret: string;
 }
 
 export class AlienTechCredential {
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: true, default: '' })
   clientId: string;
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: true, default: '' })
   clientSecret: string;
   @Prop({ type: String })
   accessToken: string;
 }
 
 export class AutoTunerCredential {
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: true, default: '' })
   apiKey: string;
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: true, default: '' })
   tunerId: string;
 }
 export class AutoFlasherCredential {
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: true, default: '' })
   apiKey: string;
 }
 
 export class EvcCredential {
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: true, default: '' })
   apiId: string;
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: true, default: '' })
   username: string;
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: true, default: '' })
   password: string;
 }
 
@@ -42,7 +42,7 @@ export class Credential extends Types.ObjectId {
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
   admin: Types.ObjectId;
 
-  @Prop({ type: PaypalCredential })
+  @Prop({ type: PaypalCredential, required: true })
   paypal: PaypalCredential;
 
   @Prop({ type: AlienTechCredential })

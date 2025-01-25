@@ -1,0 +1,12 @@
+import { Prop } from '@nestjs/mongoose';
+
+export class FileSchema {
+  @Prop({ type: String, required: true })
+  originalName: string;
+
+  @Prop({ type: String, required: true })
+  fileType: string;
+
+  @Prop({ type: String, required: true })
+  url: string;
+}

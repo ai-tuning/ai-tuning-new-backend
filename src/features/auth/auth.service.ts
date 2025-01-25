@@ -30,6 +30,12 @@ export class AuthService {
     @InjectConnection() private readonly connection: Connection,
   ) {}
 
+  /**
+   * User login
+   * @param loginDto
+   * @returns
+   */
+
   async logIn(loginDto: LoginDto): Promise<AuthResponse> {
     const user = await this.userService.getUserByEmail(loginDto.email);
     if (!user) throw new NotAcceptableException('User not found');
@@ -38,17 +44,21 @@ export class AuthService {
       _id: user._id,
     };
 
+    let profile: any = user;
+
     //extract name and make payload
     let name: string;
     if (user.role === RolesEnum.ADMIN) {
-      const admin = await this.adminModel.findOne({ user: user._id }).lean().select('_id firstName lastName');
+      const admin = await this.adminModel.findOne({ user: user._id }).lean().select('');
       name = admin.firstName + ' ' + admin.lastName;
       payload.admin = admin._id;
+      profile = { ...profile, ...admin };
     } else if (user.role === RolesEnum.CUSTOMER) {
-      const customer = await this.customerService.findByUserId(user._id, ' _id firstName lastName admin');
+      const customer = await this.customerService.findByUserId(user._id);
       name = customer.firstName + ' ' + customer.lastName;
       payload.customer = customer._id;
       payload.admin = customer.admin;
+      profile = { ...profile, ...customer };
     }
 
     //if user is not verified then send a verification email
@@ -80,10 +90,18 @@ export class AuthService {
     const refreshToken = this.jwtService.sign(payload, {
       expiresIn: '7d',
     });
-    delete user.password;
-    return { accessToken, refreshToken, user };
+    delete profile.password;
+    console.log(profile);
+    return { accessToken, refreshToken, user: profile };
   }
-  //for customer only
+
+  /**
+   * Customer registration
+   * @param registrationDto
+   * @param username
+   * @returns
+   */
+
   async registration(registrationDto: RegistrationDto, username?: string) {
     if (username) {
       const admin = await this.adminModel.findOne({ username }).lean().select('_id');
@@ -147,6 +165,11 @@ export class AuthService {
     }
   }
 
+  /**
+   * resend validation code
+   * @param email
+   * @returns
+   */
   async resendCode(email: string) {
     if (!email) throw new NotAcceptableException('Email is required');
     const user = await this.userService.getUserByEmail(email);
@@ -160,19 +183,28 @@ export class AuthService {
     return { generateVerificationCode };
   }
 
+  /**
+   * refresh the token
+   * @param refreshToken
+   * @returns
+   */
   async refreshToken(refreshToken: string) {
-    if (!refreshToken) throw new NotAcceptableException('Refresh token is required');
+    try {
+      if (!refreshToken) throw new NotAcceptableException('Refresh token is required');
 
-    //verify token
-    const decoded = this.jwtService.verify(refreshToken);
-    if (!decoded) throw new NotAcceptableException('Refresh token is invalid');
+      //verify token
+      const decoded = this.jwtService.verify(refreshToken);
+      if (!decoded) throw new NotAcceptableException('Refresh token is invalid');
 
-    const user = await this.userService.getUserById(decoded._id);
-    if (!user) throw new NotAcceptableException('User not found');
+      const user = await this.userService.getUserById(decoded._id);
+      if (!user) throw new NotAcceptableException('User not found');
 
-    delete decoded.iat;
-    delete decoded.exp;
-    const accessToken = this.jwtService.sign(decoded);
-    return { accessToken };
+      delete decoded.iat;
+      delete decoded.exp;
+      const accessToken = this.jwtService.sign(decoded);
+      return { accessToken };
+    } catch (error) {
+      throw new NotAcceptableException('Refresh token is invalid');
+    }
   }
 }

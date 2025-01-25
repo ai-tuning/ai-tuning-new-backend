@@ -1,5 +1,6 @@
 import { IsMongoId, IsNotEmpty, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+import { Types } from 'mongoose';
 
 export class PaypalCredentialDto {
   @IsNotEmpty()
@@ -33,7 +34,7 @@ export class AutoTunerCredentialDto {
 export class AutoFlasherCredentialDto {
   @IsNotEmpty()
   @IsString()
-  autoFlasher: string;
+  apiKey: string;
 }
 
 export class EvcCredentialDto {
@@ -53,7 +54,7 @@ export class EvcCredentialDto {
 export class CreateCredentialDto {
   @IsNotEmpty()
   @IsMongoId()
-  admin: string;
+  admin: Types.ObjectId;
 
   @IsOptional()
   @ValidateNested()
@@ -76,7 +77,7 @@ export class CreateCredentialDto {
   autoTuner?: AutoTunerCredentialDto;
 
   @IsOptional()
-  @IsString()
+  @ValidateNested()
   @Type(() => AutoFlasherCredentialDto)
   autoFlasher?: AutoFlasherCredentialDto;
 }

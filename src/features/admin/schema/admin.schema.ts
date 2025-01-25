@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
+import { FileSchema } from 'src/features/common';
 import { collectionsName } from 'src/features/constant';
 
 @Schema({ timestamps: true, versionKey: false })
@@ -30,10 +31,19 @@ class Admin extends Document<Types.ObjectId> {
   phone: string;
 
   @Prop({ type: String, required: true })
+  countryCode: string;
+
+  @Prop({ type: String, required: true })
+  country: string;
+
+  @Prop({ type: String, required: true })
+  state: string;
+
+  @Prop({ type: String, required: true })
   address: string;
 
-  @Prop({ type: String })
-  avatar: string;
+  @Prop({ type: FileSchema })
+  avatar: FileSchema;
 }
 
 const AdminSchema = SchemaFactory.createForClass(Admin);

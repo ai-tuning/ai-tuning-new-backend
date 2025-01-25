@@ -10,4 +10,5 @@ export const collectionsName = {
   credential: 'Credential',
   Schedule: 'Schedule',
   verificationMail: 'verificationMail',
+  notice: 'Notice',
 };
