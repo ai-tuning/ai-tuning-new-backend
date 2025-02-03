@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CredentialService } from '../credential/credential.service';
 import { HttpService } from '@nestjs/axios';
 import { Types } from 'mongoose';
@@ -12,6 +12,7 @@ export class EvcService {
 
   async checkEveCustomer(adminId: Types.ObjectId, evcNumber: string) {
     const credential = await this.credentialService.findByAdmin(adminId, 'evc');
+    if (!credential) throw new BadRequestException("Your admin doesn't have EVC service.");
     const { evc } = credential;
     const response = await this.httpService.axiosRef.get('', {
       params: {

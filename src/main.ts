@@ -8,25 +8,17 @@ import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { NestExpressApplication } from '@nestjs/platform-express';
 
-import {
-  BadRequestException,
-  HttpStatus,
-  ValidationPipe,
-} from '@nestjs/common';
+import { BadRequestException, HttpStatus, ValidationPipe } from '@nestjs/common';
 import { OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 
-import {
-  AllExceptionFilter,
-  I18nInterceptor,
-  ErrorFormatter,
-} from './features/common';
+import { AllExceptionFilter, I18nInterceptor, ErrorFormatter } from './features/common';
 import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService);
 
-  app.enableCors({ origin: ['http://localhost:3000'], credentials: true });
+  app.enableCors({ origin: ['http://localhost:3000', 'http://localhost:3005'], credentials: true });
   app.setGlobalPrefix('api/v1'); //route prefix
   app.useGlobalPipes(
     new ValidationPipe({
@@ -48,10 +40,7 @@ async function bootstrap() {
     }),
   );
 
-  const yamlContent = fs.readFileSync(
-    path.join(process.cwd(), 'docs.yaml'),
-    'utf-8',
-  );
+  const yamlContent = fs.readFileSync(path.join(process.cwd(), 'docs.yaml'), 'utf-8');
   const document: OpenAPIObject = yaml.load(yamlContent) as OpenAPIObject;
   SwaggerModule.setup('/api-docs', app, document);
   const httpAdapter = app.get(HttpAdapterHost);
@@ -61,7 +50,7 @@ async function bootstrap() {
   app.use(cookieParser(config.get<string>('cookie_secret')));
   app.useGlobalFilters(new AllExceptionFilter(httpAdapter));
   app.useGlobalInterceptors(new I18nInterceptor());
-  await app.listen(5050);
+  await app.listen(2600);
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap();

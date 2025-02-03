@@ -8,7 +8,6 @@ class Customer extends Document {
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: collectionsName.admin,
-    required: true,
   })
   admin: Types.ObjectId;
 
@@ -41,7 +40,7 @@ class Customer extends Document {
   address: string;
 
   @Prop({ type: String, required: true })
-  postCode: string;
+  postcode: string;
 
   @Prop({ type: String })
   companyName: string;
@@ -49,7 +48,7 @@ class Customer extends Document {
   @Prop({ type: String, required: true })
   countryCode: string;
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: String })
   state: string;
 
   @Prop({ type: Number, default: 0 })
@@ -61,7 +60,7 @@ class Customer extends Document {
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: collectionsName.customerType,
-    required: true,
+    // required: true,
   })
   customerType: Types.ObjectId;
 
@@ -93,7 +92,11 @@ class CustomerDocument {
   postCode: string;
   companyName: string;
   credits: number;
-  avatar: string;
+  avatar: {
+    originalname: string;
+    fileType: string;
+    url: string;
+  };
   customerType: Types.ObjectId;
   status: UserStatusEnum;
   evcNumber: string;

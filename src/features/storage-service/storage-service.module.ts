@@ -14,5 +14,6 @@ import { MulterModule } from '../common';
   ],
   controllers: [StorageServiceController],
   providers: [StorageServiceService],
+  exports: [StorageServiceService],
 })
 export class StorageServiceModule {}

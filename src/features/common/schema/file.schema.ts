@@ -2,7 +2,7 @@ import { Prop } from '@nestjs/mongoose';
 
 export class FileSchema {
   @Prop({ type: String, required: true })
-  originalName: string;
+  originalname: string;
 
   @Prop({ type: String, required: true })
   fileType: string;

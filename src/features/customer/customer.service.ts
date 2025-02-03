@@ -11,6 +11,8 @@ import { EvcService } from '../evc/evc.service';
 import { CustomBadRequest } from '../common/validation-helper/bad-request.exception';
 import { CreateCustomerTypeDto } from './dto/create-customer-type.dto';
 import { CustomerType } from './schema/customer-type.schema';
+import { FileDto } from '../common';
+import { CustomValidationPipe } from '../common/validation-helper/custom-validation-pipe';
 
 @Injectable()
 export class CustomerService {
@@ -67,7 +69,6 @@ export class CustomerService {
       }
 
       await session.commitTransaction();
-
       return newCustomer;
     } catch (error) {
       await session.abortTransaction();
@@ -133,7 +134,9 @@ export class CustomerService {
     return customerType.save();
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} customer`;
+  async changeAvatar(customerId: Types.ObjectId, avatar: FileDto) {
+    await CustomValidationPipe([avatar], FileDto);
+    //don't return the new document
+    return this.customerModel.findOneAndUpdate({ _id: customerId }, { $set: { avatar } }).lean<CustomerDocument>();
   }
 }

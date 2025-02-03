@@ -1,20 +1,10 @@
-import {
-  IsEmail,
-  IsEnum,
-  IsMongoId,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsPhoneNumber,
-  IsString,
-  Matches,
-} from 'class-validator';
+import { IsEmail, IsEnum, IsMongoId, IsNotEmpty, IsNumber, IsOptional, IsString, Matches } from 'class-validator';
 import { Type } from 'class-transformer';
 import { UserStatusEnum } from 'src/features/constant';
 import { Types } from 'mongoose';
 
 export class CreateCustomerDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsMongoId()
   admin: Types.ObjectId;
 
@@ -52,7 +42,7 @@ export class CreateCustomerDto {
 
   @IsNotEmpty()
   @Matches(/^\d{4,6}$/, { message: 'Postcode must be between 4 and 6 digits' })
-  postCode: string;
+  postcode: string;
 
   @IsOptional()
   @IsString()
@@ -67,11 +57,11 @@ export class CreateCustomerDto {
   @IsString()
   avatar?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsMongoId()
   customerType: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsEnum(UserStatusEnum)
   status: UserStatusEnum;
 

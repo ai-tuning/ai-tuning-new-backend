@@ -20,9 +20,9 @@ export class StorageServiceController {
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
     console.log(file);
     const data = await this.storageServiceService.upload(
+      { child: 'customer1', parent: DIRECTORY_NAMES.FILES },
       file.path,
       { name: file.originalname, size: file.size },
-      { child: 'customer1', parent: DIRECTORY_NAMES.FILES },
     );
     return data;
   }

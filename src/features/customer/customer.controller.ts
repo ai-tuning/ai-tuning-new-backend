@@ -29,11 +29,6 @@ export class CustomerController {
     return this.customerService.update(id, updateCustomerDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.customerService.remove(+id);
-  }
-
   @Post('customer-type')
   async createCustomerType(@Body() createCustomerTypeDto: CreateCustomerTypeDto) {
     const data = await this.customerService.createCustomerType(createCustomerTypeDto);

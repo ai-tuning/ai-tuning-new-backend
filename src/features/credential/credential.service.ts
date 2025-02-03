@@ -157,6 +157,8 @@ export class CredentialService {
   async findByAdmin(adminId: Types.ObjectId, select?: keyof Credential): Promise<Credential> {
     const credential = await this.credentialModel.findOne({ admin: adminId }).select(select).lean();
 
+    if (!credential) return null;
+
     //decrypt all before return
     if (credential.paypal) {
       credential.paypal.clientId = this.decryptData(credential.paypal.clientId);

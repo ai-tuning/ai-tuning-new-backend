@@ -105,6 +105,7 @@ export class AuthService {
   async registration(registrationDto: RegistrationDto, username?: string) {
     if (username) {
       const admin = await this.adminModel.findOne({ username }).lean().select('_id');
+      if (!admin) throw new NotAcceptableException('Unable to find admin for registration');
       registrationDto.admin = admin._id as Types.ObjectId;
     }
 

@@ -11,4 +11,6 @@ export const collectionsName = {
   Schedule: 'Schedule',
   verificationMail: 'verificationMail',
   notice: 'Notice',
+  invoice: 'Invoice',
+  supportTicket: 'SupportTicket',
 };

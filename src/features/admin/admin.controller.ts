@@ -31,9 +31,4 @@ export class AdminController {
     const updatedAdmin = await this.adminService.update(id, updateAdminDto);
     return { message: 'Admin updated successfully', data: updatedAdmin };
   }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.adminService.remove(+id);
-  }
 }

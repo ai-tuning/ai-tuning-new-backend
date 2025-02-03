@@ -8,6 +8,8 @@ import { UserService } from '../user/user.service';
 import { Connection, Model, Types } from 'mongoose';
 import { CredentialService } from '../credential/credential.service';
 import { ScheduleService } from '../setting/schedule.service';
+import { CustomValidationPipe } from '../common/validation-helper/custom-validation-pipe';
+import { FileDto } from '../common';
 
 @Injectable()
 export class AdminService {
@@ -101,7 +103,9 @@ export class AdminService {
     }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} admin`;
+  async changeAvatar(adminId: Types.ObjectId, avatar: FileDto) {
+    await CustomValidationPipe([avatar], FileDto);
+    //don't return the new document
+    return this.adminModel.findOneAndUpdate({ _id: adminId }, { $set: { avatar } }).lean<AdminDocument>();
   }
 }

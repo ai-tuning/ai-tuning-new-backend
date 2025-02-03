@@ -75,9 +75,9 @@ export class StorageServiceService implements OnModuleInit {
    * @returns
    */
   async upload(
+    dir: { parent: DIRECTORY_NAMES_TYPE; child: string },
     filePath: string,
     file: { name: string; size: number },
-    dir: { parent: DIRECTORY_NAMES_TYPE; child: string },
   ) {
     const parent = dir.parent;
     const childLowerCase = dir.child.toLowerCase();

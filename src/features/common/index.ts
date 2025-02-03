@@ -8,3 +8,4 @@ export { ErrorFormatter } from './functions/error-formatter.utils';
 export { AutoFlasher, AutoTuner, Kess3 } from './schema/slave.schema';
 export { FileSchema } from './schema/file.schema';
 export { MulterModule } from './multure.module';
+export { FileDto } from './validation-helper/file.dto';

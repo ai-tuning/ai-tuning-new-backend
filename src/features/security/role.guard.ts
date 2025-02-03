@@ -1,8 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { PERMISSION_KEY } from '../common/decorator/access-permission.decorator';
 import { RolesEnum } from '../constant';
-import { isPublicKey } from '../common';
+import { isPublicKey, ROLES_KEY } from '../common';
 
 @Injectable()
 export class PermissionGuard implements CanActivate {
@@ -10,13 +9,18 @@ export class PermissionGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     // return true;
-    const permission = this.reflector.getAllAndOverride<RolesEnum[]>(PERMISSION_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const roles = this.reflector.getAllAndOverride<RolesEnum[]>(ROLES_KEY, [context.getHandler(), context.getClass()]);
     //check the route is public
     const isPublic = this.reflector.getAllAndOverride<boolean>(isPublicKey, [context.getHandler(), context.getClass()]);
 
     if (isPublic) return true;
+
+    const { user } = context.switchToHttp().getRequest();
+
+    if (!roles) return true;
+
+    if (user.role === RolesEnum.SUPER_ADMIN) return true;
+
+    return roles.includes(user.role);
   }
 }

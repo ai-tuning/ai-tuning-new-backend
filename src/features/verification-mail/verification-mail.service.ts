@@ -13,7 +13,7 @@ export class VerificationMailService {
 
   private generateRandomCode(): string {
     //generate 6 digit random code
-    return Math.round(Math.random() * 1000000).toString();
+    return Math.floor(Math.random() * 1000000).toString();
   }
 
   async createVerificationEmail(email: string, session?: ClientSession): Promise<VerificationEmail> {

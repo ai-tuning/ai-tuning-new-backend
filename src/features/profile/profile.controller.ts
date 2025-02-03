@@ -1,10 +1,11 @@
-import { Controller, Get, Param, Delete, Body, Patch, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Body, Patch, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { ProfileService } from './profile.service';
 import { AuthUser } from '../common/decorator/get-auth-user.decorator';
 import { IAuthUser } from '../common';
 import { UpdateCustomerDto } from '../customer/dto/update-customer.dto';
 import { UpdateAdminDto } from '../admin/dto/update-admin.dto';
 import { UpdateEmployeeDto } from '../employee/dto/update-employee.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('profile')
 export class ProfileController {
@@ -23,13 +24,17 @@ export class ProfileController {
     return this.profileService.updateProfile(authUser, updateProfileDto);
   }
 
-  // @Patch('change-avatar')
-  // update(@Param('id') id: string, @Body() updateProfileDto: UpdateCustomerDto) {
-  //   return this.profileService.update(+id, updateProfileDto);
-  // }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.profileService.remove(+id);
+  @UseInterceptors(
+    FileInterceptor('avatar', {
+      limits: { fileSize: 1024 * 1024 * 1 }, //1MB
+      dest: 'public/uploads/images',
+    }),
+  )
+  @Patch('change-avatar')
+  async changeAvatar(@AuthUser() authUser: IAuthUser, @UploadedFile() file: Express.Multer.File) {
+    console.log(file);
+    const user = await this.profileService.changeAvatar(authUser, file);
+    console.log(user);
+    return { data: user, message: 'Avatar Changed' };
   }
 }

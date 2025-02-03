@@ -1,34 +1,28 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { InvoiceService } from './invoice.service';
-import { CreateInvoiceDto } from './dto/create-invoice.dto';
-import { UpdateInvoiceDto } from './dto/update-invoice.dto';
+import { AuthUser } from '../common/decorator/get-auth-user.decorator';
+import { AccessRole, IAuthUser } from '../common';
+import { RolesEnum } from '../constant';
 
-@Controller('invoice')
+@Controller('invoices')
 export class InvoiceController {
   constructor(private readonly invoiceService: InvoiceService) {}
 
-  @Post()
-  create(@Body() createInvoiceDto: CreateInvoiceDto) {
-    return this.invoiceService.create(createInvoiceDto);
-  }
-
+  @AccessRole([RolesEnum.SUPER_ADMIN])
   @Get()
   findAll() {
     return this.invoiceService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.invoiceService.findOne(+id);
+  @AccessRole([RolesEnum.ADMIN, RolesEnum.SUPER_ADMIN])
+  @Get('admin')
+  findByAdmin(@AuthUser() authUser: IAuthUser) {
+    return this.invoiceService.findByAdmin(authUser.admin);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateInvoiceDto: UpdateInvoiceDto) {
-    return this.invoiceService.update(+id, updateInvoiceDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.invoiceService.remove(+id);
+  @AccessRole([RolesEnum.CUSTOMER])
+  @Get('customer')
+  findByCustomer(@AuthUser() authUser: IAuthUser) {
+    return this.invoiceService.findByCustomer(authUser.customer);
   }
 }

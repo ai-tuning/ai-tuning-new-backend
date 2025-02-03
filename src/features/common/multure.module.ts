@@ -31,7 +31,7 @@ export class MulterModule {
             filename: (_req, file, callback) => {
               const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
               const extension = extname(file.originalname);
-              const filename = `file-${uniqueSuffix}${extension}`;
+              const filename = `${file.originalname}-${uniqueSuffix}${extension}`;
               callback(null, filename);
             },
           }),

@@ -1,19 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { CreateSupportTicketDto } from './dto/create-support-ticket.dto';
 import { UpdateSupportTicketDto } from './dto/update-support-ticket.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { collectionsName } from '../constant';
+import { SupportTicket } from './schema/support-ticket.schema';
+import { Model, Types } from 'mongoose';
 
 @Injectable()
 export class SupportTicketService {
+  constructor(@InjectModel(collectionsName.supportTicket) private readonly supportTicketModel: Model<SupportTicket>) {}
   create(createSupportTicketDto: CreateSupportTicketDto) {
     return 'This action adds a new supportTicket';
   }
 
   findAll() {
-    return `This action returns all supportTicket`;
+    return this.supportTicketModel.find().lean<SupportTicket[]>();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} supportTicket`;
+  findByAdmin(adminId: Types.ObjectId) {
+    return this.supportTicketModel.find({ admin: adminId }).lean<SupportTicket[]>();
+  }
+
+  findByCustomer(customerId: Types.ObjectId) {
+    return this.supportTicketModel.find({ customer: customerId }).lean<SupportTicket[]>();
   }
 
   update(id: number, updateSupportTicketDto: UpdateSupportTicketDto) {

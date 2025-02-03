@@ -6,13 +6,13 @@ export class LoggerMiddleware implements NestMiddleware {
   private logger = new Logger('HTTP', { timestamp: true });
 
   use(request: Request, response: Response, next: NextFunction): void {
-    const { method, url, headers } = request;
-    const userAgent = headers['user-agent'];
-    const ip = request.headers['x-forwarded-for'];
-    // const { ip, method, originalUrl: url } = request;
+    const { method, originalUrl, headers } = request;
+    // const userAgent = headers['user-agent'];
+    const ip = headers['x-forwarded-for'];
+
     response.on('close', () => {
       const { statusCode } = response;
-      this.logger.log(`${method} ${url} ${statusCode} - ${userAgent} ${ip}`);
+      this.logger.log(`${originalUrl} - ${method} ${statusCode} - ${ip}`);
     });
 
     next();

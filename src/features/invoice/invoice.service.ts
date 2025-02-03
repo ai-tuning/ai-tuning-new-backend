@@ -1,26 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
+import { Model, Types } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
+import { collectionsName } from '../constant';
+import { Invoice } from './schema/invoice.schema';
 
 @Injectable()
 export class InvoiceService {
+  constructor(@InjectModel(collectionsName.invoice) private readonly invoiceModel: Model<Invoice>) {}
+
   create(createInvoiceDto: CreateInvoiceDto) {
     return 'This action adds a new invoice';
   }
 
-  findAll() {
-    return `This action returns all invoice`;
+  async findAll(): Promise<Invoice[]> {
+    return this.invoiceModel.find({}).lean<Invoice[]>();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} invoice`;
+  async findByAdmin(adminId: Types.ObjectId): Promise<Invoice[]> {
+    return this.invoiceModel.find({ admin: adminId }).lean<Invoice[]>();
   }
 
-  update(id: number, updateInvoiceDto: UpdateInvoiceDto) {
-    return `This action updates a #${id} invoice`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} invoice`;
+  async findByCustomer(customerId: Types.ObjectId): Promise<Invoice[]> {
+    return this.invoiceModel.find({ customer: customerId }).lean<Invoice[]>();
   }
 }
