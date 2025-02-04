@@ -1,26 +1,41 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateCarDto } from './dto/create-car.dto';
 import { UpdateCarDto } from './dto/update-car.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { collectionsName } from '../constant';
+import { Model, Types } from 'mongoose';
+import { Car } from './schema/car.schema';
 
 @Injectable()
 export class CarService {
-  create(createCarDto: CreateCarDto) {
-    return 'This action adds a new car';
+  constructor(@InjectModel(collectionsName.car) private readonly carModel: Model<Car>) {}
+  async create(createCarDto: CreateCarDto) {
+    const isExist = await this.carModel.findOne({ name: createCarDto.name, admin: createCarDto.admin });
+    if (isExist) {
+      throw new BadRequestException('Car already exist');
+    }
+    const Car = new this.carModel(createCarDto);
+    return Car.save();
   }
 
-  findAll() {
-    return `This action returns all car`;
+  findByAdmin(adminId: Types.ObjectId) {
+    return this.carModel.find({ admin: adminId }).lean<Car[]>();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} car`;
+  async update(id: Types.ObjectId, updateCarDto: UpdateCarDto) {
+    const isExist = await this.carModel.findOne({
+      name: updateCarDto.name,
+      _id: { $ne: id },
+      admin: updateCarDto.admin,
+    });
+    if (isExist) {
+      throw new BadRequestException('Car already exist');
+    }
+
+    return this.carModel.findOneAndUpdate({ _id: id }, { $set: updateCarDto }, { new: true }).lean<Car>();
   }
 
-  update(id: number, updateCarDto: UpdateCarDto) {
-    return `This action updates a #${id} car`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} car`;
+  remove(id: Types.ObjectId) {
+    return this.carModel.findByIdAndDelete({ _id: id });
   }
 }

@@ -13,4 +13,5 @@ export const collectionsName = {
   notice: 'Notice',
   invoice: 'Invoice',
   supportTicket: 'SupportTicket',
+  solution: 'Solution',
 };

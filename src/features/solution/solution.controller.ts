@@ -1,34 +1,35 @@
+import { Types } from 'mongoose';
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { SolutionService } from './solution.service';
 import { CreateSolutionDto } from './dto/create-solution.dto';
 import { UpdateSolutionDto } from './dto/update-solution.dto';
+import { AuthUser } from '../common/decorator/get-auth-user.decorator';
+import { IAuthUser } from '../common';
 
-@Controller('solution')
+@Controller('solutions')
 export class SolutionController {
   constructor(private readonly solutionService: SolutionService) {}
 
   @Post()
-  create(@Body() createSolutionDto: CreateSolutionDto) {
-    return this.solutionService.create(createSolutionDto);
+  async create(@Body() createSolutionDto: CreateSolutionDto) {
+    const data = await this.solutionService.create(createSolutionDto);
+    return { message: 'Solution created successfully', data };
   }
 
   @Get()
-  findAll() {
-    return this.solutionService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.solutionService.findOne(+id);
+  findByAdmin(@AuthUser() authUser: IAuthUser) {
+    return this.solutionService.findByAdmin(authUser.admin);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSolutionDto: UpdateSolutionDto) {
-    return this.solutionService.update(+id, updateSolutionDto);
+  async update(@Param('id') id: Types.ObjectId, @Body() updateSolutionDto: UpdateSolutionDto) {
+    const data = await this.solutionService.update(id, updateSolutionDto);
+    return { data, message: 'Solution updated successfully' };
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.solutionService.remove(+id);
+  async remove(@Param('id') id: Types.ObjectId) {
+    const data = await this.solutionService.remove(id);
+    return { data, message: 'Solution deleted successfully' };
   }
 }

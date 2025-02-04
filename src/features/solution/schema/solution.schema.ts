@@ -13,8 +13,8 @@ export class Solution {
   @Prop({ type: String, enum: SOLUTION_CATEGORY, required: true })
   category: SOLUTION_CATEGORY;
 
-  @Prop({ type: [String], enum: FUEL_TYPE, required: true })
-  fuelType: FUEL_TYPE[];
+  @Prop({ type: [String], required: true })
+  fuelTypes: FUEL_TYPE[];
 }
 
 export const SolutionSchema = SchemaFactory.createForClass(Solution);

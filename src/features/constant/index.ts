@@ -14,3 +14,4 @@ export { SUPPORT_TYPE } from './enums/support-type.enum';
 export { SUPPORT_STATUS } from './enums/support-status.enum';
 export { DIRECTORY_NAMES, DIRECTORY_NAMES_TYPE } from './directory-names';
 export { EMAIL_TYPE } from './email-type';
+export { CAR_TYPE_ENUM } from './enums/car-type.enum';

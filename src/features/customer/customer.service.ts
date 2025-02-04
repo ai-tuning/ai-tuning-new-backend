@@ -9,7 +9,7 @@ import { Connection, Model, Types } from 'mongoose';
 import { UserService } from '../user/user.service';
 import { EvcService } from '../evc/evc.service';
 import { CustomBadRequest } from '../common/validation-helper/bad-request.exception';
-import { CreateCustomerTypeDto } from './dto/create-customer-type.dto';
+import { CustomerTypeDto } from './dto/customer-type.dto';
 import { CustomerType } from './schema/customer-type.schema';
 import { FileDto } from '../common';
 import { CustomValidationPipe } from '../common/validation-helper/custom-validation-pipe';
@@ -79,7 +79,7 @@ export class CustomerService {
   }
 
   async findCustomersByAdmin(adminId: Types.ObjectId): Promise<CustomerDocument[]> {
-    return this.customerModel.find({ admin: adminId }).lean<CustomerDocument[]>();
+    return this.customerModel.find({}).lean<CustomerDocument[]>();
   }
 
   async findById(id: Types.ObjectId): Promise<CustomerDocument> {
@@ -126,7 +126,17 @@ export class CustomerService {
     }
   }
 
-  async createCustomerType(createCustomerTypeDto: CreateCustomerTypeDto) {
+  async changeAvatar(customerId: Types.ObjectId, avatar: FileDto) {
+    await CustomValidationPipe([avatar], FileDto);
+    //don't return the new document
+    return this.customerModel.findOneAndUpdate({ _id: customerId }, { $set: { avatar } }).lean<CustomerDocument>();
+  }
+
+  async getCustomerTypes() {
+    return this.customerTypeModel.find().lean<CustomerType>();
+  }
+
+  async createCustomerType(createCustomerTypeDto: CustomerTypeDto) {
     const customerType = new this.customerTypeModel({
       name: createCustomerTypeDto.name,
       admin: new Types.ObjectId(createCustomerTypeDto.admin),
@@ -134,9 +144,43 @@ export class CustomerService {
     return customerType.save();
   }
 
-  async changeAvatar(customerId: Types.ObjectId, avatar: FileDto) {
-    await CustomValidationPipe([avatar], FileDto);
-    //don't return the new document
-    return this.customerModel.findOneAndUpdate({ _id: customerId }, { $set: { avatar } }).lean<CustomerDocument>();
+  async updateCustomerType(id: Types.ObjectId, updateCustomerTypeDto: CustomerTypeDto) {
+    const updatedData = await this.customerTypeModel
+      .findOneAndUpdate({ _id: id, admin: updateCustomerTypeDto.admin }, { $set: updateCustomerTypeDto }, { new: true })
+      .lean<CustomerType>();
+
+    if (!updatedData) {
+      throw new NotFoundException('Customer type not found');
+    }
+    return updatedData;
+  }
+
+  async deleteCustomerType(id: Types.ObjectId, admin: Types.ObjectId) {
+    const session = await this.connection.startSession();
+    try {
+      session.startTransaction();
+      const customerType = await this.customerTypeModel.findById(id).select('admin').lean<CustomerType>();
+      if (!customerType) {
+        throw new NotFoundException('Customer type not found');
+      }
+      if (customerType.admin.toString() !== admin.toString()) {
+        throw new BadRequestException('You are not authorized to delete this customer type');
+      }
+
+      //check associated customer
+      const customer = await this.customerModel.exists({ customerType: id }).lean<Customer>();
+      if (customer) {
+        throw new BadRequestException('Customer type is associated with customer');
+      }
+
+      await this.customerTypeModel.findOneAndDelete({ _id: id }, { session });
+      await session.commitTransaction();
+      return customerType;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      await session.endSession();
+    }
   }
 }

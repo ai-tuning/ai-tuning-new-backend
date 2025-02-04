@@ -2,33 +2,34 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { CarService } from './car.service';
 import { CreateCarDto } from './dto/create-car.dto';
 import { UpdateCarDto } from './dto/update-car.dto';
+import { AuthUser } from '../common/decorator/get-auth-user.decorator';
+import { IAuthUser } from '../common';
+import { Types } from 'mongoose';
 
-@Controller('car')
+@Controller('cars')
 export class CarController {
   constructor(private readonly carService: CarService) {}
 
   @Post()
-  create(@Body() createCarDto: CreateCarDto) {
-    return this.carService.create(createCarDto);
+  async create(@Body() createCarDto: CreateCarDto) {
+    const data = await this.carService.create(createCarDto);
+    return { message: 'Car created successfully', data };
   }
 
   @Get()
-  findAll() {
-    return this.carService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.carService.findOne(+id);
+  findByAdmin(@AuthUser() authUser: IAuthUser) {
+    return this.carService.findByAdmin(authUser.admin);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCarDto: UpdateCarDto) {
-    return this.carService.update(+id, updateCarDto);
+  async update(@Param('id') id: Types.ObjectId, @Body() updateCarDto: UpdateCarDto) {
+    const data = await this.carService.update(id, updateCarDto);
+    return { data, message: 'Car updated successfully' };
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.carService.remove(+id);
+  async remove(@Param('id') id: Types.ObjectId) {
+    const data = await this.carService.remove(id);
+    return { data, message: 'Car deleted successfully' };
   }
 }

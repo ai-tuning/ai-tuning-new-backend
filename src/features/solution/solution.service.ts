@@ -1,26 +1,44 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateSolutionDto } from './dto/create-solution.dto';
 import { UpdateSolutionDto } from './dto/update-solution.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { collectionsName } from '../constant';
+import { Solution } from './schema/solution.schema';
+import { Model, Types } from 'mongoose';
 
 @Injectable()
 export class SolutionService {
-  create(createSolutionDto: CreateSolutionDto) {
-    return 'This action adds a new solution';
+  constructor(@InjectModel(collectionsName.solution) private readonly solutionModel: Model<Solution>) {}
+
+  async create(createSolutionDto: CreateSolutionDto) {
+    const isExist = await this.solutionModel.findOne({ name: createSolutionDto.name, admin: createSolutionDto.admin });
+    if (isExist) {
+      throw new BadRequestException('Solution already exist');
+    }
+    const solution = new this.solutionModel(createSolutionDto);
+    return solution.save();
   }
 
-  findAll() {
-    return `This action returns all solution`;
+  findByAdmin(adminId: Types.ObjectId) {
+    return this.solutionModel.find({ admin: adminId }).lean<Solution[]>();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} solution`;
+  async update(id: Types.ObjectId, updateSolutionDto: UpdateSolutionDto) {
+    const isExist = await this.solutionModel.findOne({
+      name: updateSolutionDto.name,
+      _id: { $ne: id },
+      admin: updateSolutionDto.admin,
+    });
+    if (isExist) {
+      throw new BadRequestException('Solution already exist');
+    }
+
+    return this.solutionModel
+      .findOneAndUpdate({ _id: id }, { $set: updateSolutionDto }, { new: true })
+      .lean<Solution>();
   }
 
-  update(id: number, updateSolutionDto: UpdateSolutionDto) {
-    return `This action updates a #${id} solution`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} solution`;
+  remove(id: Types.ObjectId) {
+    return this.solutionModel.findByIdAndDelete({ _id: id });
   }
 }
