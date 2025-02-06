@@ -4,9 +4,15 @@ import { CarController } from './car.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { collectionsName } from '../constant';
 import { CarSchema } from './schema/car.schema';
+import { CarControllerSchema } from '../car-controller/schema/car-controller.schema';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: collectionsName.car, schema: CarSchema }])],
+  imports: [
+    MongooseModule.forFeature([
+      { name: collectionsName.car, schema: CarSchema },
+      { name: collectionsName.controller, schema: CarControllerSchema },
+    ]),
+  ],
   controllers: [CarController],
   providers: [CarService],
 })
