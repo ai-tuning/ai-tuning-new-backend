@@ -1,10 +1,4 @@
-import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { MongooseError } from 'mongoose';
 import { CustomNotFound } from '../validation-helper/not-found-exception';
@@ -51,10 +45,7 @@ export class AllExceptionFilter implements ExceptionFilter {
       for (const key in exception.errors) {
         errorData.push({
           field: key,
-          message: exception.errors[key].message.replace(
-            /Path `([^`]+)`/i,
-            '$1',
-          ), //remove 'Path' from error message
+          message: exception.errors[key].message.replace(/Path `([^`]+)`/i, '$1'), //remove 'Path' from error message
           in: 'body', //for frontend support
         });
       }
@@ -125,6 +116,7 @@ export class AllExceptionFilter implements ExceptionFilter {
     console.log(`\x1b[31m${exception.stack}\x1b[0m`); //colorful logging
 
     //send error response to the client
-    httpAdapter.reply(res, error, error.statusCode);
+    // httpAdapter.reply(res, error, error.statusCode);
+    res.status(error.statusCode).json(error);
   }
 }

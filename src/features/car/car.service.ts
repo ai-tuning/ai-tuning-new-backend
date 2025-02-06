@@ -53,8 +53,12 @@ export class CarService {
     }
   }
 
-  findByAdmin(adminId: Types.ObjectId) {
+  async findByAdmin(adminId: Types.ObjectId) {
     return this.carModel.find({ admin: adminId }).lean<Car[]>();
+  }
+
+  async findById(id: Types.ObjectId) {
+    return this.carModel.findById(id).lean<Car>();
   }
 
   async update(id: Types.ObjectId, updateCarDto: UpdateCarDto) {

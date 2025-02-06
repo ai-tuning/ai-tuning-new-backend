@@ -17,5 +17,6 @@ import { collectionsName } from '../constant';
   ],
   controllers: [CarControllerController],
   providers: [CarControllerService],
+  exports: [CarControllerService],
 })
 export class CarControllerModule {}

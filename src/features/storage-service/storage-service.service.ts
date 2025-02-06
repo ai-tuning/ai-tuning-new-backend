@@ -9,12 +9,12 @@ export class StorageServiceService implements OnModuleInit {
   storage: Storage;
   constructor() {
     const config = appConfig();
-    this.storage = new Storage({
-      email: config.mega_email,
-      password: config.mega_password,
-      userAgent:
-        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    });
+    // this.storage = new Storage({
+    //   email: config.mega_email,
+    //   password: config.mega_password,
+    //   userAgent:
+    //     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    // });
   }
 
   private async createGeneralDir() {
@@ -33,7 +33,7 @@ export class StorageServiceService implements OnModuleInit {
    * It will create base folder if not exist
    */
   onModuleInit() {
-    this.createGeneralDir();
+    // this.createGeneralDir();
   }
 
   /**

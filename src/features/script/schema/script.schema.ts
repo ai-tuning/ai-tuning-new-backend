@@ -1,11 +1,17 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { Types } from 'mongoose';
+import mongoose, { Document, Types } from 'mongoose';
 import { collectionsName } from 'src/features/constant';
 
 @Schema({ timestamps: true, versionKey: false })
 class Script extends Document {
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
   admin: Types.ObjectId;
+
+  @Prop({
+    type: String,
+    required: true,
+  })
+  makeType: string;
 
   @Prop({
     type: mongoose.Schema.Types.ObjectId,

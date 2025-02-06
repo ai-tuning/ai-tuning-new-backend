@@ -1,13 +1,7 @@
-import { Prop, Schema } from '@nestjs/mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Types } from 'mongoose';
-import { AutoFlasher, AutoTuner, Kess3 } from 'src/features/common';
-import {
-  collectionsName,
-  FILE_SERVICE_STATUS,
-  PAYMENT_STATUS,
-  SLAVE_TYPE,
-  WinOLS_STATUS,
-} from 'src/features/constant';
+import { AutoFlasher, AutoTuner, FileSchema, Kess3 } from 'src/features/common';
+import { collectionsName, FILE_SERVICE_STATUS, PAYMENT_STATUS, SLAVE_TYPE, WinOLS_STATUS } from 'src/features/constant';
 
 //solution which are requested by the customer
 export class Solutions {
@@ -63,10 +57,10 @@ export class FileService {
   operator: Types.ObjectId;
 
   @Prop({
-    type: String,
+    type: FileSchema,
     required: true,
   })
-  originalFile: string;
+  originalFile: FileSchema;
 
   @Prop({
     type: String,
@@ -159,3 +153,5 @@ export class FileService {
   @Prop({ type: ModUpload })
   modUpload: ModUpload;
 }
+
+export const FileServiceSchema = SchemaFactory.createForClass(FileService);

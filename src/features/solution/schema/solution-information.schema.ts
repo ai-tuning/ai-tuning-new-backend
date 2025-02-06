@@ -12,8 +12,11 @@ export class SolutionInformation {
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
   car: Types.ObjectId;
 
+  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+  controller: Types.ObjectId;
+
   @Prop({ type: String, required: true })
   content: string;
 }
 
-export const SolutionSchema = SchemaFactory.createForClass(SolutionInformation);
+export const SolutionInformationSchema = SchemaFactory.createForClass(SolutionInformation);

@@ -5,6 +5,9 @@ export class FileSchema {
   originalname: string;
 
   @Prop({ type: String, required: true })
+  uniqueName: string;
+
+  @Prop({ type: String, required: true })
   fileType: string;
 
   @Prop({ type: String, required: true })

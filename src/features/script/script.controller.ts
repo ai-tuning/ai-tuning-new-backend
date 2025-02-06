@@ -1,34 +1,26 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Post, Body, UseInterceptors, UploadedFiles, Get } from '@nestjs/common';
 import { ScriptService } from './script.service';
 import { CreateScriptDto } from './dto/create-script.dto';
-import { UpdateScriptDto } from './dto/update-script.dto';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { AuthUser } from '../common/decorator/get-auth-user.decorator';
+import { IAuthUser } from '../common';
 
-@Controller('script')
+@Controller('scripts')
 export class ScriptController {
   constructor(private readonly scriptService: ScriptService) {}
 
-  @Post()
-  create(@Body() createScriptDto: CreateScriptDto) {
-    return this.scriptService.create(createScriptDto);
-  }
-
   @Get()
-  findAll() {
-    return this.scriptService.findAll();
+  getScriptByAdmin(@AuthUser() authUser: IAuthUser) {
+    return this.scriptService.findByAdmin(authUser.admin);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.scriptService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateScriptDto: UpdateScriptDto) {
-    return this.scriptService.update(+id, updateScriptDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.scriptService.remove(+id);
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'originalFile', maxCount: 1 }, { name: 'modFiles' }]))
+  @Post()
+  async addScript(
+    @Body() createScriptDto: CreateScriptDto,
+    @UploadedFiles() files: { originalFile?: Express.Multer.File[]; modFiles?: Express.Multer.File[] },
+  ) {
+    const data = await this.scriptService.create(createScriptDto, files.originalFile[0], files.modFiles);
+    return { data, message: 'Script created successfully' };
   }
 }

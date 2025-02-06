@@ -73,6 +73,10 @@ export class CarControllerService {
     return this.carControllerModel.find({ admin: adminId }).lean<CarController[]>();
   }
 
+  findById(controllerId: Types.ObjectId) {
+    return this.carControllerModel.findById(controllerId).lean<CarController>();
+  }
+
   async update(id: Types.ObjectId, updateControllerDto: UpdateCarControllerDto) {
     const session = await this.connection.startSession();
     let oldPath: string;
@@ -89,7 +93,7 @@ export class CarControllerService {
         throw new BadRequestException('Car already exist');
       }
 
-      const previousCar = await this.carModel.findById(id).lean<Car>();
+      const previousCar = await this.carModel.findById(updateControllerDto.car).lean<Car>();
       if (!previousCar) {
         throw new BadRequestException('Car not found');
       }

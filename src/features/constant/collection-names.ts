@@ -14,4 +14,7 @@ export const collectionsName = {
   invoice: 'Invoice',
   supportTicket: 'SupportTicket',
   solution: 'Solution',
+  solutionInformation: 'SolutionInformation',
+  script: 'Script',
+  fileService: 'FileService',
 };
