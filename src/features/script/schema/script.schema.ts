@@ -29,6 +29,9 @@ class Script extends Document {
 
   @Prop({ type: String, required: true })
   file: string;
+
+  @Prop({ type: String, required: true })
+  originalName: string;
 }
 
 const ScriptSchema = SchemaFactory.createForClass(Script);

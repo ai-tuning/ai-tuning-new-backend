@@ -19,7 +19,7 @@ import { CarControllerModule } from '../car-controller/car-controller.module';
     CarControllerModule,
     MulterModule.register({
       acceptedMimeTypes: ['application/octet-stream'],
-      destination: './public/uploads/images',
+      destination: './public/uploads/files',
       errorMessages: 'Only bin file are allowed.',
     }),
   ],

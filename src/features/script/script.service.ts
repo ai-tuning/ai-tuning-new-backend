@@ -28,76 +28,92 @@ export class ScriptService {
     modFiles: Express.Multer.File[],
   ) {
     let originalFilePath: string;
+    let modFilesPath: string[] = [];
 
-    const car = await this.carService.findById(createScriptDto.car);
-    if (!car) throw new NotFoundException('Car not found');
-    const controller = await this.controllerService.findById(createScriptDto.controller);
-    if (!controller) throw new NotFoundException('Controller not found');
+    try {
+      const car = await this.carService.findById(createScriptDto.car);
+      if (!car) throw new NotFoundException('Car not found');
+      const controller = await this.controllerService.findById(createScriptDto.controller);
+      if (!controller) throw new NotFoundException('Controller not found');
 
-    //manage files
-    if (createScriptDto.fileService) {
-      const fileService = await this.fileServiceService.findById(createScriptDto.fileService);
-      if (!fileService) {
-        throw new NotFoundException('File service not found');
+      //manage files
+      if (createScriptDto.fileService) {
+        const fileService = await this.fileServiceService.findById(createScriptDto.fileService);
+        if (!fileService) {
+          throw new NotFoundException('File service not found');
+        }
+        fileService.originalFile = originalFile as FileSchema;
+        //download the original file
+        const { data } = await this.storageService.download(fileService.originalFile.url);
+        originalFilePath = this.pathService.getTempFilePath(fileService.originalFile.uniqueName);
+        data.pipe(fs.createWriteStream(originalFilePath));
+      } else {
+        if (!originalFile) throw new BadRequestException('Original file is required');
+        const oriFile = originalFile as Express.Multer.File;
+        originalFilePath = oriFile.path;
       }
-      fileService.originalFile = originalFile as FileSchema;
-      //download the original file
-      const { data } = await this.storageService.download(fileService.originalFile.url);
-      originalFilePath = this.pathService.getTempFilePath(fileService.originalFile.uniqueName);
-      data.pipe(fs.createWriteStream(originalFilePath));
-    } else {
-      if (!originalFile) throw new BadRequestException('Original file is required');
-      const oriFile = originalFile as Express.Multer.File;
-      originalFilePath = oriFile.path;
+
+      if (!fs.existsSync(originalFilePath)) {
+        throw new BadRequestException('Original file not found');
+      }
+
+      //check if the file size is different
+      if (this.compareFileSize(originalFilePath, modFiles)) {
+        throw new BadRequestException('Mod files must be same size as original file');
+      }
+
+      const completeScriptPath = this.pathService.getCompleteScriptPath(
+        createScriptDto.admin,
+        car.makeType,
+        car.name,
+        controller.name,
+      );
+      if (!fs.existsSync(completeScriptPath)) {
+        fs.mkdirSync(completeScriptPath, { recursive: true });
+      }
+
+      const originalFileContent = await fs.promises.readFile(originalFilePath);
+
+      const scriptInformation = []; //for storing script for db
+
+      for (const modFile of modFiles) {
+        const modFileContent = await fs.promises.readFile(modFile.path);
+        const differences = this.compareFiles(originalFileContent, modFileContent);
+        const hexDifferences = this.convertDifferencesToHex(differences);
+        const resultData = {
+          differences: hexDifferences,
+        };
+
+        const jsonDataItem = JSON.stringify(resultData, null, 2);
+        const parsedName = path.parse(modFile.filename);
+
+        const exactFilePath = path.join(completeScriptPath, parsedName.name + '.json');
+
+        const parseOriginalName = path.parse(modFile.originalname);
+
+        scriptInformation.push({
+          admin: createScriptDto.admin,
+          makeType: car.makeType,
+          car: createScriptDto.car,
+          controller: createScriptDto.controller,
+          file: `${parsedName.name}.json`,
+          originalName: `${parseOriginalName.name}.json`,
+        });
+        await fs.promises.writeFile(exactFilePath, jsonDataItem);
+
+        modFilesPath.push(modFile.path);
+      }
+
+      const scripts = await this.scriptModel.create(scriptInformation);
+      return scripts;
+    } catch (error) {
+      throw error;
+    } finally {
+      for (const modFilePath of modFilesPath) {
+        fs.rmSync(modFilePath, { recursive: true, force: true });
+      }
+      fs.rmSync(originalFilePath, { recursive: true, force: true });
     }
-
-    if (!fs.existsSync(originalFilePath)) {
-      throw new BadRequestException('Original file not found');
-    }
-
-    //check if the file size is different
-    if (this.compareFileSize(originalFilePath, modFiles)) {
-      throw new BadRequestException('Mod files must be same size as original file');
-    }
-
-    const completeScriptPath = this.pathService.getCompleteScriptPath(
-      createScriptDto.admin,
-      car.makeType,
-      car.name,
-      controller.name,
-    );
-    if (!fs.existsSync(completeScriptPath)) {
-      fs.mkdirSync(completeScriptPath, { recursive: true });
-    }
-
-    const originalFileContent = await fs.promises.readFile(originalFilePath);
-
-    const scriptInformation = []; //for storing script for db
-
-    for (const modFile of modFiles) {
-      const modFileContent = await fs.promises.readFile(modFile.path);
-      const differences = this.compareFiles(originalFileContent, modFileContent);
-      const hexDifferences = this.convertDifferencesToHex(differences);
-      const resultData = {
-        differences: hexDifferences,
-      };
-
-      const jsonDataItem = JSON.stringify(resultData, null, 2);
-      const parsedName = path.parse(modFile.filename);
-      const exactFilePath = path.join(completeScriptPath, parsedName.name + '.json');
-
-      scriptInformation.push({
-        admin: createScriptDto.admin,
-        makeType: car.makeType,
-        car: createScriptDto.car,
-        controller: createScriptDto.controller,
-        file: `${modFile.filename}.json`,
-      });
-      await fs.promises.writeFile(exactFilePath, jsonDataItem);
-    }
-
-    const scripts = await this.scriptModel.create(scriptInformation);
-    return scripts;
   }
 
   async findByAdmin(adminId: Types.ObjectId) {
@@ -141,7 +157,7 @@ export class ScriptService {
     });
   }
 
-  compareFiles(file1Buffer: Buffer, file2Buffer: Buffer) {
+  private compareFiles(file1Buffer: Buffer, file2Buffer: Buffer) {
     const maxLength = Math.max(file1Buffer.length, file2Buffer.length);
     const differences = [];
 
@@ -156,5 +172,71 @@ export class ScriptService {
     }
 
     return differences;
+  }
+
+  async downloadScript(scriptId: Types.ObjectId) {
+    const script = await this.scriptModel
+      .findById(scriptId)
+      .populate({
+        path: 'car',
+        select: 'name',
+      })
+      .populate({
+        path: 'controller',
+        select: 'name',
+      })
+      .lean<any>();
+
+    if (!script) {
+      throw new NotFoundException('Script not found');
+    }
+
+    const scriptBasePath = this.pathService.getCompleteScriptPath(
+      script.admin,
+      script.makeType,
+      script.car.name,
+      script.controller.name,
+    );
+
+    const filePath = path.join(scriptBasePath, script.file);
+
+    if (!fs.existsSync(filePath)) {
+      throw new NotFoundException('File not found');
+    }
+
+    return filePath;
+  }
+
+  async deleteScript(scriptId: Types.ObjectId) {
+    const deletedScript = await this.scriptModel
+      .findByIdAndDelete(scriptId)
+      .populate({
+        path: 'car',
+        select: 'name',
+      })
+      .populate({
+        path: 'controller',
+        select: 'name',
+      })
+      .lean<any>();
+
+    if (!deletedScript) {
+      throw new NotFoundException('Script not found');
+    }
+
+    const scriptBasePath = this.pathService.getCompleteScriptPath(
+      deletedScript.admin,
+      deletedScript.makeType,
+      deletedScript.car.name,
+      deletedScript.controller.name,
+    );
+
+    const filePath = path.join(scriptBasePath, deletedScript.file);
+
+    if (fs.existsSync(filePath)) {
+      fs.rmSync(filePath, { recursive: true, force: true });
+    }
+
+    return deletedScript;
   }
 }
