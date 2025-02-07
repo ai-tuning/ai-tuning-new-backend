@@ -7,6 +7,7 @@ import { CustomerSchema } from './schema/customer.schema';
 import { UserModule } from '../user/user.module';
 import { EvcModule } from '../evc/evc.module';
 import { CustomerTypeSchema } from './schema/customer-type.schema';
+import { PricingModule } from '../pricing/pricing.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { CustomerTypeSchema } from './schema/customer-type.schema';
     ]),
     UserModule,
     EvcModule,
+    PricingModule,
   ],
   controllers: [CustomerController],
   providers: [CustomerService],

@@ -36,6 +36,7 @@ import { AutoTunerModule } from './features/auto-tuner/auto-tuner.module';
 import { AutoFlasherModule } from './features/auto-flasher/auto-flasher.module';
 import { StorageServiceModule } from './features/storage-service/storage-service.module';
 import { VerificationMailModule } from './features/verification-mail/verification-mail.module';
+import { PricingModule } from './features/pricing/pricing.module';
 
 @Module({
   imports: [
@@ -150,6 +151,7 @@ import { VerificationMailModule } from './features/verification-mail/verificatio
     AutoFlasherModule,
     StorageServiceModule,
     VerificationMailModule,
+    PricingModule,
   ],
   controllers: [],
   providers: [],

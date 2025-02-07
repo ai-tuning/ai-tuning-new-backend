@@ -8,7 +8,7 @@ export const collectionsName = {
   controller: 'Controller',
   setting: 'Setting',
   credential: 'Credential',
-  Schedule: 'Schedule',
+  schedule: 'Schedule',
   verificationMail: 'verificationMail',
   notice: 'Notice',
   invoice: 'Invoice',
@@ -17,4 +17,5 @@ export const collectionsName = {
   solutionInformation: 'SolutionInformation',
   script: 'Script',
   fileService: 'FileService',
+  pricing: 'Pricing',
 };

@@ -3,7 +3,7 @@ import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { CredentialService } from '../credential/credential.service';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { collectionsName, RolesEnum } from '../constant';
+import { CAR_TYPE_ENUM, collectionsName, RolesEnum, SOLUTION_CATEGORY } from '../constant';
 import { Customer, CustomerDocument } from './schema/customer.schema';
 import { Connection, Model, Types } from 'mongoose';
 import { UserService } from '../user/user.service';
@@ -13,6 +13,7 @@ import { CustomerTypeDto } from './dto/customer-type.dto';
 import { CustomerType } from './schema/customer-type.schema';
 import { FileDto } from '../common';
 import { CustomValidationPipe } from '../common/validation-helper/custom-validation-pipe';
+import { PricingService } from '../pricing/pricing.service';
 
 @Injectable()
 export class CustomerService {
@@ -22,6 +23,7 @@ export class CustomerService {
     @InjectModel(collectionsName.customer) private readonly customerModel: Model<Customer>,
     @InjectModel(collectionsName.customerType) private readonly customerTypeModel: Model<CustomerType>,
     @InjectConnection() private readonly connection: Connection,
+    private readonly pricingService: PricingService,
   ) {}
 
   async create(createCustomerDto: CreateCustomerDto) {
@@ -113,7 +115,7 @@ export class CustomerService {
         .findOneAndUpdate({ _id: id }, { $set: updateCustomerDto }, { new: true, session })
         .lean<CustomerDocument>();
 
-      if (updateCustomerDto.evcNumber) {
+      if (isNewEvcNumber) {
         await this.evcService.addCustomer(customer.admin, updateCustomerDto.evcNumber);
       }
       await session.commitTransaction();
@@ -137,11 +139,25 @@ export class CustomerService {
   }
 
   async createCustomerType(createCustomerTypeDto: CustomerTypeDto) {
-    const customerType = new this.customerTypeModel({
-      name: createCustomerTypeDto.name,
-      admin: new Types.ObjectId(createCustomerTypeDto.admin),
-    });
-    return customerType.save();
+    const session = await this.connection.startSession();
+    try {
+      session.startTransaction();
+      const customerType = new this.customerTypeModel({
+        name: createCustomerTypeDto.name,
+        admin: new Types.ObjectId(createCustomerTypeDto.admin),
+      });
+
+      await this.pricingService.pushItems(customerType.admin, customerType._id as Types.ObjectId, session);
+
+      const newCustomerType = await customerType.save({ session });
+      await session.commitTransaction();
+      return newCustomerType;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      await session.endSession();
+    }
   }
 
   async updateCustomerType(id: Types.ObjectId, updateCustomerTypeDto: CustomerTypeDto) {
@@ -174,6 +190,10 @@ export class CustomerService {
       }
 
       await this.customerTypeModel.findOneAndDelete({ _id: id }, { session });
+
+      //delete pricing related to the customer type
+      await this.pricingService.pullItems(admin._id, id, session);
+
       await session.commitTransaction();
       return customerType;
     } catch (error) {

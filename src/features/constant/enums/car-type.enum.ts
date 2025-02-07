@@ -1,5 +1,5 @@
 export enum CAR_TYPE_ENUM {
   CAR = 'CAR',
   BIKE = 'BIKE',
-  'Truck-Agri-Construction' = 'Truck-Agri-Construction',
+  TRUCK_AGRI_CONSTRUCTION = 'TRUCK_AGRI_CONSTRUCTION',
 }

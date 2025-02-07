@@ -42,7 +42,7 @@ export class Credential extends Types.ObjectId {
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
   admin: Types.ObjectId;
 
-  @Prop({ type: PaypalCredential, required: true })
+  @Prop({ type: PaypalCredential })
   paypal: PaypalCredential;
 
   @Prop({ type: AlienTechCredential })

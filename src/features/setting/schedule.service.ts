@@ -7,7 +7,7 @@ import { UpdateScheduleDto } from './dto/update-schedule.dto';
 
 @Injectable()
 export class ScheduleService {
-  constructor(@InjectModel(collectionsName.Schedule) private readonly scheduleModel: Model<Schedule>) {}
+  constructor(@InjectModel(collectionsName.schedule) private readonly scheduleModel: Model<Schedule>) {}
 
   /**
    * CREATE A SCHEDULE FOR AN ADMIN WHEN ADMIN REGISTER

@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { collectionsName, RolesEnum } from '../constant';
+import { CAR_TYPE_ENUM, collectionsName, RolesEnum, SOLUTION_CATEGORY } from '../constant';
 import { Admin, AdminDocument } from './schema/admin.schema';
 import { UserService } from '../user/user.service';
 import { Connection, Model, Types } from 'mongoose';
@@ -10,15 +10,19 @@ import { CredentialService } from '../credential/credential.service';
 import { ScheduleService } from '../setting/schedule.service';
 import { CustomValidationPipe } from '../common/validation-helper/custom-validation-pipe';
 import { FileDto } from '../common';
+import { CustomerType } from '../customer/schema/customer-type.schema';
+import { PricingService } from '../pricing/pricing.service';
 
 @Injectable()
 export class AdminService {
   constructor(
     @InjectModel(collectionsName.admin) private readonly adminModel: Model<Admin>,
+    @InjectModel(collectionsName.customerType) private readonly customerTypeModel: Model<CustomerType>,
     @InjectConnection() private readonly connection: Connection,
     private readonly userService: UserService,
     private readonly credentialService: CredentialService,
     private readonly scheduleService: ScheduleService,
+    private readonly pricingService: PricingService,
   ) {}
 
   async create(createAdminDto: CreateAdminDto) {
@@ -52,6 +56,13 @@ export class AdminService {
       await this.scheduleService.createSchedule(newAdmin._id as Types.ObjectId, session);
 
       await this.credentialService.create(newAdmin._id as Types.ObjectId, session);
+
+      //create default customer type
+      const customerType = new this.customerTypeModel({ admin: newAdmin._id as Types.ObjectId, name: 'NORMAL' });
+      await customerType.save({ session });
+
+      //create default pricing
+      await this.pricingService.create(newAdmin._id, customerType._id as Types.ObjectId, session);
 
       await session.commitTransaction();
       return newAdmin;

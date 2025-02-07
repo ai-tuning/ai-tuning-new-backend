@@ -1,0 +1,21 @@
+import { Types } from 'mongoose';
+import { CAR_TYPE_ENUM, SOLUTION_CATEGORY } from 'src/features/constant';
+import { IsEnum, IsMongoId, IsNotEmpty, IsNumber } from 'class-validator';
+
+export class CreatePricingDto {
+  @IsNotEmpty()
+  @IsNumber()
+  price: number;
+
+  @IsNotEmpty()
+  @IsEnum(CAR_TYPE_ENUM)
+  makeType: CAR_TYPE_ENUM;
+
+  @IsNotEmpty()
+  @IsEnum(SOLUTION_CATEGORY)
+  solutionCategory: SOLUTION_CATEGORY;
+
+  @IsNotEmpty()
+  @IsMongoId()
+  customerType: Types.ObjectId;
+}

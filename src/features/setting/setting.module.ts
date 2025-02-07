@@ -11,7 +11,7 @@ import { NoticeService } from './notice.service';
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: collectionsName.Schedule, schema: ScheduleSchema },
+      { name: collectionsName.schedule, schema: ScheduleSchema },
       { name: collectionsName.notice, schema: NoticeSchema },
     ]),
   ],
