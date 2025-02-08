@@ -18,4 +18,5 @@ export const collectionsName = {
   script: 'Script',
   fileService: 'FileService',
   pricing: 'Pricing',
+  creditPricing: 'CreditPricing',
 };

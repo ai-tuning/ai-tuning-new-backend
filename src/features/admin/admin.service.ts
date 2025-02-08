@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { CAR_TYPE_ENUM, collectionsName, RolesEnum, SOLUTION_CATEGORY } from '../constant';
+import { collectionsName, RolesEnum } from '../constant';
 import { Admin, AdminDocument } from './schema/admin.schema';
 import { UserService } from '../user/user.service';
 import { Connection, Model, Types } from 'mongoose';
@@ -61,7 +61,7 @@ export class AdminService {
       const customerType = new this.customerTypeModel({ admin: newAdmin._id as Types.ObjectId, name: 'NORMAL' });
       await customerType.save({ session });
 
-      //create default pricing
+      //create default pricing including evc and credit pricing
       await this.pricingService.create(newAdmin._id, customerType._id as Types.ObjectId, session);
 
       await session.commitTransaction();

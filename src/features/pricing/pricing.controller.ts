@@ -5,13 +5,14 @@ import { AuthUser } from '../common/decorator/get-auth-user.decorator';
 import { IAuthUser } from '../common';
 import { Types } from 'mongoose';
 import { CAR_TYPE_ENUM } from '../constant';
+import { CreditPricingDto } from './dto/credit-pricing.dto';
 
 @Controller('pricing')
 export class PricingController {
   constructor(private readonly pricingService: PricingService) {}
 
   @Get('')
-  async findAll(@AuthUser() authUser: IAuthUser) {
+  async findPricingByAdmin(@AuthUser() authUser: IAuthUser) {
     return await this.pricingService.findByAdminId(authUser.admin);
   }
 
@@ -23,5 +24,16 @@ export class PricingController {
   ) {
     const pricing = await this.pricingService.updatePricing(adminId, updatePricingDto, makeType);
     return { data: pricing, message: 'Pricing updated successfully' };
+  }
+
+  @Get('credit')
+  async findCreditPricingByAdmin(@AuthUser() authUser: IAuthUser) {
+    return await this.pricingService.findCreditPricingByAdminId(authUser.admin);
+  }
+
+  @Patch('credit/:adminId')
+  async updateCreditPricing(@Param('adminId') adminId: Types.ObjectId, @Body() updatePricingDto: CreditPricingDto) {
+    const creditPricing = await this.pricingService.updateCreditPricing(adminId, updatePricingDto);
+    return { data: creditPricing, message: 'Pricing updated successfully' };
   }
 }

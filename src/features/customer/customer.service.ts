@@ -1,9 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
-import { CredentialService } from '../credential/credential.service';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { CAR_TYPE_ENUM, collectionsName, RolesEnum, SOLUTION_CATEGORY } from '../constant';
+import { collectionsName, RolesEnum } from '../constant';
 import { Customer, CustomerDocument } from './schema/customer.schema';
 import { Connection, Model, Types } from 'mongoose';
 import { UserService } from '../user/user.service';
@@ -149,6 +148,8 @@ export class CustomerService {
 
       await this.pricingService.pushItems(customerType.admin, customerType._id as Types.ObjectId, session);
 
+      await this.pricingService.pushEvcPriceItems(customerType.admin, customerType._id as Types.ObjectId, session);
+
       const newCustomerType = await customerType.save({ session });
       await session.commitTransaction();
       return newCustomerType;
@@ -194,7 +195,10 @@ export class CustomerService {
       //delete pricing related to the customer type
       await this.pricingService.pullItems(admin._id, id, session);
 
+      await this.pricingService.pullEvcPricingItem(admin._id, id, session);
+
       await session.commitTransaction();
+
       return customerType;
     } catch (error) {
       await session.abortTransaction();
