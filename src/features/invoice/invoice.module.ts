@@ -9,5 +9,6 @@ import { collectionsName } from '../constant';
   imports: [MongooseModule.forFeature([{ name: collectionsName.invoice, schema: InvoiceSchema }])],
   controllers: [InvoiceController],
   providers: [InvoiceService],
+  exports: [InvoiceService],
 })
 export class InvoiceModule {}

@@ -58,7 +58,7 @@ export class AdminService {
       await this.credentialService.create(newAdmin._id as Types.ObjectId, session);
 
       //create default customer type
-      const customerType = new this.customerTypeModel({ admin: newAdmin._id as Types.ObjectId, name: 'NORMAL' });
+      const customerType = new this.customerTypeModel({ admin: newAdmin._id as Types.ObjectId, name: 'DEFAULT' });
       await customerType.save({ session });
 
       //create default pricing including evc and credit pricing
@@ -70,7 +70,7 @@ export class AdminService {
       await session.abortTransaction();
       throw error;
     } finally {
-      session.endSession();
+      await session.endSession();
     }
   }
 
@@ -110,7 +110,7 @@ export class AdminService {
       await session.abortTransaction();
       throw error;
     } finally {
-      session.endSession();
+      await session.endSession();
     }
   }
 

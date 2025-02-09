@@ -4,7 +4,7 @@ import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { collectionsName, RolesEnum } from '../constant';
 import { Customer, CustomerDocument } from './schema/customer.schema';
-import { Connection, Model, Types } from 'mongoose';
+import { ClientSession, Connection, Model, Types } from 'mongoose';
 import { UserService } from '../user/user.service';
 import { EvcService } from '../evc/evc.service';
 import { CustomBadRequest } from '../common/validation-helper/bad-request.exception';
@@ -50,6 +50,13 @@ export class CustomerService {
         }
       }
 
+      //get Default Customer Type
+      const customerType = await this.customerTypeModel
+        .findOne({ admin: createCustomerDto.admin, name: 'DEFAULT' })
+        .lean<CustomerType>();
+
+      rest.customerType = customerType._id as Types.ObjectId;
+
       const customer = new this.customerModel(rest);
 
       //add user
@@ -88,6 +95,12 @@ export class CustomerService {
   }
   async findByUserId(userId: Types.ObjectId, select?: string): Promise<CustomerDocument> {
     return await this.customerModel.findOne({ user: userId }).select(select).lean<CustomerDocument>();
+  }
+
+  async updateCredit(customerId: Types.ObjectId, amount: number, session: ClientSession) {
+    return await this.customerModel
+      .findOneAndUpdate({ _id: customerId }, { $inc: { credits: amount } }, { new: true, session })
+      .lean<CustomerDocument>();
   }
 
   async update(id: Types.ObjectId, updateCustomerDto: UpdateCustomerDto): Promise<CustomerDocument> {
@@ -180,6 +193,11 @@ export class CustomerService {
       if (!customerType) {
         throw new NotFoundException('Customer type not found');
       }
+
+      if (customerType.name === 'DEFAULT') {
+        throw new BadRequestException('Default customer type cannot be deleted');
+      }
+
       if (customerType.admin.toString() !== admin.toString()) {
         throw new BadRequestException('You are not authorized to delete this customer type');
       }

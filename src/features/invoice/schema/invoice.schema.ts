@@ -1,25 +1,26 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
+import { collectionsName, PAYMENT_STATUS } from 'src/features/constant';
 
 @Schema({ timestamps: true, versionKey: false })
 class Invoice extends Document {
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
   admin: Types.ObjectId;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, ref: collectionsName.customer })
   customer: Types.ObjectId;
 
   @Prop({ type: String, required: true })
   invoiceNumber: string;
 
-  @Prop({ type: String, required: true })
-  product: string;
+  @Prop({ type: String })
+  orderId: string;
 
   @Prop({ type: String, required: true })
   description: string;
 
-  @Prop({ type: String, required: true })
-  quantity: string;
+  @Prop({ type: Number, required: true })
+  quantity: number;
 
   @Prop({ type: String, required: true })
   unitPrice: string;
@@ -31,7 +32,10 @@ class Invoice extends Document {
   vat: number;
 
   @Prop({ type: Number, required: true })
-  grantTotal: number;
+  grandTotal: number;
+
+  @Prop({ type: String, required: true, enum: PAYMENT_STATUS, default: PAYMENT_STATUS.UNPAID })
+  status: PAYMENT_STATUS;
 }
 
 const InvoiceSchema = SchemaFactory.createForClass(Invoice);

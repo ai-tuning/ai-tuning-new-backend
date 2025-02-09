@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotAcceptableException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotAcceptableException, UnauthorizedException } from '@nestjs/common';
 import { compare } from 'bcrypt';
 import { UserService } from '../user/user.service';
 import { LoginDto } from './dto/login.dto';
@@ -159,10 +159,10 @@ export class AuthService {
       await session.commitTransaction();
       return { accessToken, refreshToken, user };
     } catch (error) {
-      session.endSession();
+      await session.abortTransaction();
       throw error;
     } finally {
-      session.endSession();
+      await session.endSession();
     }
   }
 
@@ -191,21 +191,21 @@ export class AuthService {
    */
   async refreshToken(refreshToken: string) {
     try {
-      if (!refreshToken) throw new NotAcceptableException('Refresh token is required');
+      if (!refreshToken) throw new UnauthorizedException('Refresh token is required');
 
       //verify token
       const decoded = this.jwtService.verify(refreshToken);
-      if (!decoded) throw new NotAcceptableException('Refresh token is invalid');
+      if (!decoded) throw new UnauthorizedException('Refresh token is invalid');
 
       const user = await this.userService.getUserById(decoded._id);
-      if (!user) throw new NotAcceptableException('User not found');
+      if (!user) throw new UnauthorizedException('User not found');
 
       delete decoded.iat;
       delete decoded.exp;
       const accessToken = this.jwtService.sign(decoded);
       return { accessToken };
     } catch (error) {
-      throw new NotAcceptableException('Refresh token is invalid');
+      throw new UnauthorizedException('Refresh token is invalid');
     }
   }
 }

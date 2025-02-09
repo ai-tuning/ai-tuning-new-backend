@@ -65,7 +65,7 @@ export class CarControllerService {
       if (isDirCreated) fs.rmSync(controllerPath, { recursive: true, force: true });
       throw error;
     } finally {
-      session.endSession();
+      await session.endSession();
     }
   }
 
@@ -139,7 +139,7 @@ export class CarControllerService {
       await session.abortTransaction();
       throw error;
     } finally {
-      session.endSession();
+      await session.endSession();
     }
   }
 
@@ -177,7 +177,7 @@ export class CarControllerService {
       await session.abortTransaction();
       throw error;
     } finally {
-      session.endSession();
+      await session.endSession();
     }
   }
 }

@@ -101,7 +101,14 @@ export class PricingService {
         select: 'name',
         model: collectionsName.customerType,
       })
-      .lean<Pricing[]>();
+      .lean<Pricing>();
+  }
+
+  async getPricingByCustomerType(adminId: Types.ObjectId, customerType: Types.ObjectId) {
+    const pricing = await this.pricingModel.findOne({ admin: adminId }).lean<Pricing>();
+    const filteredItems = pricing.items.filter((item) => item.customerType.toString() === customerType.toString());
+    pricing.items = filteredItems;
+    return pricing;
   }
 
   async pushItems(adminId: Types.ObjectId, customerType: Types.ObjectId, session: ClientSession) {
@@ -213,7 +220,7 @@ export class PricingService {
         select: 'name',
         model: collectionsName.customerType,
       })
-      .lean<CreditPricing[]>();
+      .lean<CreditPricing>();
   }
 
   async updateCreditPricing(adminId: Types.ObjectId, updatePricingDto: CreditPricingDto) {

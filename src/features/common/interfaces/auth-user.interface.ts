@@ -8,4 +8,5 @@ export interface IAuthUser {
   employee: Types.ObjectId;
   role: RolesEnum;
   email: string;
+  ipAddress: string;
 }

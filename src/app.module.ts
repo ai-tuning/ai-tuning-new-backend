@@ -37,6 +37,7 @@ import { AutoFlasherModule } from './features/auto-flasher/auto-flasher.module';
 import { StorageServiceModule } from './features/storage-service/storage-service.module';
 import { VerificationMailModule } from './features/verification-mail/verification-mail.module';
 import { PricingModule } from './features/pricing/pricing.module';
+import { PurchaseModule } from './features/purchase/purchase.module';
 
 @Module({
   imports: [
@@ -152,6 +153,7 @@ import { PricingModule } from './features/pricing/pricing.module';
     StorageServiceModule,
     VerificationMailModule,
     PricingModule,
+    PurchaseModule,
   ],
   controllers: [],
   providers: [],

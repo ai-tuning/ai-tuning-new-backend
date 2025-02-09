@@ -22,6 +22,7 @@ export class ProfileService {
   async getProfile(authUser: IAuthUser) {
     if (authUser.role === RolesEnum.CUSTOMER) {
       const customer = await this.customerService.findByUserId(authUser._id);
+      delete authUser.ipAddress;
       return { ...customer, ...authUser };
     } else if (authUser.role === RolesEnum.EMPLOYEE) {
       return { ...authUser };

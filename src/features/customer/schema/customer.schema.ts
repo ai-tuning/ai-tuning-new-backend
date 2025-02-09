@@ -60,7 +60,7 @@ class Customer extends Document {
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: collectionsName.customerType,
-    // required: true,
+    required: true,
   })
   customerType: Types.ObjectId;
 

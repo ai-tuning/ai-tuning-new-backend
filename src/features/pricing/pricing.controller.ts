@@ -16,6 +16,14 @@ export class PricingController {
     return await this.pricingService.findByAdminId(authUser.admin);
   }
 
+  @Get('customer-types/:customerTypeId')
+  async findPricingByCustomerType(
+    @AuthUser() authUser: IAuthUser,
+    @Param('customerTypeId') customerTypeId: Types.ObjectId,
+  ) {
+    return await this.pricingService.getPricingByCustomerType(authUser.admin, customerTypeId);
+  }
+
   @Patch(':adminId')
   async update(
     @Param('adminId') adminId: Types.ObjectId,

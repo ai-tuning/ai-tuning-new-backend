@@ -51,7 +51,7 @@ export class CreateCustomerDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
-  credits?: number;
+  credits?: number = 0;
 
   @IsOptional()
   @IsString()
@@ -59,7 +59,7 @@ export class CreateCustomerDto {
 
   @IsOptional()
   @IsMongoId()
-  customerType: string;
+  customerType: Types.ObjectId;
 
   @IsOptional()
   @IsEnum(UserStatusEnum)
