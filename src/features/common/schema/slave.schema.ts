@@ -8,7 +8,7 @@ export class Kess3 {
   fileType: string;
 
   @Prop({ type: String, required: true })
-  kess3FileSlotGUID: string;
+  fileSlotGUID: string;
 
   @Prop({ type: Boolean, required: true })
   isCVNCorrectionPossible: boolean;
@@ -36,5 +36,5 @@ export class AutoFlasher {
   serialNumber: string;
 
   @Prop({ type: String, required: true })
-  memoryType: string;
+  memory_type: string;
 }

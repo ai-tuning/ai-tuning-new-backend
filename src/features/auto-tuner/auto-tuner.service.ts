@@ -6,6 +6,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { CredentialService } from '../credential/credential.service';
 import { DecodeAutoTunerFileDto } from './dto/autotuner-decode-encode.dto';
+import { PathService } from '../common';
 
 interface AutotunerEncodePayload {
   slave_id: string;
@@ -18,28 +19,11 @@ interface AutotunerEncodePayload {
 
 @Injectable()
 export class AutoTunerService {
-  /**
-   * Path for storing decoded file for autotuner service
-   */
-  decodedPath = path.join(process.cwd(), 'public', 'autotuner', 'decoded');
-
-  /**
-   * Path for storing endcoded file for autotuner service
-   */
-  encodedPath = path.join(process.cwd(), 'public', 'solutions');
-
   constructor(
     private readonly httpService: HttpService,
     private readonly credentialService: CredentialService,
-  ) {
-    //create decoded and encoded folder if not exist when initializing the service
-    if (!fs.existsSync(this.decodedPath)) {
-      fs.mkdirSync(this.decodedPath, { recursive: true });
-    }
-    if (!fs.existsSync(this.encodedPath)) {
-      fs.mkdirSync(this.encodedPath, { recursive: true });
-    }
-  }
+    private readonly pathService: PathService,
+  ) {}
   /**
    * Decode the encoded file and return the decoded information
    * @param decodeAutoTunerFileDto
@@ -48,8 +32,7 @@ export class AutoTunerService {
   async decode(decodeAutoTunerFileDto: DecodeAutoTunerFileDto) {
     const parsed = path.parse(decodeAutoTunerFileDto.filePath);
     const decodedFilePath = path.join(
-      this.decodedPath,
-      decodeAutoTunerFileDto.adminId.toString(),
+      this.pathService.getDecodedFilePath(decodeAutoTunerFileDto.adminId),
       parsed.name + '-decoded.bin',
     );
     try {
@@ -72,7 +55,7 @@ export class AutoTunerService {
         if (hash !== data.hash) {
           throw new BadRequestException('Hash not match');
         } else {
-          fs.writeFileSync(decodedFilePath, mapsData);
+          await fs.promises.writeFile(decodedFilePath, mapsData);
           return {
             mode: data.mode,
             slave_id: data.slave_id,
@@ -80,7 +63,7 @@ export class AutoTunerService {
             model_id: data.model_id,
             mcu_id: data.mcu_id,
             decodedFilePath: decodedFilePath,
-            filename: path.basename(decodedFilePath),
+            decodedFileName: path.basename(decodedFilePath),
           };
         }
       } else {
@@ -104,7 +87,10 @@ export class AutoTunerService {
   async encode(autoTunerEncodeDto: AutotunerEncodePayload) {
     const parseFile = path.parse(autoTunerEncodeDto.filePath);
     const name = parseFile.name.replace(/decoded/gi, 'modified');
-    const encryptedFilePath = path.join(this.encodedPath, autoTunerEncodeDto.adminId.toString(), name + '.slave');
+    const encryptedFilePath = path.join(
+      this.pathService.getEncodedFilePath(autoTunerEncodeDto.adminId),
+      name + '.slave',
+    );
 
     try {
       // Read the binary data from the file
@@ -137,7 +123,7 @@ export class AutoTunerService {
           throw new BadRequestException('Hash not match');
         } else {
           // Write the encrypted data to a new file
-          fs.writeFileSync(encryptedFilePath, encryptedData);
+          await fs.promises.writeFile(encryptedFilePath, encryptedData);
           console.log(`Encrypted file saved to: ${encryptedFilePath}`);
         }
       } else {

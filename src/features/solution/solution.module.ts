@@ -19,5 +19,6 @@ import { SolutionInformationSchema } from './schema/solution-information.schema'
   ],
   controllers: [SolutionController],
   providers: [SolutionService, SolutionInformationService],
+  exports: [SolutionService, SolutionInformationService],
 })
 export class SolutionModule {}

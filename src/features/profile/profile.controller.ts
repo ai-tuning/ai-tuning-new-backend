@@ -32,9 +32,7 @@ export class ProfileController {
   )
   @Patch('change-avatar')
   async changeAvatar(@AuthUser() authUser: IAuthUser, @UploadedFile() file: Express.Multer.File) {
-    console.log(file);
     const user = await this.profileService.changeAvatar(authUser, file);
-    console.log(user);
     return { data: user, message: 'Avatar Changed' };
   }
 }

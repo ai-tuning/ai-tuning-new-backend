@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { CreateCarDto } from './dto/create-car.dto';
@@ -8,6 +8,9 @@ import { collectionsName } from '../constant';
 import { Connection, Model, Types } from 'mongoose';
 import { Car } from './schema/car.schema';
 import { CarController } from '../car-controller/schema/car-controller.schema';
+import { PathService } from '../common';
+const cars = require('../../../cars.json');
+const controllers = require('../../../controllers.json');
 
 @Injectable()
 export class CarService {
@@ -15,6 +18,7 @@ export class CarService {
     @InjectModel(collectionsName.car) private readonly carModel: Model<Car>,
     @InjectModel(collectionsName.controller) private readonly carControllerModel: Model<CarController>,
     @InjectConnection() private readonly connection: Connection,
+    private readonly pathService: PathService,
   ) {}
   async create(createCarDto: CreateCarDto) {
     const session = await this.connection.startSession();
@@ -22,19 +26,15 @@ export class CarService {
     let isDirCreated = false;
     try {
       session.startTransaction();
-      const isExist = await this.carModel.findOne({ name: createCarDto.name, admin: createCarDto.admin });
+      const isExist = await this.carModel.findOne({ name: createCarDto.name.trim(), admin: createCarDto.admin });
       if (isExist) {
         throw new BadRequestException('Car already exist');
       }
-      carPath = path.join(
-        process.cwd(),
-        'public',
-        createCarDto.admin.toString(),
-        createCarDto.makeType,
-        createCarDto.name,
-      );
 
-      const car = new this.carModel(createCarDto);
+      const rootScriptPath = this.pathService.getRootScriptPath(createCarDto.admin, createCarDto.makeType);
+      carPath = path.join(rootScriptPath, createCarDto.name.trim());
+
+      const car = new this.carModel({ ...createCarDto, name: createCarDto.name.trim() });
       const newCar = await car.save({ session });
 
       //create folder
@@ -54,7 +54,7 @@ export class CarService {
   }
 
   async findByAdmin(adminId: Types.ObjectId) {
-    return this.carModel.find({ admin: adminId }).lean<Car[]>();
+    return this.carModel.find({ admin: adminId }).sort({ name: 1 }).lean<Car[]>();
   }
 
   async findById(id: Types.ObjectId) {
@@ -69,7 +69,7 @@ export class CarService {
     try {
       session.startTransaction();
       const isExist = await this.carModel.findOne({
-        name: updateCarDto.name,
+        name: updateCarDto.name.trim(),
         _id: { $ne: id },
         admin: updateCarDto.admin,
       });
@@ -95,11 +95,15 @@ export class CarService {
         'public',
         previousCar.admin.toString(),
         updateCarDto.makeType,
-        updateCarDto.name,
+        updateCarDto.name.trim(),
       );
 
       const updatedCar = await this.carModel
-        .findOneAndUpdate({ _id: id }, { $set: updateCarDto }, { new: true, session })
+        .findOneAndUpdate(
+          { _id: id },
+          { $set: { ...updateCarDto, name: updateCarDto.name.trim() } },
+          { new: true, session },
+        )
         .lean<Car>();
 
       if (oldPath !== newPath) {
@@ -137,13 +141,8 @@ export class CarService {
         await this.carControllerModel.deleteMany({ car: deletedCar._id });
       }
 
-      const carPath = path.join(
-        process.cwd(),
-        'public',
-        deletedCar.admin.toString(),
-        deletedCar.makeType,
-        deletedCar.name,
-      );
+      const getCompleteScriptPath = this.pathService.getRootScriptPath(deletedCar.admin, deletedCar.makeType);
+      const carPath = path.join(getCompleteScriptPath, deletedCar.name.trim());
 
       if (fs.existsSync(carPath)) {
         fs.rmSync(carPath, { recursive: true, force: true });
@@ -158,4 +157,48 @@ export class CarService {
       await session.endSession();
     }
   }
+
+  // async manualCarCreation(adminId) {
+  //   const carsPayload = cars.map((car) => ({
+  //     name: car.carname.trim(),
+  //     makeType: car.makeType,
+  //     Id: car.Id,
+  //     admin: adminId,
+  //   }));
+
+  //   await this.carModel.insertMany(carsPayload);
+  //   const insertedCars = await this.carModel.find({ admin: adminId }).lean();
+
+  //   insertedCars.forEach(async (car) => {
+  //     const rootScriptPath = this.pathService.getRootScriptPath(adminId, car.makeType);
+  //     const carPath = path.join(rootScriptPath, car.name.trim());
+  //     if (!fs.existsSync(carPath)) {
+  //       fs.mkdirSync(carPath, { recursive: true });
+  //     }
+  //     const carController = controllers.filter((controller) => controller.makeId == car.Id);
+
+  //     const makeControllerPayload = carController.map((controller) => ({
+  //       name: controller.controllername.trim(),
+  //       car: car._id,
+  //       admin: adminId,
+  //     }));
+
+  //     await this.carControllerModel.insertMany(makeControllerPayload);
+
+  //     const insertedControllers = await this.carControllerModel.find({ car: car._id }).lean();
+
+  //     insertedControllers.forEach(async (controller) => {
+  //       const controllerPath = this.pathService.getCompleteScriptPath(
+  //         adminId,
+  //         car.makeType,
+  //         car.name.trim(),
+  //         controller.name.trim(),
+  //       );
+
+  //       if (!fs.existsSync(controllerPath)) {
+  //         fs.mkdirSync(controllerPath, { recursive: true });
+  //       }
+  //     });
+  //   });
+  // }
 }

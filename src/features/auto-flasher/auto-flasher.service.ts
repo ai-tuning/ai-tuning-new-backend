@@ -6,12 +6,14 @@ import { HttpService } from '@nestjs/axios';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { CredentialService } from '../credential/credential.service';
+import { PathService } from '../common';
 
 interface AutoFlasherDecodeDto {
   filePath: string;
   customerId: Types.ObjectId;
   adminId: Types.ObjectId;
 }
+
 interface AutoFlasherEncodeDto {
   serialNumber: string;
   memory_type: string;
@@ -21,28 +23,11 @@ interface AutoFlasherEncodeDto {
 
 @Injectable()
 export class AutoFlasherService {
-  /**
-   * Path for storing decoded file for auto-flasher service
-   */
-  decodedPath = path.join(process.cwd(), 'public', 'autoflasher', 'decoded');
-
-  /**
-   * Path for storing decoded file for auto-flasher service
-   */
-  encodedPath = path.join(process.cwd(), 'public', 'solutions');
-
   constructor(
     private readonly httpService: HttpService,
     private readonly credentialService: CredentialService,
-  ) {
-    //create decoded and encoded folder if not exist when initializing the service
-    if (!fs.existsSync(this.decodedPath)) {
-      fs.mkdirSync(this.decodedPath, { recursive: true });
-    }
-    if (!fs.existsSync(this.encodedPath)) {
-      fs.mkdirSync(this.encodedPath, { recursive: true });
-    }
-  }
+    private readonly pathService: PathService,
+  ) {}
 
   async getHexSn(sourceFilePath: string) {
     let chunkSize = 16;
@@ -122,9 +107,15 @@ export class AutoFlasherService {
 
   async decode(autoFlasherDecodeDto: AutoFlasherDecodeDto) {
     const filePath = autoFlasherDecodeDto.filePath;
-    let unzippedFilePath = path.join(this.decodedPath, 'extracted_files' + autoFlasherDecodeDto.customerId);
+    let unzippedFilePath = path.join(
+      this.pathService.getDecodedFilePath(autoFlasherDecodeDto.adminId),
+      'extracted_files' + autoFlasherDecodeDto.customerId,
+    );
     const parsed = path.parse(filePath);
-    const decodedFilePath = path.join(this.decodedPath, parsed.name + '-decoded.zip');
+    const decodedFilePath = path.join(
+      this.pathService.getDecodedFilePath(autoFlasherDecodeDto.adminId),
+      parsed.name + '-decoded.zip',
+    );
     try {
       if (fs.existsSync(unzippedFilePath)) {
         fs.rmSync(unzippedFilePath, { recursive: true });
@@ -184,7 +175,10 @@ export class AutoFlasherService {
           }
         }
         const newFileName = parsed.name + '-decoded-' + memory_type + '.bin';
-        const newDecodedFilePath = path.join(this.decodedPath, autoFlasherDecodeDto.adminId.toString(), newFileName);
+        const newDecodedFilePath = path.join(
+          this.pathService.getDecodedFilePath(autoFlasherDecodeDto.adminId),
+          newFileName,
+        );
         console.log('newDecodedFilePath', newDecodedFilePath);
 
         //move the files into DECODED__BASE_FILE_PATH directory
@@ -200,7 +194,7 @@ export class AutoFlasherService {
           serialNumber,
           memory_type,
           decodedFilePath: newDecodedFilePath,
-          filename: path.basename(newDecodedFilePath),
+          decodedFileName: path.basename(newDecodedFilePath),
         };
       } else {
         throw new BadRequestException(response.data.errors[0]);
@@ -219,7 +213,10 @@ export class AutoFlasherService {
   async encode(autoFlasherEncodeDto: AutoFlasherEncodeDto) {
     const parseFile = path.parse(autoFlasherEncodeDto.filePath);
     const name = parseFile.name.replace(/decoded/gi, 'modified');
-    const encryptedFilePath = path.join(this.encodedPath, autoFlasherEncodeDto.adminId.toString(), name + '.atf');
+    const encryptedFilePath = path.join(
+      this.pathService.getEncodedFilePath(autoFlasherEncodeDto.adminId),
+      name + '.atf',
+    );
     const formData = new FormData();
     formData.append('input_file', fs.createReadStream(autoFlasherEncodeDto.filePath));
     formData.append('sn', autoFlasherEncodeDto.serialNumber);

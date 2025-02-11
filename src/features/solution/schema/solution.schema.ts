@@ -1,9 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { Types } from 'mongoose';
+import mongoose, { Document, Types } from 'mongoose';
 import { FUEL_TYPE, SOLUTION_CATEGORY } from 'src/features/constant';
 
 @Schema({ timestamps: true, versionKey: false })
-export class Solution {
+export class Solution extends Document {
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
   admin: Types.ObjectId;
 

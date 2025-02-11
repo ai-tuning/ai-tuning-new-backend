@@ -83,6 +83,9 @@ export class MulterModule {
             if (prohibitedExtensions.includes(ext)) {
               callback(new BadRequestException('Invalid file type'), false);
             }
+
+            if (!options.acceptedMimeTypes.length) return callback(null, true);
+
             if (options.acceptedMimeTypes.includes(file.mimetype)) {
               callback(null, true); // Accept the file
             } else {

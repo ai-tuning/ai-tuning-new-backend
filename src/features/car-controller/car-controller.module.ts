@@ -4,6 +4,7 @@ import { CarControllerController } from './car-controller.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CarControllerSchema } from './schema/car-controller.schema';
 import { collectionsName } from '../constant';
+import { PathService } from '../common';
 
 @Module({
   imports: [
@@ -16,7 +17,7 @@ import { collectionsName } from '../constant';
     ]),
   ],
   controllers: [CarControllerController],
-  providers: [CarControllerService],
+  providers: [CarControllerService, PathService],
   exports: [CarControllerService],
 })
 export class CarControllerModule {}

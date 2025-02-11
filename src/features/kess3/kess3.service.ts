@@ -8,31 +8,15 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { CredentialService } from '../credential/credential.service';
 import { customValidationPipe } from '../common/functions/custom.validationPipe';
 import { DecodeKess3FileDto, EncodeKess3FileDto } from './dto/kess3-encode-decode.dto';
+import { PathService } from '../common';
 
 @Injectable()
 export class Kess3Service {
-  /**
-   * Path for storing decoded file for kess3 service
-   */
-  decodedPath = path.join(process.cwd(), 'public', 'kess3', 'decoded');
-
-  /**
-   * Path for storing endcoded file for kess3 service
-   */
-  encodedPath = path.join(process.cwd(), 'public', 'solutions');
-
   constructor(
     private readonly httpService: HttpService,
     private readonly credentialService: CredentialService,
-  ) {
-    //create decoded and encoded folder if not exist when initializing the service
-    if (!fs.existsSync(this.decodedPath)) {
-      fs.mkdirSync(this.decodedPath, { recursive: true });
-    }
-    if (!fs.existsSync(this.encodedPath)) {
-      fs.mkdirSync(this.encodedPath, { recursive: true });
-    }
-  }
+    private readonly pathService: PathService,
+  ) {}
 
   /**
    * upload encoded file for decoding
@@ -41,7 +25,7 @@ export class Kess3Service {
    * @param additionalInfo
    * @returns
    */
-  async uploadEncodedFile(
+  private async uploadEncodedFile(
     customerId: string,
     filePath: string,
     adminId: Types.ObjectId,
@@ -54,7 +38,6 @@ export class Kess3Service {
     if (additionalInfo) {
       formData.append('userInfo', JSON.stringify(additionalInfo));
     }
-    console.log('upload started');
     const apiService = this.apiService(adminId);
     const response = await apiService({
       method: 'post',
@@ -64,7 +47,6 @@ export class Kess3Service {
       url: `/api/kess3/decode-read-file/${customerId}`,
       data: formData,
     });
-    console.log('upload ended');
     return response.data;
   }
 
@@ -73,7 +55,7 @@ export class Kess3Service {
    * @param asyncOperationGuid
    * @returns
    */
-  async getAsyncInformation(adminId: Types.ObjectId, asyncOperationGuid: string) {
+  private async getAsyncInformation(adminId: Types.ObjectId, asyncOperationGuid: string) {
     const apiService = this.apiService(adminId);
     const response = await apiService({
       url: `/api/async-operations/${asyncOperationGuid}`,
@@ -88,7 +70,12 @@ export class Kess3Service {
    * @param bootBenchComponents
    * @returns
    */
-  async downloadDecodeFile(adminId: Types.ObjectId, fileSlotGUID: string, mode: string, bootBenchComponents: any[]) {
+  private async downloadDecodeFile(
+    adminId: Types.ObjectId,
+    fileSlotGUID: string,
+    mode: string,
+    bootBenchComponents: any[],
+  ) {
     let fileType = 'OBDDecoded';
     let url = `/api/kess3/file-slots/${fileSlotGUID}/files/?fileType=${fileType}&download=true`;
     if (mode === 'BootBench') {
@@ -111,7 +98,7 @@ export class Kess3Service {
     });
 
     // Path where the file will be saved
-    const filePath = path.join(this.decodedPath, adminId.toString(), data.name);
+    const filePath = path.join(this.pathService.getDecodedFilePath(adminId), data.name);
 
     // Decode Base64 string to a buffer
     const fileBuffer = Buffer.from(data.data, 'base64');
@@ -132,7 +119,7 @@ export class Kess3Service {
    * @param fileGUID
    * @returns
    */
-  async downloadEncodeFile(adminId: Types.ObjectId, fileSlotGUID: string, fileGUID: string) {
+  private async downloadEncodeFile(adminId: Types.ObjectId, fileSlotGUID: string, fileGUID: string) {
     const apiService = this.apiService(adminId);
     const { data } = await apiService({
       method: 'get',
@@ -140,7 +127,7 @@ export class Kess3Service {
     });
 
     // Path where the file will be saved
-    const filePath = path.join(this.encodedPath, adminId.toString(), data.name);
+    const filePath = path.join(this.pathService.getEncodedFilePath(adminId), data.name);
     // Decode Base64 string to a buffer
     const fileBuffer = Buffer.from(data.data, 'base64');
 
@@ -157,7 +144,7 @@ export class Kess3Service {
    * @param adminId
    * @returns
    */
-  async getFileSlots(adminId: Types.ObjectId) {
+  private async getFileSlots(adminId: Types.ObjectId) {
     const alienTechApi = this.apiService(adminId);
     const response = await alienTechApi({
       method: 'get',
@@ -172,7 +159,7 @@ export class Kess3Service {
    * @param fileSlotGUID
    * @returns
    */
-  async closeFileSlot(adminId: Types.ObjectId, fileSlotGUID: string) {
+  private async closeFileSlot(adminId: Types.ObjectId, fileSlotGUID: string) {
     const alienTechApi = this.apiService(adminId);
 
     const response = await alienTechApi({
@@ -187,7 +174,7 @@ export class Kess3Service {
    * @param fileSlotGUID
    * @returns
    */
-  async reOpenFileSlot(adminId: Types.ObjectId, fileSlotGUID: string) {
+  private async reOpenFileSlot(adminId: Types.ObjectId, fileSlotGUID: string) {
     const apiService = this.apiService(adminId);
     const response = await apiService({
       method: 'post',
@@ -211,7 +198,6 @@ export class Kess3Service {
     asyncOperationGuid: string,
   ): Promise<any> {
     const start = Date.now();
-    console.log('called');
     return new Promise((resolve, reject) => {
       const poll = async () => {
         try {
@@ -274,10 +260,10 @@ export class Kess3Service {
         asyncInformation.result.bootBenchComponents,
       );
       await this.closeFileSlot(decodeFileServiceDto.adminId, asyncInformation.slotGUID);
-      //update decoded file path to request object
 
+      //update decoded file path to request object
       return {
-        kess3Mode: asyncInformation.result.kess3Mode,
+        mode: asyncInformation.result.kess3Mode,
         isCVNCorrectionPossible: asyncInformation.result.isCVNCorrectionPossible,
         fileSlotGUID: asyncInformation.slotGUID,
         fileType: decodedFile.fileType,
@@ -298,7 +284,7 @@ export class Kess3Service {
     }
   }
 
-  async uploadModifiedFile(
+  private async uploadModifiedFile(
     adminId: Types.ObjectId,
     customerId: string,
     fileSlotGUID: string,

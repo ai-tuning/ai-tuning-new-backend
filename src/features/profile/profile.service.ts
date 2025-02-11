@@ -23,7 +23,8 @@ export class ProfileService {
     if (authUser.role === RolesEnum.CUSTOMER) {
       const customer = await this.customerService.findByUserId(authUser._id);
       delete authUser.ipAddress;
-      return { ...customer, ...authUser };
+
+      return { ...customer, customer: authUser.customer, ...authUser };
     } else if (authUser.role === RolesEnum.EMPLOYEE) {
       return { ...authUser };
     } else if (authUser.role === RolesEnum.ADMIN) {

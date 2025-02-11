@@ -32,7 +32,6 @@ export class AuthController {
     let domain = '';
     let sameSite: 'lax' | 'strict' | 'none' | boolean = 'lax';
     const origin = request.headers.host;
-    console.log(origin);
     if (origin.includes('.ecufile.eu')) {
       domain = 'ai-tuningfiles.com';
       sameSite = 'none';
@@ -80,7 +79,6 @@ export class AuthController {
     let domain = '';
     let sameSite: 'lax' | 'strict' | 'none' | boolean = 'lax';
     const origin = request.headers.host;
-    console.log(origin);
     if (origin.includes('.ecufile.eu')) {
       domain = 'ai-tuningfiles.com';
       sameSite = 'none';

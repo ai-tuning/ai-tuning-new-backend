@@ -17,6 +17,7 @@ export const collectionsName = {
   solutionInformation: 'SolutionInformation',
   script: 'Script',
   fileService: 'FileService',
+  tempFileService: 'TempFileService',
   pricing: 'Pricing',
   creditPricing: 'CreditPricing',
 };

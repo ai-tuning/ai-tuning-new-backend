@@ -7,7 +7,6 @@ class Car extends Document {
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: collectionsName.admin,
-    required: true,
   })
   admin: Types.ObjectId;
 

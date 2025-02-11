@@ -91,7 +91,6 @@ export class AuthService {
       expiresIn: '7d',
     });
     delete profile.password;
-    console.log(profile);
     return { accessToken, refreshToken, user: profile };
   }
 

@@ -59,7 +59,6 @@ export class PurchaseService {
 
       //generate payment link
       const order = await this.createOrder(adminId, invoice._id as Types.ObjectId, totalPrice, origin);
-      console.log('order', order);
 
       await session.commitTransaction();
       return order.links[1].href;
@@ -133,7 +132,6 @@ export class PurchaseService {
    */
   async createOrder(adminId: Types.ObjectId, invoiceId: Types.ObjectId, amount: number, origin: string) {
     const token = await this.getAccessToken(adminId);
-    console.log(this.returnUrl);
     const { data } = await this.httpService.axiosRef(`${this.paypal_url}/v2/checkout/orders`, {
       method: 'POST',
       headers: {

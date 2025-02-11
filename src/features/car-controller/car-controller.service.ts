@@ -8,6 +8,7 @@ import { Connection, Model, Types } from 'mongoose';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { collectionsName } from '../constant';
 import { CarController } from './schema/car-controller.schema';
+import { PathService } from '../common';
 
 @Injectable()
 export class CarControllerService {
@@ -15,6 +16,7 @@ export class CarControllerService {
     @InjectModel(collectionsName.car) private readonly carModel: Model<Car>,
     @InjectModel(collectionsName.controller) private readonly carControllerModel: Model<CarController>,
     @InjectConnection() private readonly connection: Connection,
+    private readonly pathService: PathService,
   ) {}
   async create(createCarControllerDto: CreateCarControllerDto) {
     const session = await this.connection.startSession();
@@ -32,24 +34,25 @@ export class CarControllerService {
         throw new BadRequestException('Car not found');
       }
 
-      controllerPath = path.join(
-        process.cwd(),
-        'public',
-        createCarControllerDto.admin.toString(),
+      controllerPath = this.pathService.getCompleteScriptPath(
+        createCarControllerDto.admin,
         car.makeType,
         car.name,
-        createCarControllerDto.name,
+        createCarControllerDto.name.trim(),
       );
 
       const isExist = await this.carControllerModel.findOne({
-        name: createCarControllerDto.name,
+        name: createCarControllerDto.name.trim(),
         admin: createCarControllerDto.admin,
       });
 
       if (isExist) {
         throw new BadRequestException('Car already exist');
       }
-      const carController = new this.carControllerModel(createCarControllerDto);
+      const carController = new this.carControllerModel({
+        ...createCarControllerDto,
+        name: createCarControllerDto.name.trim(),
+      });
       const newController = await carController.save({ session });
 
       //create folder
@@ -70,7 +73,7 @@ export class CarControllerService {
   }
 
   findByAdmin(adminId: Types.ObjectId) {
-    return this.carControllerModel.find({ admin: adminId }).lean<CarController[]>();
+    return this.carControllerModel.find({ admin: adminId }).sort({ name: 1 }).lean<CarController[]>();
   }
 
   findById(controllerId: Types.ObjectId) {
@@ -85,7 +88,7 @@ export class CarControllerService {
     try {
       session.startTransaction();
       const isExist = await this.carControllerModel.findOne({
-        name: updateControllerDto.name,
+        name: updateControllerDto.name.trim(),
         _id: { $ne: id },
         admin: updateControllerDto.admin,
       });
@@ -103,26 +106,26 @@ export class CarControllerService {
         throw new BadRequestException('Controller not found');
       }
 
-      oldPath = path.join(
-        process.cwd(),
-        'public',
-        previousCar.admin.toString(),
+      oldPath = this.pathService.getCompleteScriptPath(
+        previousCar.admin,
         previousCar.makeType,
         previousCar.name,
         previousController.name,
       );
 
-      newPath = path.join(
-        process.cwd(),
-        'public',
-        previousCar.admin.toString(),
+      newPath = this.pathService.getCompleteScriptPath(
+        previousCar.admin,
         previousCar.makeType,
         previousCar.name,
-        updateControllerDto.name,
+        updateControllerDto.name.trim(),
       );
 
       const updatedController = await this.carControllerModel
-        .findOneAndUpdate({ _id: id }, { $set: updateControllerDto }, { new: true })
+        .findOneAndUpdate(
+          { _id: id },
+          { $set: { ...updateControllerDto, name: updateControllerDto.name.trim() } },
+          { new: true },
+        )
         .lean<Car>();
 
       if (oldPath !== newPath) {
@@ -159,17 +162,15 @@ export class CarControllerService {
         throw new BadRequestException('Car not found');
       }
 
-      const carPath = path.join(
-        process.cwd(),
-        'public',
-        deletedController.admin.toString(),
+      const getCompleteScriptPath = this.pathService.getCompleteScriptPath(
+        deletedController.admin,
         car.makeType,
         car.name,
         deletedController.name,
       );
 
-      if (fs.existsSync(carPath)) {
-        fs.rmSync(carPath, { recursive: true, force: true });
+      if (fs.existsSync(getCompleteScriptPath)) {
+        fs.rmSync(getCompleteScriptPath, { recursive: true, force: true });
       }
       await session.commitTransaction();
       return deletedController;
