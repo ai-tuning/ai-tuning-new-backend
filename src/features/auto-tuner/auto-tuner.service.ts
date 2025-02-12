@@ -8,13 +8,14 @@ import { CredentialService } from '../credential/credential.service';
 import { DecodeAutoTunerFileDto } from './dto/autotuner-decode-encode.dto';
 import { PathService } from '../common';
 
-interface AutotunerEncodePayload {
+interface AutoTunerEncodePayload {
   slave_id: string;
   ecu_id: string;
   model_id: string;
   mcu_id: string;
   filePath: string;
   adminId: Types.ObjectId;
+  tempFileId: Types.ObjectId;
 }
 
 @Injectable()
@@ -32,7 +33,7 @@ export class AutoTunerService {
   async decode(decodeAutoTunerFileDto: DecodeAutoTunerFileDto) {
     const parsed = path.parse(decodeAutoTunerFileDto.filePath);
     const decodedFilePath = path.join(
-      this.pathService.getDecodedFilePath(decodeAutoTunerFileDto.adminId),
+      this.pathService.getFileServicePath(decodeAutoTunerFileDto.adminId, decodeAutoTunerFileDto.tempFileId),
       parsed.name + '-decoded.bin',
     );
     try {
@@ -84,11 +85,11 @@ export class AutoTunerService {
    * @param autoTunerEncodeDto
    * @returns
    */
-  async encode(autoTunerEncodeDto: AutotunerEncodePayload) {
+  async encode(autoTunerEncodeDto: AutoTunerEncodePayload) {
     const parseFile = path.parse(autoTunerEncodeDto.filePath);
     const name = parseFile.name.replace(/decoded/gi, 'modified');
     const encryptedFilePath = path.join(
-      this.pathService.getEncodedFilePath(autoTunerEncodeDto.adminId),
+      this.pathService.getFileServicePath(autoTunerEncodeDto.adminId, autoTunerEncodeDto.tempFileId),
       name + '.slave',
     );
 

@@ -13,6 +13,8 @@ import { Kess3Module } from '../kess3/kess3.module';
 import { AutoTunerModule } from '../auto-tuner/auto-tuner.module';
 import { AutoFlasherModule } from '../auto-flasher/auto-flasher.module';
 import { CustomerModule } from '../customer/customer.module';
+import { PricingModule } from '../pricing/pricing.module';
+import { StorageServiceModule } from '../storage-service/storage-service.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { CustomerModule } from '../customer/customer.module';
     Kess3Module,
     AutoTunerModule,
     AutoFlasherModule,
+    PricingModule,
+    StorageServiceModule,
   ],
   controllers: [FileServiceController],
   providers: [FileServiceService, PathService],

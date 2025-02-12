@@ -72,6 +72,7 @@ export class Kess3Service {
    */
   private async downloadDecodeFile(
     adminId: Types.ObjectId,
+    tempFileId: Types.ObjectId,
     fileSlotGUID: string,
     mode: string,
     bootBenchComponents: any[],
@@ -98,7 +99,7 @@ export class Kess3Service {
     });
 
     // Path where the file will be saved
-    const filePath = path.join(this.pathService.getDecodedFilePath(adminId), data.name);
+    const filePath = path.join(this.pathService.getFileServicePath(adminId, tempFileId), data.name);
 
     // Decode Base64 string to a buffer
     const fileBuffer = Buffer.from(data.data, 'base64');
@@ -119,7 +120,12 @@ export class Kess3Service {
    * @param fileGUID
    * @returns
    */
-  private async downloadEncodeFile(adminId: Types.ObjectId, fileSlotGUID: string, fileGUID: string) {
+  private async downloadEncodeFile(
+    adminId: Types.ObjectId,
+    tempFileId: Types.ObjectId,
+    fileSlotGUID: string,
+    fileGUID: string,
+  ) {
     const apiService = this.apiService(adminId);
     const { data } = await apiService({
       method: 'get',
@@ -127,7 +133,7 @@ export class Kess3Service {
     });
 
     // Path where the file will be saved
-    const filePath = path.join(this.pathService.getEncodedFilePath(adminId), data.name);
+    const filePath = path.join(this.pathService.getFileServicePath(adminId, tempFileId), data.name);
     // Decode Base64 string to a buffer
     const fileBuffer = Buffer.from(data.data, 'base64');
 
@@ -255,6 +261,7 @@ export class Kess3Service {
       //save the file
       const decodedFile = await this.downloadDecodeFile(
         decodeFileServiceDto.adminId,
+        decodeFileServiceDto.tempFileId,
         asyncInformation.slotGUID,
         asyncInformation.result.kess3Mode,
         asyncInformation.result.bootBenchComponents,
@@ -379,6 +386,7 @@ export class Kess3Service {
 
       const encodedData = await this.downloadEncodeFile(
         adminId,
+        encodePayload.tempFileId,
         asyncInformation.slotGUID,
         asyncInformation.result.kess3FileGUID,
       );

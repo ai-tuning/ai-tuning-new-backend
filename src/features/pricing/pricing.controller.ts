@@ -4,7 +4,7 @@ import { UpdatePricingDto } from './dto/update-pricing.dto';
 import { AuthUser } from '../common/decorator/get-auth-user.decorator';
 import { IAuthUser } from '../common';
 import { Types } from 'mongoose';
-import { CAR_TYPE_ENUM } from '../constant';
+import { MAKE_TYPE_ENUM } from '../constant';
 import { CreditPricingDto } from './dto/credit-pricing.dto';
 
 @Controller('pricing')
@@ -28,7 +28,7 @@ export class PricingController {
   async update(
     @Param('adminId') adminId: Types.ObjectId,
     @Body() updatePricingDto: UpdatePricingDto[],
-    @Query('makeType') makeType: CAR_TYPE_ENUM,
+    @Query('makeType') makeType: MAKE_TYPE_ENUM,
   ) {
     const pricing = await this.pricingService.updatePricing(adminId, updatePricingDto, makeType);
     return { data: pricing, message: 'Pricing updated successfully' };

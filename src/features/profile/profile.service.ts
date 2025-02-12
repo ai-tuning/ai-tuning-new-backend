@@ -7,7 +7,7 @@ import { AdminService } from '../admin/admin.service';
 import { UpdateCustomerDto } from '../customer/dto/update-customer.dto';
 import { UpdateAdminDto } from '../admin/dto/update-admin.dto';
 import { UpdateEmployeeDto } from '../employee/dto/update-employee.dto';
-import { StorageServiceService } from '../storage-service/storage-service.service';
+import { StorageService } from '../storage-service/storage-service.service';
 import { EmployeeService } from '../employee/employee.service';
 
 @Injectable()
@@ -16,7 +16,7 @@ export class ProfileService {
     private readonly customerService: CustomerService,
     private readonly adminService: AdminService,
     private readonly employeeService: EmployeeService,
-    private readonly storageService: StorageServiceService,
+    private readonly storageService: StorageService,
   ) {}
 
   async getProfile(authUser: IAuthUser) {
@@ -53,8 +53,7 @@ export class ProfileService {
         parent: DIRECTORY_NAMES.IMAGES,
         child: authUser._id.toString(),
       },
-      file.path,
-      { name: file.originalname, size: file.size },
+      { path: file.path, name: file.originalname, size: file.size },
     );
 
     //delete the file form local

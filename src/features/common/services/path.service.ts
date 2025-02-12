@@ -47,29 +47,12 @@ export class PathService {
   }
 
   /**
-   * get decoded file path for slave file
+   * get file service path
+   * @param adminId
    * @param uniqueName
    * @returns
    */
-  getDecodedFilePath(uniqueName: any) {
-    return join(process.cwd(), 'public', 'decoded', uniqueName.toString());
-  }
-
-  /**
-   * get encoded file path for slave file
-   * @param uniqueName
-   * @returns
-   */
-  getEncodedFilePath(uniqueName: any) {
-    return join(process.cwd(), 'public', 'encoded', uniqueName.toString());
-  }
-
-  /**
-   * get solution file path
-   * @param uniqueName
-   * @returns
-   */
-  getSolutionPath(uniqueName: any) {
-    return join(process.cwd(), 'public', 'solutions', uniqueName.toString());
+  getFileServicePath(adminId: Types.ObjectId | string, tempFileId: Types.ObjectId | string) {
+    return join(process.cwd(), 'public', 'file-services', adminId.toString(), tempFileId.toString());
   }
 }

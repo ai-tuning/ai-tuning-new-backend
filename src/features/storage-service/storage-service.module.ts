@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 
-import { StorageServiceService } from './storage-service.service';
+import { StorageService } from './storage-service.service';
 import { StorageServiceController } from './storage-service.controller';
 import { MulterModule } from '../common';
 
@@ -13,7 +13,7 @@ import { MulterModule } from '../common';
     }),
   ],
   controllers: [StorageServiceController],
-  providers: [StorageServiceService],
-  exports: [StorageServiceService],
+  providers: [StorageService],
+  exports: [StorageService],
 })
 export class StorageServiceModule {}

@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { CAR_TYPE_ENUM, SOLUTION_CATEGORY } from 'src/features/constant';
+import { MAKE_TYPE_ENUM, SOLUTION_CATEGORY } from 'src/features/constant';
 import { IsEnum, IsMongoId, IsNotEmpty, IsNumber } from 'class-validator';
 
 export class CreatePricingDto {
@@ -8,8 +8,8 @@ export class CreatePricingDto {
   price: number;
 
   @IsNotEmpty()
-  @IsEnum(CAR_TYPE_ENUM)
-  makeType: CAR_TYPE_ENUM;
+  @IsEnum(MAKE_TYPE_ENUM)
+  makeType: MAKE_TYPE_ENUM;
 
   @IsNotEmpty()
   @IsEnum(SOLUTION_CATEGORY)

@@ -1,13 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Types } from 'mongoose';
-import { CAR_TYPE_ENUM, collectionsName, SOLUTION_CATEGORY } from 'src/features/constant';
+import { MAKE_TYPE_ENUM, collectionsName, SOLUTION_CATEGORY } from 'src/features/constant';
 
 export class Item {
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, ref: collectionsName.customerType })
   customerType: Types.ObjectId;
 
-  @Prop({ type: String, required: true, enum: CAR_TYPE_ENUM })
-  makeType: CAR_TYPE_ENUM;
+  @Prop({ type: String, required: true, enum: MAKE_TYPE_ENUM })
+  makeType: MAKE_TYPE_ENUM;
 
   @Prop({ type: SOLUTION_CATEGORY, required: true })
   solutionCategory: SOLUTION_CATEGORY;

@@ -12,6 +12,7 @@ interface AutoFlasherDecodeDto {
   filePath: string;
   customerId: Types.ObjectId;
   adminId: Types.ObjectId;
+  tempFileId: Types.ObjectId;
 }
 
 interface AutoFlasherEncodeDto {
@@ -19,6 +20,7 @@ interface AutoFlasherEncodeDto {
   memory_type: string;
   filePath: string;
   adminId: Types.ObjectId;
+  tempFileId: Types.ObjectId;
 }
 
 @Injectable()
@@ -29,7 +31,7 @@ export class AutoFlasherService {
     private readonly pathService: PathService,
   ) {}
 
-  async getHexSn(sourceFilePath: string) {
+  private async getHexSn(sourceFilePath: string) {
     let chunkSize = 16;
     let visualSplit: number | boolean = 8;
     let innerIterator = 0;
@@ -97,7 +99,7 @@ export class AutoFlasherService {
     return sn.join('');
   }
 
-  async extractZip(filePath: string, outputDir: string) {
+  private async extractZip(filePath: string, outputDir: string) {
     await fs
       .createReadStream(filePath)
       .pipe(unzipper.Extract({ path: outputDir }))
@@ -108,12 +110,12 @@ export class AutoFlasherService {
   async decode(autoFlasherDecodeDto: AutoFlasherDecodeDto) {
     const filePath = autoFlasherDecodeDto.filePath;
     let unzippedFilePath = path.join(
-      this.pathService.getDecodedFilePath(autoFlasherDecodeDto.adminId),
+      this.pathService.getFileServicePath(autoFlasherDecodeDto.adminId, autoFlasherDecodeDto.tempFileId),
       'extracted_files' + autoFlasherDecodeDto.customerId,
     );
     const parsed = path.parse(filePath);
     const decodedFilePath = path.join(
-      this.pathService.getDecodedFilePath(autoFlasherDecodeDto.adminId),
+      this.pathService.getFileServicePath(autoFlasherDecodeDto.adminId, autoFlasherDecodeDto.tempFileId),
       parsed.name + '-decoded.zip',
     );
     try {
@@ -176,7 +178,7 @@ export class AutoFlasherService {
         }
         const newFileName = parsed.name + '-decoded-' + memory_type + '.bin';
         const newDecodedFilePath = path.join(
-          this.pathService.getDecodedFilePath(autoFlasherDecodeDto.adminId),
+          this.pathService.getFileServicePath(autoFlasherDecodeDto.adminId, autoFlasherDecodeDto.tempFileId),
           newFileName,
         );
         console.log('newDecodedFilePath', newDecodedFilePath);
@@ -214,7 +216,7 @@ export class AutoFlasherService {
     const parseFile = path.parse(autoFlasherEncodeDto.filePath);
     const name = parseFile.name.replace(/decoded/gi, 'modified');
     const encryptedFilePath = path.join(
-      this.pathService.getEncodedFilePath(autoFlasherEncodeDto.adminId),
+      this.pathService.getFileServicePath(autoFlasherEncodeDto.adminId, autoFlasherEncodeDto.tempFileId),
       name + '.atf',
     );
     const formData = new FormData();

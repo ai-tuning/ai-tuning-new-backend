@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
-import { CAR_TYPE_ENUM, collectionsName } from 'src/features/constant';
+import { MAKE_TYPE_ENUM, collectionsName } from 'src/features/constant';
 
 @Schema({ timestamps: true, versionKey: false })
 class Script extends Document {
@@ -10,9 +10,9 @@ class Script extends Document {
   @Prop({
     type: String,
     required: true,
-    enum: CAR_TYPE_ENUM,
+    enum: MAKE_TYPE_ENUM,
   })
-  makeType: CAR_TYPE_ENUM;
+  makeType: MAKE_TYPE_ENUM;
 
   @Prop({
     type: mongoose.Schema.Types.ObjectId,

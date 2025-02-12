@@ -8,8 +8,5 @@ export class FileSchema {
   uniqueName: string;
 
   @Prop({ type: String, required: true })
-  fileType: string;
-
-  @Prop({ type: String, required: true })
   url: string;
 }

@@ -1,14 +1,14 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { Types } from 'mongoose';
+import mongoose, { Document, Types } from 'mongoose';
 import { AutoFlasher, AutoTuner, Kess3 } from 'src/features/common';
-import { SLAVE_TYPE } from 'src/features/constant';
+import { MAKE_TYPE_ENUM, SLAVE_TYPE } from 'src/features/constant';
 
 /**
  * This is a temp record for tracking uploaded files for better file management
  * It can be used remove unnecessary files when a files is not used
  */
 @Schema({ versionKey: false, timestamps: true })
-export class TempFileService {
+export class TempFileService extends Document {
   @Prop({ type: mongoose.Schema.Types.ObjectId })
   admin: Types.ObjectId;
 
@@ -18,6 +18,9 @@ export class TempFileService {
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
   customer: Types.ObjectId;
 
+  @Prop({ type: String, required: true, enum: MAKE_TYPE_ENUM })
+  makeType: MAKE_TYPE_ENUM;
+
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
   car: Types.ObjectId;
 
@@ -26,6 +29,9 @@ export class TempFileService {
 
   @Prop({ type: String, required: true })
   originalFile: string;
+
+  @Prop({ type: String, required: true })
+  originalFileName: string;
 
   @Prop({ type: String })
   decodedFile: string;

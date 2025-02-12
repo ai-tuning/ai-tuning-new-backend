@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { UpdatePricingDto } from './dto/update-pricing.dto';
 import { InjectModel } from '@nestjs/mongoose';
-import { CAR_TYPE_ENUM, collectionsName, SOLUTION_CATEGORY } from '../constant';
+import { MAKE_TYPE_ENUM, collectionsName, SOLUTION_CATEGORY } from '../constant';
 import { Pricing } from './schema/pricing.schema';
 import { ClientSession, Model, Types } from 'mongoose';
 import { CreditPricing } from './schema/credit-pricing.schema';
@@ -38,55 +38,55 @@ export class PricingService {
           customerType: customerType,
           price: 0,
           solutionCategory: SOLUTION_CATEGORY.DEACTIVATION,
-          makeType: CAR_TYPE_ENUM.CAR,
+          makeType: MAKE_TYPE_ENUM.CAR,
         },
         {
           customerType: customerType,
           price: 0,
           solutionCategory: SOLUTION_CATEGORY.DEACTIVATION,
-          makeType: CAR_TYPE_ENUM.BIKE,
+          makeType: MAKE_TYPE_ENUM.BIKE,
         },
         {
           customerType: customerType,
           price: 0,
           solutionCategory: SOLUTION_CATEGORY.DEACTIVATION,
-          makeType: CAR_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
+          makeType: MAKE_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
         },
         {
           customerType: customerType,
           price: 0,
           solutionCategory: SOLUTION_CATEGORY.SPECIALS,
-          makeType: CAR_TYPE_ENUM.CAR,
+          makeType: MAKE_TYPE_ENUM.CAR,
         },
         {
           customerType: customerType,
           price: 0,
           solutionCategory: SOLUTION_CATEGORY.SPECIALS,
-          makeType: CAR_TYPE_ENUM.BIKE,
+          makeType: MAKE_TYPE_ENUM.BIKE,
         },
         {
           customerType: customerType,
           price: 0,
           solutionCategory: SOLUTION_CATEGORY.SPECIALS,
-          makeType: CAR_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
+          makeType: MAKE_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
         },
         {
           customerType: customerType,
           price: 0,
           solutionCategory: SOLUTION_CATEGORY.TUNING,
-          makeType: CAR_TYPE_ENUM.CAR,
+          makeType: MAKE_TYPE_ENUM.CAR,
         },
         {
           customerType: customerType,
           price: 0,
           solutionCategory: SOLUTION_CATEGORY.TUNING,
-          makeType: CAR_TYPE_ENUM.BIKE,
+          makeType: MAKE_TYPE_ENUM.BIKE,
         },
         {
           customerType: customerType,
           price: 0,
           solutionCategory: SOLUTION_CATEGORY.TUNING,
-          makeType: CAR_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
+          makeType: MAKE_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
         },
       ],
     });
@@ -123,55 +123,55 @@ export class PricingService {
                   customerType: customerType,
                   price: 0,
                   solutionCategory: SOLUTION_CATEGORY.DEACTIVATION,
-                  makeType: CAR_TYPE_ENUM.CAR,
+                  makeType: MAKE_TYPE_ENUM.CAR,
                 },
                 {
                   customerType: customerType,
                   price: 0,
                   solutionCategory: SOLUTION_CATEGORY.DEACTIVATION,
-                  makeType: CAR_TYPE_ENUM.BIKE,
+                  makeType: MAKE_TYPE_ENUM.BIKE,
                 },
                 {
                   customerType: customerType,
                   price: 0,
                   solutionCategory: SOLUTION_CATEGORY.DEACTIVATION,
-                  makeType: CAR_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
+                  makeType: MAKE_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
                 },
                 {
                   customerType: customerType,
                   price: 0,
                   solutionCategory: SOLUTION_CATEGORY.SPECIALS,
-                  makeType: CAR_TYPE_ENUM.CAR,
+                  makeType: MAKE_TYPE_ENUM.CAR,
                 },
                 {
                   customerType: customerType,
                   price: 0,
                   solutionCategory: SOLUTION_CATEGORY.SPECIALS,
-                  makeType: CAR_TYPE_ENUM.BIKE,
+                  makeType: MAKE_TYPE_ENUM.BIKE,
                 },
                 {
                   customerType: customerType,
                   price: 0,
                   solutionCategory: SOLUTION_CATEGORY.SPECIALS,
-                  makeType: CAR_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
+                  makeType: MAKE_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
                 },
                 {
                   customerType: customerType,
                   price: 0,
                   solutionCategory: SOLUTION_CATEGORY.TUNING,
-                  makeType: CAR_TYPE_ENUM.CAR,
+                  makeType: MAKE_TYPE_ENUM.CAR,
                 },
                 {
                   customerType: customerType,
                   price: 0,
                   solutionCategory: SOLUTION_CATEGORY.TUNING,
-                  makeType: CAR_TYPE_ENUM.BIKE,
+                  makeType: MAKE_TYPE_ENUM.BIKE,
                 },
                 {
                   customerType: customerType,
                   price: 0,
                   solutionCategory: SOLUTION_CATEGORY.TUNING,
-                  makeType: CAR_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
+                  makeType: MAKE_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
                 },
               ],
             },
@@ -191,7 +191,7 @@ export class PricingService {
     return await pricing.save({ session });
   }
 
-  async updatePricing(adminId: Types.ObjectId, updatePricingDto: UpdatePricingDto[], makeType: CAR_TYPE_ENUM) {
+  async updatePricing(adminId: Types.ObjectId, updatePricingDto: UpdatePricingDto[], makeType: MAKE_TYPE_ENUM) {
     const pricing = await this.pricingModel.findOne({ admin: adminId });
 
     if (!pricing) {

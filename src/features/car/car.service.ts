@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { CreateCarDto } from './dto/create-car.dto';
@@ -9,8 +9,6 @@ import { Connection, Model, Types } from 'mongoose';
 import { Car } from './schema/car.schema';
 import { CarController } from '../car-controller/schema/car-controller.schema';
 import { PathService } from '../common';
-const cars = require('../../../cars.json');
-const controllers = require('../../../controllers.json');
 
 @Injectable()
 export class CarService {

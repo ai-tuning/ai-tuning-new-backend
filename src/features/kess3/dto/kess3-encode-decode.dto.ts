@@ -1,4 +1,4 @@
-import { IsBoolean, IsNotEmpty, IsString } from 'class-validator';
+import { IsBoolean, IsMongoId, IsNotEmpty, IsString } from 'class-validator';
 import { Types } from 'mongoose';
 
 export class DecodeKess3FileDto {
@@ -9,6 +9,10 @@ export class DecodeKess3FileDto {
   @IsNotEmpty()
   @IsString()
   customerId: string;
+
+  @IsNotEmpty()
+  @IsString()
+  tempFileId: Types.ObjectId;
 
   @IsNotEmpty()
   @IsString()
@@ -30,6 +34,10 @@ export class EncodeKess3FileDto {
   @IsNotEmpty()
   @IsString()
   customerId: string;
+
+  @IsNotEmpty()
+  @IsMongoId()
+  tempFileId: Types.ObjectId;
 
   @IsNotEmpty()
   @IsString()

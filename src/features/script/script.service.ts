@@ -8,7 +8,7 @@ import { Script } from './schema/script.schema';
 import { Model, Types } from 'mongoose';
 import { FileServiceService } from '../file-service/file-service.service';
 import { FileSchema, PathService } from '../common';
-import { StorageServiceService } from '../storage-service/storage-service.service';
+import { StorageService } from '../storage-service/storage-service.service';
 import { CarControllerService } from '../car-controller/car-controller.service';
 import { CarService } from '../car/car.service';
 
@@ -17,7 +17,7 @@ export class ScriptService {
   constructor(
     @InjectModel(collectionsName.script) private readonly scriptModel: Model<Script>,
     private readonly fileServiceService: FileServiceService,
-    private readonly storageService: StorageServiceService,
+    private readonly storageService: StorageService,
     private readonly carService: CarService,
     private readonly controllerService: CarControllerService,
     private readonly pathService: PathService,

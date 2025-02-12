@@ -5,7 +5,7 @@ import { appConfig } from '../config';
 import { DIRECTORY_NAMES, DIRECTORY_NAMES_TYPE } from '../constant';
 
 @Injectable()
-export class StorageServiceService implements OnModuleInit {
+export class StorageService implements OnModuleInit {
   storage: Storage;
   constructor() {
     const config = appConfig();
@@ -69,15 +69,13 @@ export class StorageServiceService implements OnModuleInit {
   }
   /**
    * create and upload file on mega
-   * @param filePath
    * @param file
    * @param dir
    * @returns
    */
   async upload(
     dir: { parent: DIRECTORY_NAMES_TYPE; child: string },
-    filePath: string,
-    file: { name: string; size: number },
+    file: { name: string; size: number; path: string },
   ) {
     const parent = dir.parent;
     const childLowerCase = dir.child.toLowerCase();
@@ -91,7 +89,7 @@ export class StorageServiceService implements OnModuleInit {
 
     //upload to the root
     const uploadStream = this.storage.upload({ name: file.name, size: file.size });
-    const fileStream = fs.createReadStream(filePath);
+    const fileStream = fs.createReadStream(file.path);
     fileStream.pipe(uploadStream);
 
     const uploaded = await uploadStream.complete;

@@ -1,6 +1,6 @@
 import { IsEnum, IsMongoId, IsNotEmpty, IsString } from 'class-validator';
 import { Types } from 'mongoose';
-import { CAR_TYPE_ENUM } from 'src/features/constant';
+import { MAKE_TYPE_ENUM } from 'src/features/constant';
 
 export class CreateCarDto {
   @IsNotEmpty()
@@ -14,7 +14,7 @@ export class CreateCarDto {
 
   @IsNotEmpty()
   @IsString()
-  @IsEnum(CAR_TYPE_ENUM)
+  @IsEnum(MAKE_TYPE_ENUM)
   makeType: string;
 
   logo: string;

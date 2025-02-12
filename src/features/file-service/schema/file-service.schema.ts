@@ -5,11 +5,11 @@ import { collectionsName, FILE_SERVICE_STATUS, PAYMENT_STATUS, SLAVE_TYPE, WinOL
 
 //solution which are requested by the customer
 export class Solutions {
-  @Prop({ type: [String] })
-  requested: string[];
+  @Prop({ type: [mongoose.Schema.Types.ObjectId] })
+  requested: Types.ObjectId[];
 
-  @Prop({ type: [String] })
-  automatic: string[];
+  @Prop({ type: [mongoose.Schema.Types.ObjectId] })
+  automatic: Types.ObjectId[];
 }
 
 export class ModUpload {
@@ -52,7 +52,6 @@ export class FileService {
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: collectionsName.user,
-    required: true,
   })
   operator: Types.ObjectId;
 
@@ -63,30 +62,30 @@ export class FileService {
   originalFile: FileSchema;
 
   @Prop({
-    type: String,
+    type: FileSchema,
   })
-  decodedFile: string;
+  decodedFile: FileSchema;
 
   @Prop({
-    type: String,
+    type: FileSchema,
     required: true,
   })
-  iniFiles: string;
+  iniFiles: FileSchema;
+
+  @Prop({
+    type: FileSchema,
+  })
+  modWithoutEncoded: FileSchema;
+
+  @Prop({
+    type: FileSchema,
+  })
+  modFile: FileSchema;
 
   @Prop({
     type: String,
   })
-  modWithoutEncoded: string;
-
-  @Prop({
-    type: String,
-  })
-  modFile: string;
-
-  @Prop({
-    type: String,
-  })
-  description: string;
+  comment: string;
 
   @Prop({
     type: String,
@@ -98,7 +97,6 @@ export class FileService {
   @Prop({
     type: String,
     enum: WinOLS_STATUS,
-    required: true,
   })
   winolsStatus: WinOLS_STATUS;
 
