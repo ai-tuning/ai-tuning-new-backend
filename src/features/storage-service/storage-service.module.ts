@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 
 import { StorageService } from './storage-service.service';
-import { StorageServiceController } from './storage-service.controller';
 import { MulterModule } from '../common';
 
 @Module({
@@ -12,7 +11,6 @@ import { MulterModule } from '../common';
       errorMessages: 'Only image file are allowed.',
     }),
   ],
-  controllers: [StorageServiceController],
   providers: [StorageService],
   exports: [StorageService],
 })

@@ -36,6 +36,15 @@ export class TempFileService extends Document {
   @Prop({ type: String })
   decodedFile: string;
 
+  @Prop({ type: String })
+  iniFile: string;
+
+  @Prop({ type: String })
+  modWithoutEncoded: string;
+
+  @Prop({ type: String })
+  modFile: string;
+
   @Prop({ type: Kess3 })
   kess3: Kess3;
 

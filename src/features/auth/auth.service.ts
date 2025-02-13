@@ -2,7 +2,7 @@ import { ForbiddenException, Injectable, NotAcceptableException, UnauthorizedExc
 import { compare } from 'bcrypt';
 import { UserService } from '../user/user.service';
 import { LoginDto } from './dto/login.dto';
-import { collectionsName, RolesEnum, UserStatusEnum } from '../constant';
+import { collectionsName, EMAIL_TYPE, RolesEnum, UserStatusEnum } from '../constant';
 import { appConfig } from '../config';
 import { JwtService } from '@nestjs/jwt';
 import { RegistrationDto } from './dto/registration.dto';
@@ -68,7 +68,7 @@ export class AuthService {
       this.emailQueueProducers.sendMail({
         receiver: loginDto.email,
         name: name,
-        emailType: 'verify-email',
+        emailType: EMAIL_TYPE.verifyEmail,
         code: generateVerificationCode.code,
       });
       return { generateVerificationCode, isVerified: false };
@@ -115,7 +115,7 @@ export class AuthService {
     this.emailQueueProducers.sendMail({
       receiver: registrationDto.email,
       name: data.firstName + ' ' + data.lastName,
-      emailType: 'verify-email',
+      emailType: EMAIL_TYPE.verifyEmail,
       code: generateVerificationCode.code,
     });
     return registrationDto;
@@ -177,8 +177,9 @@ export class AuthService {
     const generateVerificationCode = await this.verificationMailService.createVerificationEmail(email);
     this.emailQueueProducers.sendMail({
       receiver: email,
-      emailType: 'verify-email',
+      emailType: EMAIL_TYPE.verifyEmail,
       code: generateVerificationCode.code,
+      name: '',
     });
     return { generateVerificationCode };
   }

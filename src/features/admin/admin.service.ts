@@ -12,6 +12,7 @@ import { CustomValidationPipe } from '../common/validation-helper/custom-validat
 import { FileDto } from '../common';
 import { CustomerType } from '../customer/schema/customer-type.schema';
 import { PricingService } from '../pricing/pricing.service';
+import { AvatarDto } from '../customer/dto/avatar.dto';
 
 @Injectable()
 export class AdminService {
@@ -114,8 +115,8 @@ export class AdminService {
     }
   }
 
-  async changeAvatar(adminId: Types.ObjectId, avatar: FileDto) {
-    await CustomValidationPipe([avatar], FileDto);
+  async changeAvatar(adminId: Types.ObjectId, avatar: AvatarDto) {
+    await CustomValidationPipe([avatar], AvatarDto);
     //don't return the new document
     return this.adminModel.findOneAndUpdate({ _id: adminId }, { $set: { avatar } }).lean<AdminDocument>();
   }

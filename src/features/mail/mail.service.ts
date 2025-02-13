@@ -184,21 +184,21 @@ export class MailService {
 `;
   }
 
-  async sendLoginCode(to: string, code: string) {
+  async sendLoginCode(data: { receiver: string; code: string; name: string }) {
     const mailOptions = {
       from: `AI Tuning Files <${this.config.smtp_auth_email}>`,
-      to,
+      to: data.receiver,
       subject: 'Verify your email address',
       html: this.emailTemplate(
         'Verify your email address',
         'support@ai-tuningfiles.com',
         `<td class="email-content">
-                <h2>Hello, Nahid!</h2>
+                <h2>Hello, ${data.name}!</h2>
                 <p>Thank you for signing up with AI Tuning Files. To ensure the security of your account, we require you to verify your email address.</p>
                 <div class="highlight">
                     <strong>Details:</strong>
                     <p>Please use the code provided in below to verify your email address and activate your account.</p>
-                   <h3>  Your code is ${code}</h3>
+                   <h3>  Your code is ${data.code}</h3>
                 </div>
                 <p>If you didn’t sign up for this account, please ignore this email or contact our support team.</p>
             </td>`,
@@ -218,6 +218,25 @@ export class MailService {
         `<td class="email-content">
                   <h2>Hello,${data.name}!</h2>
                   <p>Thank you for signing up with AI Tuning Files. </p>
+                  <div class="highlight">
+                    <p>Enjoy the best service from AI Tuning Files</p>
+                </div>
+              </td>`,
+      ),
+    };
+    await this.authTransporter().sendMail(mailOptions);
+  }
+  async fileReady(data: { receiver: string; name: string; uniqueId: string }) {
+    const mailOptions = {
+      from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+      to: data.receiver,
+      subject: 'Your file is ready',
+      html: this.emailTemplate(
+        'Your file is ready',
+        'support@ai-tuningfiles.com',
+        `<td class="email-content">
+                  <h2>Hello,${data.name}!</h2>
+                  <p>Thank you for your uploaded file ID: ${data.uniqueId}. Your file is ready to download.</p>
                   <div class="highlight">
                     <p>Enjoy the best service from AI Tuning Files</p>
                 </div>

@@ -1,53 +1,30 @@
 import * as fs from 'fs';
 import { Storage, File } from 'megajs';
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { appConfig } from '../config';
-import { DIRECTORY_NAMES, DIRECTORY_NAMES_TYPE } from '../constant';
 
 @Injectable()
-export class StorageService implements OnModuleInit {
+export class StorageService {
   storage: Storage;
   constructor() {
     const config = appConfig();
-    // this.storage = new Storage({
-    //   email: config.mega_email,
-    //   password: config.mega_password,
-    //   userAgent:
-    //     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    // });
-  }
-
-  private async createGeneralDir() {
-    await this.storage.ready;
-    const imagesDir = this.storage.find((folder) => folder.name === DIRECTORY_NAMES.IMAGES);
-    const filesDir = this.storage.find((folder) => folder.name === DIRECTORY_NAMES.FILES);
-    if (!imagesDir) {
-      await this.storage.root.mkdir(DIRECTORY_NAMES.IMAGES);
-    }
-    if (!filesDir) {
-      await this.storage.root.mkdir(DIRECTORY_NAMES.FILES);
-    }
+    this.storage = new Storage({
+      email: config.mega_email,
+      password: config.mega_password,
+      userAgent:
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    });
   }
 
   /**
-   * It will create base folder if not exist
-   */
-  onModuleInit() {
-    // this.createGeneralDir();
-  }
-
-  /**
-   * This function will check 2 level folder some folder we create manually in mega
-   * @param parent
-   * @param child
+   * This function will check folder we create manually in mega
+   * @param name
    * @returns
    */
-  hasDir(parent: DIRECTORY_NAMES_TYPE, child: string) {
-    const parentLowerCase = parent.toLowerCase();
-    const childLowerCase = child.toLowerCase();
-    const parentDir = this.storage.root.children.find((folder) => folder.name === parentLowerCase);
-    const hasChild = parentDir.children.find((folder) => folder.name === childLowerCase);
-    return hasChild;
+  hasDir(name: string, storage: Storage) {
+    const lowerCaseName = name.toLowerCase();
+    const hasDir = storage.root.children.find((file) => file.name === lowerCaseName);
+    return hasDir;
   }
 
   /**
@@ -56,15 +33,11 @@ export class StorageService implements OnModuleInit {
    * @param child
    * @returns
    */
-  async createDir(parent: DIRECTORY_NAMES_TYPE, child: string) {
-    await this.storage.ready;
-
-    const childLowerCase = child.toLowerCase();
-    const hasFolder = this.hasDir(parent, childLowerCase);
+  async createDir(name: string, storage: Storage) {
+    const lowerCaseName = name.toLowerCase();
+    const hasFolder = this.hasDir(lowerCaseName, storage);
     if (!hasFolder) {
-      const folder = this.storage.root.children.find((folder) => folder.name === parent);
-      await folder.mkdir(childLowerCase);
-      return folder.link({});
+      await storage.mkdir(lowerCaseName);
     }
   }
   /**
@@ -73,31 +46,28 @@ export class StorageService implements OnModuleInit {
    * @param dir
    * @returns
    */
-  async upload(
-    dir: { parent: DIRECTORY_NAMES_TYPE; child: string },
-    file: { name: string; size: number; path: string },
-  ) {
-    const parent = dir.parent;
-    const childLowerCase = dir.child.toLowerCase();
-    await this.storage.ready;
+  async upload(dirName: string, file: { name: string; size: number; path: string }) {
+    const storage = this.storage;
 
-    await this.createDir(parent, childLowerCase);
+    const lowerCaseName = dirName.toLowerCase();
+
+    await this.createDir(lowerCaseName, storage);
     //find the parent
-    const parentDir = this.storage.find(parent);
-    //find the child
-    const childDir = parentDir.children.find((folder) => folder.name === childLowerCase);
 
+    const createdDir = storage.find((file) => file.name === lowerCaseName);
     //upload to the root
-    const uploadStream = this.storage.upload({ name: file.name, size: file.size });
+    const uploadStream = storage.upload({ name: file.name, size: file.size });
+
     const fileStream = fs.createReadStream(file.path);
     fileStream.pipe(uploadStream);
 
     const uploaded = await uploadStream.complete;
 
     //move to the child dir
-    await uploaded.moveTo(childDir);
+    await uploaded.moveTo(createdDir);
     // return the link
-    return uploaded.link({});
+    const link = await uploaded.link({});
+    return link;
   }
 
   /**
@@ -105,30 +75,21 @@ export class StorageService implements OnModuleInit {
    * @param dir
    * @param link
    */
-  async delete(dir: { parent: DIRECTORY_NAMES_TYPE; child: string }, link: string) {
-    const parentLowerCase = dir.parent.toLowerCase();
-    const childLowerCase = dir.child.toLowerCase();
-    await this.storage.ready;
-
-    const parentDir = this.storage.find(parentLowerCase);
-    const childDir = parentDir.children.find((folder) => folder.name === childLowerCase);
-    const file = childDir.children.find(async (file) => (await file.link({})) === link);
-
+  async delete(dirName: string, link: string) {
+    const lowerCaseName = dirName.toLowerCase();
+    const dir = this.storage.find((file) => file.name === lowerCaseName);
+    const file = dir.children.find(async (file) => (await file.link({})) === link);
     await file.delete();
   }
 
   /**
    * Delete the entire folder
-   * @param dir
+   * @param dirName
    */
-  async deleteFolder(dir: { parent: DIRECTORY_NAMES_TYPE; child: string }) {
-    const parentLowerCase = dir.parent.toLowerCase();
-    const childLowerCase = dir.child.toLowerCase();
-
-    const parentDir = this.storage.find(parentLowerCase);
-    const childDir = parentDir.children.find((folder) => folder.name === childLowerCase);
-
-    await childDir.delete();
+  async deleteFolder(dirName: string) {
+    const lowerCaseName = dirName.toLowerCase();
+    const dir = this.storage.find((file) => file.name === lowerCaseName);
+    await dir.delete();
   }
 
   async download(link: string) {

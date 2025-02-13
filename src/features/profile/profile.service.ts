@@ -2,12 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { IAuthUser } from '../common';
 import { CustomerService } from '../customer/customer.service';
 import * as fs from 'fs';
-import { DIRECTORY_NAMES, RolesEnum } from '../constant';
+import * as path from 'path';
+import { RolesEnum } from '../constant';
 import { AdminService } from '../admin/admin.service';
 import { UpdateCustomerDto } from '../customer/dto/update-customer.dto';
 import { UpdateAdminDto } from '../admin/dto/update-admin.dto';
 import { UpdateEmployeeDto } from '../employee/dto/update-employee.dto';
-import { StorageService } from '../storage-service/storage-service.service';
 import { EmployeeService } from '../employee/employee.service';
 
 @Injectable()
@@ -16,7 +16,6 @@ export class ProfileService {
     private readonly customerService: CustomerService,
     private readonly adminService: AdminService,
     private readonly employeeService: EmployeeService,
-    private readonly storageService: StorageService,
   ) {}
 
   async getProfile(authUser: IAuthUser) {
@@ -47,23 +46,11 @@ export class ProfileService {
   async changeAvatar(authUser: IAuthUser, file: Express.Multer.File) {
     let profile: any;
 
-    //upload the new avatar
-    const uploadedAvatar = await this.storageService.upload(
-      {
-        parent: DIRECTORY_NAMES.IMAGES,
-        child: authUser._id.toString(),
-      },
-      { path: file.path, name: file.originalname, size: file.size },
-    );
-
-    //delete the file form local
-    fs.rmSync(file.path);
-
     //get the new avatar data
     const newAvatar = {
-      url: uploadedAvatar,
       fileType: file.mimetype,
       originalname: file.originalname,
+      filename: file.filename,
     };
 
     //update the profile based on role
@@ -79,13 +66,9 @@ export class ProfileService {
 
     const oldAvatar = profile.avatar;
     if (oldAvatar) {
-      await this.storageService.delete(
-        {
-          parent: DIRECTORY_NAMES.IMAGES,
-          child: authUser._id.toString(),
-        },
-        oldAvatar.url,
-      );
+      //delete the old avatar
+      const imagePath = path.join(process.cwd(), 'public', 'uploads', 'images', oldAvatar.filename);
+      if (fs.existsSync(imagePath)) fs.rmSync(imagePath);
     }
 
     profile.avatar = newAvatar;

@@ -7,6 +7,7 @@ import { FileDto } from '../common';
 import { InjectModel } from '@nestjs/mongoose';
 import { collectionsName } from '../constant';
 import { Employee, EmployeeDocument } from './entities/employee.entity';
+import { AvatarDto } from '../customer/dto/avatar.dto';
 
 @Injectable()
 export class EmployeeService {
@@ -28,8 +29,8 @@ export class EmployeeService {
     return `This action updates a #${id} employee`;
   }
 
-  async changeAvatar(employeeId: Types.ObjectId, avatar: FileDto) {
-    await CustomValidationPipe([avatar], FileDto);
+  async changeAvatar(employeeId: Types.ObjectId, avatar: AvatarDto) {
+    await CustomValidationPipe([avatar], AvatarDto);
 
     //don't return the new document
     return this.employeeModel.findOneAndUpdate({ _id: employeeId }, { $set: { avatar } }).lean<EmployeeDocument>();

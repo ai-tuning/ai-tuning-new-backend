@@ -15,6 +15,7 @@ import { AutoFlasherModule } from '../auto-flasher/auto-flasher.module';
 import { CustomerModule } from '../customer/customer.module';
 import { PricingModule } from '../pricing/pricing.module';
 import { StorageServiceModule } from '../storage-service/storage-service.module';
+import { QueueManagerModule } from '../queue-manager/queue-manager.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { StorageServiceModule } from '../storage-service/storage-service.module'
     AutoFlasherModule,
     PricingModule,
     StorageServiceModule,
+    QueueManagerModule,
   ],
   controllers: [FileServiceController],
   providers: [FileServiceService, PathService],

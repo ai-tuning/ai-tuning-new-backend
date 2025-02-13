@@ -9,7 +9,7 @@ import {
   SOLUTION_CATEGORY,
   FILE_SERVICE_STATUS,
   PAYMENT_STATUS,
-  DIRECTORY_NAMES,
+  EMAIL_TYPE,
 } from '../constant';
 import { FileService } from './schema/file-service.schema';
 import { Connection, Model, Types } from 'mongoose';
@@ -29,6 +29,7 @@ import { PrepareSolutionDto } from './dto/prepare-solution.dto';
 import { Pricing } from '../pricing/schema/pricing.schema';
 import { PricingService } from '../pricing/pricing.service';
 import { StorageService } from '../storage-service/storage-service.service';
+import { EmailQueueProducers } from '../queue-manager/producers/email-queue.producers';
 
 @Injectable()
 export class FileServiceService {
@@ -46,10 +47,15 @@ export class FileServiceService {
     private readonly kess3Service: Kess3Service,
     private readonly pricingService: PricingService,
     private readonly storageService: StorageService,
+    private readonly emailQueueProducers: EmailQueueProducers,
   ) {}
 
   async findById(id: Types.ObjectId): Promise<FileService> {
     return this.fileServiceModel.findById(id).lean<FileService>();
+  }
+
+  async findByCustomerId(customerId: Types.ObjectId): Promise<FileService[]> {
+    return this.fileServiceModel.find({ customer: customerId }).lean<FileService[]>();
   }
 
   async automatisation(automatisationDto: AutomatisationDto, file: Express.Multer.File) {
@@ -73,10 +79,15 @@ export class FileServiceService {
 
     const tempFileData = new this.tempFileServiceModel(automatisationDto);
 
-    const newFilePath = path.join(
+    const fileServicePath = path.join(
       this.pathService.getFileServicePath(automatisationDto.admin, tempFileData._id as Types.ObjectId),
-      file.filename,
     );
+
+    if (!fs.existsSync(fileServicePath)) {
+      fs.mkdirSync(fileServicePath, { recursive: true });
+    }
+
+    const newFilePath = path.join(fileServicePath, file.filename);
 
     // move the file to file service path
     await fs.promises.rename(filePath, newFilePath);
@@ -135,7 +146,6 @@ export class FileServiceService {
     const fileBufferContent = await fs.promises.readFile(filePath);
 
     const scriptFiles = await fs.promises.readdir(scriptPath);
-    console.log('scriptFiles', scriptFiles);
 
     const limit = pLimit(10);
     //get the match script files
@@ -179,6 +189,7 @@ export class FileServiceService {
 
   async prepareSolution(prepareSolutionDto: PrepareSolutionDto) {
     const session = await this.connection.startSession();
+    let fileServicePath: string;
     try {
       session.startTransaction();
       //destructuring the body
@@ -193,7 +204,7 @@ export class FileServiceService {
       } = prepareSolutionDto;
 
       //get the temp file service
-      const tempFileService = await this.tempFileServiceModel.findById(tempFileServiceId).lean<TempFileService>();
+      const tempFileService = await this.tempFileServiceModel.findById(tempFileServiceId);
 
       if (!tempFileService) {
         throw new BadRequestException('Something went wrong');
@@ -229,7 +240,7 @@ export class FileServiceService {
 
       const newFileService = new this.fileServiceModel(rest);
       newFileService.customer = customer._id as Types.ObjectId;
-      newFileService.admin = admin._id as Types.ObjectId;
+      newFileService.admin = admin as Types.ObjectId;
       newFileService.car = car._id as Types.ObjectId;
       newFileService.controller = controller._id as Types.ObjectId;
       newFileService.status = FILE_SERVICE_STATUS.NEW;
@@ -239,9 +250,11 @@ export class FileServiceService {
         automatic: selectedSolutions,
         requested: requestedSolutions,
       };
+      newFileService.uniqueId = Date.now().toString();
 
-      const fileServicePath = this.pathService.getFileServicePath(admin, tempFileService._id as Types.ObjectId);
+      fileServicePath = this.pathService.getFileServicePath(admin, tempFileService._id as Types.ObjectId);
 
+      //read the bin file
       let binFileBuffer: Buffer;
       if (!tempFileService.slaveType) {
         binFileBuffer = await fs.promises.readFile(path.join(fileServicePath, tempFileService.originalFile));
@@ -271,10 +284,11 @@ export class FileServiceService {
         }
       }
 
+      //handle ini files for WINOLS
       const iniData = `[WinOLS]
 VehicleType=${tempFileService.makeType}
 VehicleProducer=${car.name}
-VehicleSeries=${rest.model}
+VehicleSeries=${rest.carModel}
 VehicleModel=${rest.engine}
 EcuProducer=${controller.name}
 EcuBuild=${rest.exactEcu}
@@ -289,6 +303,9 @@ ResellerCredits= 10
 
       const iniFileName = `${tempFileService.originalFileName}.ini`;
 
+      //save the ini file to tempDB
+      tempFileService.iniFile = iniFileName;
+
       await fs.promises.writeFile(path.join(fileServicePath, iniFileName), iniData);
 
       let encodedPath: string;
@@ -298,9 +315,10 @@ ResellerCredits= 10
 
         modifiedPath = path.join(fileServicePath, modifiedFileName);
 
+        tempFileService.modWithoutEncoded = modifiedFileName;
+
         await fs.promises.writeFile(modifiedPath, binFileBuffer);
 
-        //Send email for file confirmation
         //handle encode if file is slave
         if (tempFileService.slaveType) {
           newFileService.slaveType = tempFileService.slaveType;
@@ -312,39 +330,62 @@ ResellerCredits= 10
             newFileService.kess3 = tempFileService.kess3;
           }
           encodedPath = await this.encodeModifiedFile(modifiedPath, tempFileService);
+          tempFileService.modFile = path.basename(encodedPath);
         }
+        await this.customerService.updateCredit(customer._id as Types.ObjectId, -requiredCredits, session);
+        newFileService.paymentStatus = PAYMENT_STATUS.PAID;
+        newFileService.status = FILE_SERVICE_STATUS.COMPLETED;
       } else {
         //mail to both admin and the customer
         //send the request to the queue for winols
       }
 
-      //upload to the cloud
+      //==========upload to the cloud===================
+      await tempFileService.save();
 
       //original file
       const originalFilePath = path.join(fileServicePath, tempFileService.originalFile);
       const originalFileSize = fs.statSync(originalFilePath).size;
-
-      const originalUpload = await this.storageService.upload(
-        { parent: DIRECTORY_NAMES.FILES, child: newFileService._id.toString() },
-        { name: tempFileService.originalFileName, path: originalFilePath, size: originalFileSize },
-      );
-
+      console.log(originalFilePath);
+      const originalUpload = await this.storageService.upload(newFileService._id.toString(), {
+        name: tempFileService.originalFileName,
+        path: originalFilePath,
+        size: originalFileSize,
+      });
+      console.log(originalUpload);
       newFileService.originalFile = {
         url: originalUpload,
         originalname: tempFileService.originalFileName,
         uniqueName: tempFileService.originalFile,
       };
 
+      //upload ini file
+      const iniFilePath = path.join(fileServicePath, tempFileService.iniFile);
+      const iniFileSize = fs.statSync(iniFilePath).size;
+      console.log(iniFilePath);
+      const iniUpload = await this.storageService.upload(newFileService._id.toString(), {
+        name: tempFileService.iniFile,
+        path: iniFilePath,
+        size: iniFileSize,
+      });
+      console.log(iniUpload);
+      newFileService.iniFile = {
+        url: iniUpload,
+        originalname: tempFileService.iniFile,
+        uniqueName: tempFileService.iniFile,
+      };
+
       if (tempFileService.decodedFile) {
         //decoded file
         const decodedFilePath = path.join(fileServicePath, tempFileService.decodedFile);
         const decodedFileSize = fs.statSync(decodedFilePath).size;
-
-        const decodedUpload = await this.storageService.upload(
-          { parent: DIRECTORY_NAMES.FILES, child: newFileService._id.toString() },
-          { name: tempFileService.decodedFile, path: decodedFilePath, size: decodedFileSize },
-        );
-
+        console.log(decodedFilePath);
+        const decodedUpload = await this.storageService.upload(newFileService._id.toString(), {
+          name: tempFileService.decodedFile,
+          path: decodedFilePath,
+          size: decodedFileSize,
+        });
+        console.log(decodedUpload);
         newFileService.decodedFile = {
           url: decodedUpload,
           originalname: tempFileService.decodedFile,
@@ -352,13 +393,37 @@ ResellerCredits= 10
         };
       }
 
+      if (modifiedPath) {
+        const modWithoutEncodedFileSize = fs.statSync(modifiedPath).size;
+        const modifiedUpload = await this.storageService.upload(newFileService._id.toString(), {
+          name: path.basename(modifiedPath),
+          path: modifiedPath,
+          size: modWithoutEncodedFileSize,
+        });
+
+        if (encodedPath) {
+          newFileService.modWithoutEncoded = {
+            url: modifiedUpload,
+            originalname: path.basename(modifiedPath),
+            uniqueName: path.basename(modifiedPath),
+          };
+        } else {
+          newFileService.modFile = {
+            url: modifiedUpload,
+            originalname: path.basename(modifiedPath),
+            uniqueName: path.basename(modifiedPath),
+          };
+        }
+      }
+
       //encoded file
       if (encodedPath) {
         const encodedFileSize = fs.statSync(encodedPath).size;
-        const encodedUpload = await this.storageService.upload(
-          { parent: DIRECTORY_NAMES.FILES, child: newFileService._id.toString() },
-          { name: path.basename(encodedPath), path: encodedPath, size: encodedFileSize },
-        );
+        const encodedUpload = await this.storageService.upload(newFileService._id.toString(), {
+          name: path.basename(encodedPath),
+          path: encodedPath,
+          size: encodedFileSize,
+        });
         newFileService.modFile = {
           url: encodedUpload,
           originalname: path.basename(encodedPath),
@@ -366,24 +431,14 @@ ResellerCredits= 10
         };
       }
 
-      const modWithoutEncodedFileSize = fs.statSync(modifiedPath).size;
-      const modifiedUpload = await this.storageService.upload(
-        { parent: DIRECTORY_NAMES.FILES, child: newFileService._id.toString() },
-        { name: path.basename(modifiedPath), path: modifiedPath, size: modWithoutEncodedFileSize },
-      );
-
-      if (encodedPath) {
-        newFileService.modWithoutEncoded = {
-          url: modifiedUpload,
-          originalname: path.basename(modifiedPath),
-          uniqueName: path.basename(modifiedPath),
-        };
-      } else {
-        newFileService.modFile = {
-          url: modifiedUpload,
-          originalname: path.basename(modifiedPath),
-          uniqueName: path.basename(modifiedPath),
-        };
+      if (!requestedSolutions.length) {
+        //Send email for file confirmation
+        this.emailQueueProducers.sendMail({
+          receiver: customer.email,
+          name: customer.firstName + ' ' + customer.lastName,
+          emailType: EMAIL_TYPE.fileReady,
+          code: newFileService.uniqueId,
+        });
       }
 
       const result = await newFileService.save({ session });

@@ -5,25 +5,20 @@ import { EMAIL_TYPE, queueNames } from '../../constant';
 import { Injectable } from '@nestjs/common';
 import { MailService } from 'src/features/mail/mail.service';
 
-interface EmailData {
-  receiver: string;
-  code: string;
-  name: string;
-  emailType: (typeof EMAIL_TYPE)[keyof typeof EMAIL_TYPE];
-}
-
 @Injectable()
 @Processor(queueNames.emailQueue)
 export class EmailQueueConsumer {
   constructor(private readonly mailService: MailService) {}
   @Process({ concurrency: 10, name: queueNames.emailQueue })
   async process(job: Job<unknown>): Promise<any> {
-    const data = job.data as EmailData;
+    const data = job.data as any;
 
     if (data.emailType === EMAIL_TYPE.verifyEmail) {
-      await this.mailService.sendLoginCode(data.receiver, data.code);
+      await this.mailService.sendLoginCode({ receiver: data.receiver, code: data.code, name: data.name });
     } else if (data.emailType === EMAIL_TYPE.welcomeEmail) {
-      await this.mailService.sendWelcomeMail(data);
+      await this.mailService.sendWelcomeMail({ receiver: data.receiver, name: data.name });
+    } else if (data.emailType === EMAIL_TYPE.fileReady) {
+      await this.mailService.fileReady({ receiver: data.receiver, name: data.name, uniqueId: data.uniqueId });
     }
   }
 

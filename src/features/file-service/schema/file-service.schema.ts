@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { Types } from 'mongoose';
+import mongoose, { Document, Types } from 'mongoose';
 import { AutoFlasher, AutoTuner, FileSchema, Kess3 } from 'src/features/common';
 import { collectionsName, FILE_SERVICE_STATUS, PAYMENT_STATUS, SLAVE_TYPE, WinOLS_STATUS } from 'src/features/constant';
 
@@ -21,7 +21,7 @@ export class ModUpload {
 }
 
 @Schema({ timestamps: true, versionKey: false })
-export class FileService {
+export class FileService extends Document {
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
   admin: Types.ObjectId;
 
@@ -45,6 +45,12 @@ export class FileService {
     required: true,
   })
   controller: Types.ObjectId;
+
+  @Prop({
+    type: String,
+    required: true,
+  })
+  uniqueId: String;
 
   /**
    * who operate or handle the service
@@ -70,7 +76,7 @@ export class FileService {
     type: FileSchema,
     required: true,
   })
-  iniFiles: FileSchema;
+  iniFile: FileSchema;
 
   @Prop({
     type: FileSchema,
@@ -122,7 +128,7 @@ export class FileService {
   solutions: Solutions;
 
   @Prop({ type: String, required: true })
-  model: string;
+  modelName: string;
 
   @Prop({ type: String, required: true })
   engine: string;
@@ -146,7 +152,7 @@ export class FileService {
   vin: string;
 
   @Prop({ type: String, required: true })
-  exactECU: string;
+  exactEcu: string;
 
   @Prop({ type: ModUpload })
   modUpload: ModUpload;

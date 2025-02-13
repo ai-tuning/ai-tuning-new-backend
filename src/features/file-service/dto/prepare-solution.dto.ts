@@ -14,8 +14,7 @@ export class PrepareSolutionDto {
   tempFileService: Types.ObjectId;
 
   @IsNotEmpty()
-  @IsString()
-  @IsMongoId()
+  @IsArray()
   selectedSolutions: Types.ObjectId[];
 
   @IsNotEmpty()
@@ -28,7 +27,6 @@ export class PrepareSolutionDto {
 
   @IsNotEmpty()
   @IsArray()
-  @IsMongoId()
   requestedSolutions: Types.ObjectId[];
 
   @IsNotEmpty()
@@ -41,7 +39,7 @@ export class PrepareSolutionDto {
 
   @IsNotEmpty()
   @IsString()
-  model: string;
+  carModel: string;
 
   @IsNotEmpty()
   @IsString()

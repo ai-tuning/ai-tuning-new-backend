@@ -13,6 +13,7 @@ import { CustomerType } from './schema/customer-type.schema';
 import { FileDto } from '../common';
 import { CustomValidationPipe } from '../common/validation-helper/custom-validation-pipe';
 import { PricingService } from '../pricing/pricing.service';
+import { AvatarDto } from './dto/avatar.dto';
 
 @Injectable()
 export class CustomerService {
@@ -140,8 +141,8 @@ export class CustomerService {
     }
   }
 
-  async changeAvatar(customerId: Types.ObjectId, avatar: FileDto) {
-    await CustomValidationPipe([avatar], FileDto);
+  async changeAvatar(customerId: Types.ObjectId, avatar: AvatarDto) {
+    await CustomValidationPipe([avatar], AvatarDto);
     //don't return the new document
     return this.customerModel.findOneAndUpdate({ _id: customerId }, { $set: { avatar } }).lean<CustomerDocument>();
   }
