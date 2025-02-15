@@ -160,7 +160,7 @@ export class FileServiceService {
     }
 
     const scriptPath = this.pathService.getCompleteScriptPath(car.admin, car.makeType, car.name, controller.name);
-    if (!scriptPath) {
+    if (!fs.existsSync(scriptPath)) {
       return false;
     }
 
