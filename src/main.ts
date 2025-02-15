@@ -18,7 +18,10 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService);
 
-  app.enableCors({ origin: ['http://localhost:3000', 'http://localhost:3005'], credentials: true });
+  app.enableCors({
+    origin: ['http://admin-dev.ai-tuningfiles.com', 'http://portal-dev.ai-tuningfiles.com'],
+    credentials: true,
+  });
   app.setGlobalPrefix('api/v1'); //route prefix
   app.useGlobalPipes(
     new ValidationPipe({
