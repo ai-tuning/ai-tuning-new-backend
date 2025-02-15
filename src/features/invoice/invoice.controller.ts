@@ -10,19 +10,19 @@ export class InvoiceController {
 
   @AccessRole([RolesEnum.SUPER_ADMIN])
   @Get()
-  findAll() {
-    return this.invoiceService.findAll();
+  async findAll() {
+    return await this.invoiceService.findAll();
   }
 
   @AccessRole([RolesEnum.ADMIN, RolesEnum.SUPER_ADMIN])
   @Get('admin')
-  findByAdmin(@AuthUser() authUser: IAuthUser) {
-    return this.invoiceService.findByAdmin(authUser.admin);
+  async findByAdmin(@AuthUser() authUser: IAuthUser) {
+    return await this.invoiceService.findByAdmin(authUser.admin);
   }
 
   @AccessRole([RolesEnum.CUSTOMER])
   @Get('customer')
-  findByCustomer(@AuthUser() authUser: IAuthUser) {
-    return this.invoiceService.findByCustomer(authUser.customer);
+  async findByCustomer(@AuthUser() authUser: IAuthUser) {
+    return await this.invoiceService.findByCustomer(authUser.customer);
   }
 }

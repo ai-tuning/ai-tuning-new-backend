@@ -32,6 +32,7 @@ import { PricingService } from '../pricing/pricing.service';
 import { StorageService } from '../storage-service/storage-service.service';
 import { EmailQueueProducers } from '../queue-manager/producers/email-queue.producers';
 import { ChatService } from '../chat/chat.service';
+import { AdminService } from '../admin/admin.service';
 
 @Injectable()
 export class FileServiceService {
@@ -50,6 +51,7 @@ export class FileServiceService {
     private readonly pricingService: PricingService,
     private readonly storageService: StorageService,
     private readonly chatService: ChatService,
+    private readonly adminService: AdminService,
     private readonly emailQueueProducers: EmailQueueProducers,
   ) {}
 
@@ -367,7 +369,6 @@ ResellerCredits= 10
         newFileService.paymentStatus = PAYMENT_STATUS.PAID;
         newFileService.status = FILE_SERVICE_STATUS.COMPLETED;
       } else {
-        //mail to both admin and the customer
         //send the request to the queue for winols
       }
 
@@ -477,12 +478,33 @@ ResellerCredits= 10
 
       await session.commitTransaction();
 
+      /**
+       * Sending email for customer and admin
+       */
       if (!requestedSolutions.length) {
         //Send email for file confirmation
         this.emailQueueProducers.sendMail({
           receiver: customer.email,
           name: customer.firstName + ' ' + customer.lastName,
           emailType: EMAIL_TYPE.fileReady,
+          uniqueId: newFileService.uniqueId,
+        });
+      } else {
+        //Send to customer
+        this.emailQueueProducers.sendMail({
+          receiver: customer.email,
+          name: customer.firstName + ' ' + customer.lastName,
+          emailType: EMAIL_TYPE.requestSolution,
+          uniqueId: newFileService.uniqueId,
+        });
+
+        const admin = await this.adminService.findOne(prepareSolutionDto.admin, 'email');
+
+        //send to admin
+        this.emailQueueProducers.sendMail({
+          receiver: admin.email,
+          name: customer.firstName + ' ' + customer.lastName,
+          emailType: EMAIL_TYPE.newFileNotification,
           uniqueId: newFileService.uniqueId,
         });
       }

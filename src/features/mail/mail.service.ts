@@ -184,6 +184,149 @@ export class MailService {
 `;
   }
 
+  private adminEmailTemplate(title: string, content: string) {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Action Required: ${title}</title>
+    <style>
+      
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f7f9fc;
+            font-family: 'Arial', sans-serif, 'Helvetica Neue', Helvetica;
+            color: #444444;
+        }
+        table {
+            border-spacing: 0;
+            width: 100%;
+        }
+        td {
+            padding: 0;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 1px solid #e0e7ff;
+        }
+
+        .email-header {
+            background: #f3faff;
+            padding: 20px;
+            text-align: center;
+            color: #ffffff;
+        }
+        .email-header img {
+            max-width: 180px;
+            height: auto;
+        }
+        .email-header h1 {
+            font-size: 26px;
+            margin: 10px 0;
+            font-weight: bold;
+            color:#1e90ff;
+        }
+
+     
+        .email-content {
+            padding: 30px;
+            text-align: left;
+            color: #555555;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+        .email-content h2 {
+            color: #1e90ff;
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+        .email-content p {
+            margin: 10px 0;
+        }
+        .email-content .highlight {
+            background-color: #f3faff;
+            border-left: 4px solid #1e90ff;
+            padding: 15px 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+      
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button-container a {
+            background: linear-gradient(135deg, #1e90ff, #4682b4);
+            color: #ffffff;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.3s ease;
+        }
+        .button-container a:hover {
+            background: linear-gradient(135deg, #4682b4, #1e90ff);
+        }
+
+    
+        .email-footer {
+            background-color: #f7f9fc;
+            text-align: center;
+            padding: 20px 15px;
+            color: #777777;
+            font-size: 14px;
+        }
+        .email-footer a {
+            color: #1e90ff;
+            text-decoration: none;
+        }
+        .email-footer .social-icons img {
+            width: 24px;
+            margin: 0 5px;
+        }
+
+
+        @media (max-width: 600px) {
+            .email-content {
+                padding: 20px;
+            }
+            .email-header h1 {
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <table class="email-container" align="center">
+        <tr>
+            <td class="email-header">
+                <img src="https://admin.ai-tuningfiles.com/Assets/logo.png" alt="AI Tuning Logo">
+                <h1>${title}</h1>
+            </td>
+        </tr>
+        <tr>${content}</tr>
+        <tr>
+            <td class="email-footer">
+                <p>© 2024 AI Tuning Files. All Rights Reserved.</p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+`;
+  }
+
   async sendLoginCode(data: { receiver: string; code: string; name: string }) {
     const mailOptions = {
       from: `AI Tuning Files <${this.config.smtp_auth_email}>`,
@@ -239,6 +382,44 @@ export class MailService {
                   <p>Thank you for your uploaded file ID: ${data.uniqueId}. Your file is ready to download.</p>
                   <div class="highlight">
                     <p>Enjoy the best service from AI Tuning Files</p>
+                </div>
+              </td>`,
+      ),
+    };
+    await this.authTransporter().sendMail(mailOptions);
+  }
+  async requestedForSolution(data: { receiver: string; name: string; uniqueId: string }) {
+    const mailOptions = {
+      from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+      to: data.receiver,
+      subject: 'New File uploaded',
+      html: this.emailTemplate(
+        'New File uploaded',
+        'support@ai-tuningfiles.com',
+        `<td class="email-content">
+                  <h2>Hello,${data.name}!</h2>
+                  <p>Thank you for your uploaded file ID: ${data.uniqueId}. we will start asap with your ModFile.</p>
+                  <div class="highlight">
+                    <p>Enjoy the best service from AI Tuning Files</p>
+                </div>
+              </td>`,
+      ),
+    };
+    await this.authTransporter().sendMail(mailOptions);
+  }
+
+  async newFileUploadAdmin(data: { receiver: string; name: string; uniqueId: string }) {
+    const mailOptions = {
+      from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+      to: data.receiver,
+      subject: 'New File uploaded',
+      html: this.adminEmailTemplate(
+        'New File uploaded',
+        `<td class="email-content">
+                  <h2>Hello There</h2>
+                  <p>A new file was uploaded from ${data.name}</p>
+                  <div class="highlight">
+                    <p>ID : ${data.uniqueId}</p>
                 </div>
               </td>`,
       ),

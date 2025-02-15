@@ -19,19 +19,31 @@ export class InvoiceService {
   }
 
   async findAll(): Promise<Invoice[]> {
-    return this.invoiceModel.find({}).lean<Invoice[]>();
+    return this.invoiceModel
+      .find({})
+      .populate({
+        path: collectionsName.customer,
+        select: 'firstName lastName email phone country city address postcode state companyName',
+      })
+      .lean<Invoice[]>();
   }
 
   async findByAdmin(adminId: Types.ObjectId): Promise<Invoice[]> {
-    return this.invoiceModel.find({ admin: adminId }).lean<Invoice[]>();
+    return this.invoiceModel
+      .find({ admin: adminId })
+      .populate({
+        path: collectionsName.customer,
+        select: 'firstName lastName email phone country city address postcode state companyName',
+      })
+      .lean<Invoice[]>();
   }
 
   async findByCustomer(customerId: Types.ObjectId): Promise<Invoice[]> {
     return this.invoiceModel
       .find({ customer: customerId })
       .populate({
-        path: 'customer',
-        select: 'firstName lastName email phone country city address postcode state companyName ',
+        path: collectionsName.customer,
+        select: 'firstName lastName email phone country city address postcode state companyName',
       })
       .lean<Invoice[]>();
   }

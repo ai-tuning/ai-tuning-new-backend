@@ -19,6 +19,18 @@ export class EmailQueueConsumer {
       await this.mailService.sendWelcomeMail({ receiver: data.receiver, name: data.name });
     } else if (data.emailType === EMAIL_TYPE.fileReady) {
       await this.mailService.fileReady({ receiver: data.receiver, name: data.name, uniqueId: data.uniqueId });
+    } else if (data.emailType === EMAIL_TYPE.requestSolution) {
+      await this.mailService.requestedForSolution({
+        receiver: data.receiver,
+        name: data.name,
+        uniqueId: data.uniqueId,
+      });
+    } else if (data.emailType === EMAIL_TYPE.newFileNotification) {
+      await this.mailService.newFileUploadAdmin({
+        receiver: data.receiver,
+        name: data.name,
+        uniqueId: data.uniqueId,
+      });
     }
   }
 

@@ -17,6 +17,7 @@ import { PricingModule } from '../pricing/pricing.module';
 import { StorageServiceModule } from '../storage-service/storage-service.module';
 import { QueueManagerModule } from '../queue-manager/queue-manager.module';
 import { ChatModule } from '../chat/chat.module';
+import { AdminModule } from '../admin/admin.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ChatModule } from '../chat/chat.module';
       { name: collectionsName.tempFileService, schema: TempFileServiceSchema },
     ]),
     CustomerModule,
+    AdminModule,
     CarModule,
     CarControllerModule,
     SolutionModule,
