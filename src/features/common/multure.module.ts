@@ -1,5 +1,3 @@
-// src/multer/multer.module.ts
-import { extname } from 'path';
 import * as path from 'path';
 import { BadRequestException, Module } from '@nestjs/common';
 import { MulterModule as NestMulterModule } from '@nestjs/platform-express';
