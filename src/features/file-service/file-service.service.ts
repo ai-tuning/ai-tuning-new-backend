@@ -161,7 +161,7 @@ export class FileServiceService {
 
     const scriptPath = this.pathService.getCompleteScriptPath(car.admin, car.makeType, car.name, controller.name);
     if (!fs.existsSync(scriptPath)) {
-      return false;
+      fs.mkdirSync(scriptPath, { recursive: true });
     }
 
     const solutions = await this.solutionService.findByAdmin(car.admin);

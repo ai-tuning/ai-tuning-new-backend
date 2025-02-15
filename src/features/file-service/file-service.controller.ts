@@ -33,7 +33,7 @@ export class FileServiceController {
   @UseInterceptors(FileInterceptor('file'))
   @Post('automatisation')
   async automatisation(@Body() automatisationDto: AutomatisationDto, @UploadedFile() file: Express.Multer.File) {
-    return this.fileServiceService.automatisation(automatisationDto, file);
+    return await this.fileServiceService.automatisation(automatisationDto, file);
   }
 
   @Post('prepare-solution')
