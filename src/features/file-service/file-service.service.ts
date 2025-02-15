@@ -10,6 +10,7 @@ import {
   FILE_SERVICE_STATUS,
   PAYMENT_STATUS,
   EMAIL_TYPE,
+  CHAT_BELONG,
 } from '../constant';
 import { FileService } from './schema/file-service.schema';
 import { Connection, Model, Types } from 'mongoose';
@@ -30,6 +31,7 @@ import { Pricing } from '../pricing/schema/pricing.schema';
 import { PricingService } from '../pricing/pricing.service';
 import { StorageService } from '../storage-service/storage-service.service';
 import { EmailQueueProducers } from '../queue-manager/producers/email-queue.producers';
+import { ChatService } from '../chat/chat.service';
 
 @Injectable()
 export class FileServiceService {
@@ -47,6 +49,7 @@ export class FileServiceService {
     private readonly kess3Service: Kess3Service,
     private readonly pricingService: PricingService,
     private readonly storageService: StorageService,
+    private readonly chatService: ChatService,
     private readonly emailQueueProducers: EmailQueueProducers,
   ) {}
 
@@ -56,6 +59,27 @@ export class FileServiceService {
 
   async findByCustomerId(customerId: Types.ObjectId): Promise<FileService[]> {
     return this.fileServiceModel.find({ customer: customerId }).lean<FileService[]>();
+  }
+  async findByAdminId(adminId: Types.ObjectId): Promise<FileService[]> {
+    return await this.fileServiceModel
+      .find({ admin: adminId })
+      .populate({
+        path: collectionsName.customer,
+        select: 'firstName lastName customerType',
+      })
+      .populate({
+        path: collectionsName.car,
+        select: 'name logo',
+      })
+      .populate({
+        path: collectionsName.controller,
+        select: 'name',
+      })
+      .lean<FileService[]>();
+  }
+
+  async downloadFile(url: string) {
+    return this.storageService.download(url);
   }
 
   async automatisation(automatisationDto: AutomatisationDto, file: Express.Multer.File) {
@@ -230,6 +254,12 @@ export class FileServiceService {
 
       const allSolution = selectedSolutions.concat(requestedSolutions);
 
+      if (!allSolution.length) {
+        throw new BadRequestException('No solution selected');
+      }
+
+      const allSolutionName = await this.solutionService.findByIdsAndDistinctName(allSolution);
+
       const pricing = await this.pricingService.getPricingByCustomerType(admin, customer.customerType);
 
       const requiredCredits = this.calculateCredits(selectedSolutionCategory, pricing, tempFileService.makeType);
@@ -239,6 +269,7 @@ export class FileServiceService {
       }
 
       const newFileService = new this.fileServiceModel(rest);
+      newFileService.carModel = rest.carModel;
       newFileService.customer = customer._id as Types.ObjectId;
       newFileService.admin = admin as Types.ObjectId;
       newFileService.car = car._id as Types.ObjectId;
@@ -311,7 +342,7 @@ ResellerCredits= 10
       let encodedPath: string;
       let modifiedPath: string;
       if (!requestedSolutions.length) {
-        const modifiedFileName = `MOD_${allSolution.join('_')}_${tempFileService.originalFileName.replace(/Original/i, 'modified')}`;
+        const modifiedFileName = `MOD_${allSolutionName.join('_')}_${tempFileService.originalFileName.replace(/Original/i, 'modified')}`;
 
         modifiedPath = path.join(fileServicePath, modifiedFileName);
 
@@ -346,13 +377,11 @@ ResellerCredits= 10
       //original file
       const originalFilePath = path.join(fileServicePath, tempFileService.originalFile);
       const originalFileSize = fs.statSync(originalFilePath).size;
-      console.log(originalFilePath);
       const originalUpload = await this.storageService.upload(newFileService._id.toString(), {
-        name: tempFileService.originalFileName,
+        name: tempFileService.originalFile,
         path: originalFilePath,
         size: originalFileSize,
       });
-      console.log(originalUpload);
       newFileService.originalFile = {
         url: originalUpload,
         originalname: tempFileService.originalFileName,
@@ -362,13 +391,11 @@ ResellerCredits= 10
       //upload ini file
       const iniFilePath = path.join(fileServicePath, tempFileService.iniFile);
       const iniFileSize = fs.statSync(iniFilePath).size;
-      console.log(iniFilePath);
       const iniUpload = await this.storageService.upload(newFileService._id.toString(), {
         name: tempFileService.iniFile,
         path: iniFilePath,
         size: iniFileSize,
       });
-      console.log(iniUpload);
       newFileService.iniFile = {
         url: iniUpload,
         originalname: tempFileService.iniFile,
@@ -379,13 +406,11 @@ ResellerCredits= 10
         //decoded file
         const decodedFilePath = path.join(fileServicePath, tempFileService.decodedFile);
         const decodedFileSize = fs.statSync(decodedFilePath).size;
-        console.log(decodedFilePath);
         const decodedUpload = await this.storageService.upload(newFileService._id.toString(), {
           name: tempFileService.decodedFile,
           path: decodedFilePath,
           size: decodedFileSize,
         });
-        console.log(decodedUpload);
         newFileService.decodedFile = {
           url: decodedUpload,
           originalname: tempFileService.decodedFile,
@@ -431,19 +456,36 @@ ResellerCredits= 10
         };
       }
 
+      if (prepareSolutionDto.comments) {
+        //send the comment in the chat
+        await this.chatService.create(
+          {
+            admin: admin as Types.ObjectId,
+            chatBelong: CHAT_BELONG.FILE_SERVICE,
+            customer: customer._id as Types.ObjectId,
+            message: prepareSolutionDto.comments,
+            receiver: admin as Types.ObjectId,
+            service: newFileService._id as Types.ObjectId,
+            sender: customer.user as Types.ObjectId,
+          },
+          null,
+          session,
+        );
+      }
+
+      const result = await newFileService.save({ session });
+
+      await session.commitTransaction();
+
       if (!requestedSolutions.length) {
         //Send email for file confirmation
         this.emailQueueProducers.sendMail({
           receiver: customer.email,
           name: customer.firstName + ' ' + customer.lastName,
           emailType: EMAIL_TYPE.fileReady,
-          code: newFileService.uniqueId,
+          uniqueId: newFileService.uniqueId,
         });
       }
-
-      const result = await newFileService.save({ session });
-
-      await session.commitTransaction();
 
       return result;
     } catch (error) {

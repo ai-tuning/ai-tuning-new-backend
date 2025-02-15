@@ -1,12 +1,25 @@
-import { Controller, Post, Body, UseInterceptors, UploadedFiles, Get, Param, Res, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseInterceptors,
+  UploadedFiles,
+  Get,
+  Param,
+  Res,
+  Delete,
+  Patch,
+  UploadedFile,
+} from '@nestjs/common';
 import { ScriptService } from './script.service';
 import { CreateScriptDto } from './dto/create-script.dto';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { AuthUser } from '../common/decorator/get-auth-user.decorator';
 import { AccessRole, IAuthUser } from '../common';
 import { Types } from 'mongoose';
 import { Response } from 'express';
 import { RolesEnum } from '../constant';
+import { ReplaceScriptDto } from './dto/replace-script.dto';
 
 @Controller('scripts')
 export class ScriptController {
@@ -23,7 +36,8 @@ export class ScriptController {
     @Body() createScriptDto: CreateScriptDto,
     @UploadedFiles() files: { originalFile?: Express.Multer.File[]; modFiles?: Express.Multer.File[] },
   ) {
-    const data = await this.scriptService.create(createScriptDto, files.originalFile[0], files.modFiles);
+    const originalFile = files.originalFile ? files.originalFile[0] : null;
+    const data = await this.scriptService.create(createScriptDto, originalFile, files.modFiles);
     return { data, message: 'Script created successfully' };
   }
 
@@ -40,5 +54,13 @@ export class ScriptController {
   async deleteScript(@Param('scriptId') scriptId: Types.ObjectId) {
     const deletedScript = await this.scriptService.deleteScript(scriptId);
     return { deletedScript, message: 'Script deleted successfully' };
+  }
+
+  @AccessRole([RolesEnum.ADMIN])
+  @UseInterceptors(FileInterceptor('modFile'))
+  @Patch('replace-script')
+  async replaceScript(@Body() replaceScriptDto: ReplaceScriptDto, @UploadedFile() file: Express.Multer.File) {
+    await this.scriptService.replaceScript(replaceScriptDto, file);
+    return { message: 'Script replaced successfully' };
   }
 }

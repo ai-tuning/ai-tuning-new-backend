@@ -23,6 +23,13 @@ export class SolutionService {
     return this.solutionModel.find({ admin: adminId }).lean<Solution[]>();
   }
 
+  findByIdsAndDistinctName(solutions: Types.ObjectId[]) {
+    return this.solutionModel
+      .find({ _id: { $in: solutions } })
+      .distinct('name')
+      .lean<string[]>();
+  }
+
   async update(id: Types.ObjectId, updateSolutionDto: UpdateSolutionDto) {
     const isExist = await this.solutionModel.findOne({
       name: updateSolutionDto.name,

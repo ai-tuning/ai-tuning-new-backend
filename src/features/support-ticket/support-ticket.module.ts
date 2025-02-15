@@ -4,9 +4,19 @@ import { SupportTicketController } from './support-ticket.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { collectionsName } from '../constant';
 import { SupportTicketSchema } from './schema/support-ticket.schema';
+import { MulterModule } from '../common';
+import { StorageServiceModule } from '../storage-service/storage-service.module';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: collectionsName.supportTicket, schema: SupportTicketSchema }])],
+  imports: [
+    MulterModule.register({
+      acceptedMimeTypes: [],
+      destination: './public/uploads/files',
+      errorMessages: 'Please upload a valid file',
+    }),
+    MongooseModule.forFeature([{ name: collectionsName.supportTicket, schema: SupportTicketSchema }]),
+    StorageServiceModule,
+  ],
   controllers: [SupportTicketController],
   providers: [SupportTicketService],
 })

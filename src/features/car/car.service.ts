@@ -156,6 +156,27 @@ export class CarService {
     }
   }
 
+  async uploadLogo(id: Types.ObjectId, file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Logo is required');
+    }
+    console.log(file);
+    const car = await this.carModel.findById(id);
+
+    if (!car) {
+      throw new BadRequestException('Car not found');
+    }
+
+    if (car.logo) {
+      const getLogoPath = this.pathService.getCarLogoPath();
+      if (fs.existsSync(path.join(getLogoPath, car.logo))) {
+        fs.unlinkSync(path.join(getLogoPath, car.logo));
+      }
+    }
+    const updatedCar = await this.carModel.findByIdAndUpdate(id, { $set: { logo: file.filename } }, { new: true });
+    return updatedCar;
+  }
+
   // async manualCarCreation(adminId) {
   //   const carsPayload = cars.map((car) => ({
   //     name: car.carname.trim(),

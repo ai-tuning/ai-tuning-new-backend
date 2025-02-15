@@ -38,6 +38,7 @@ import { StorageServiceModule } from './features/storage-service/storage-service
 import { VerificationMailModule } from './features/verification-mail/verification-mail.module';
 import { PricingModule } from './features/pricing/pricing.module';
 import { PurchaseModule } from './features/purchase/purchase.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
 
 @Module({
   imports: [
@@ -121,6 +122,10 @@ import { PurchaseModule } from './features/purchase/purchase.module';
           },
         };
       },
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: path.join(process.cwd(), 'public', 'car-logos'), // Serve only 'car-logos' folder
+      serveRoot: '/car-logos', // Keep the same route
     }),
     SecurityModule,
     CommonModule,

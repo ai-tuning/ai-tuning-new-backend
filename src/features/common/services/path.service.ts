@@ -55,4 +55,8 @@ export class PathService {
   getFileServicePath(adminId: Types.ObjectId | string, tempFileId: Types.ObjectId | string) {
     return join(process.cwd(), 'public', 'file-services', adminId.toString(), tempFileId.toString());
   }
+
+  getCarLogoPath() {
+    return join(process.cwd(), 'public', 'car-logos');
+  }
 }

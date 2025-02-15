@@ -1,5 +1,6 @@
 import { Prop, SchemaFactory, Schema } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
+import { FileSchema } from 'src/features/common';
 import { CHAT_BELONG } from 'src/features/constant';
 
 @Schema({ timestamps: true, versionKey: false })
@@ -10,14 +11,16 @@ class Chat extends Document {
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
   customer: Types.ObjectId;
 
+  //user id who send the message
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
-  senderId: Types.ObjectId;
+  sender: Types.ObjectId;
+
+  //admin or customer
+  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+  receiver: Types.ObjectId;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
-  receiverId: Types.ObjectId;
-
-  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
-  serviceId: Types.ObjectId;
+  service: Types.ObjectId;
 
   @Prop({ type: String, enum: CHAT_BELONG, required: true })
   chatBelong: CHAT_BELONG;
@@ -25,8 +28,8 @@ class Chat extends Document {
   @Prop({ type: String })
   message: string;
 
-  @Prop({ type: String })
-  file: string;
+  @Prop({ type: FileSchema })
+  file: FileSchema;
 
   @Prop({ type: String })
   mimeType: string;

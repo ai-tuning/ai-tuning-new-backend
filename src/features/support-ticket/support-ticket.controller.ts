@@ -1,18 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { SupportTicketService } from './support-ticket.service';
 import { CreateSupportTicketDto } from './dto/create-support-ticket.dto';
 import { UpdateSupportTicketDto } from './dto/update-support-ticket.dto';
 import { AccessRole, IAuthUser } from '../common';
 import { RolesEnum } from '../constant';
 import { AuthUser } from '../common/decorator/get-auth-user.decorator';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('support-tickets')
 export class SupportTicketController {
   constructor(private readonly supportTicketService: SupportTicketService) {}
 
+  @UseInterceptors(FileInterceptor('file'))
   @Post()
-  create(@Body() createSupportTicketDto: CreateSupportTicketDto) {
-    return this.supportTicketService.create(createSupportTicketDto);
+  async create(@Body() createSupportTicketDto: CreateSupportTicketDto, @UploadedFile() file: Express.Multer.File) {
+    const data = await this.supportTicketService.create(createSupportTicketDto, file);
+    return { data, message: 'Support Ticket Created Successfully' };
   }
 
   @AccessRole([RolesEnum.SUPER_ADMIN])

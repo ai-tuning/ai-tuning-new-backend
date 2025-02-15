@@ -67,6 +67,8 @@ export class CustomerService {
           password,
           customer: customer._id as Types.ObjectId,
           role: RolesEnum.CUSTOMER,
+          firstName: createCustomerDto.firstName,
+          lastName: createCustomerDto.lastName,
         },
         session,
       );
@@ -88,7 +90,7 @@ export class CustomerService {
   }
 
   async findCustomersByAdmin(adminId: Types.ObjectId): Promise<CustomerDocument[]> {
-    return this.customerModel.find({}).lean<CustomerDocument[]>();
+    return this.customerModel.find({ admin: adminId }).lean<CustomerDocument[]>();
   }
 
   async findById(id: Types.ObjectId): Promise<CustomerDocument> {

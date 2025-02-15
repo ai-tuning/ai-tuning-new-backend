@@ -9,7 +9,6 @@ import { Connection, Model, Types } from 'mongoose';
 import { CredentialService } from '../credential/credential.service';
 import { ScheduleService } from '../setting/schedule.service';
 import { CustomValidationPipe } from '../common/validation-helper/custom-validation-pipe';
-import { FileDto } from '../common';
 import { CustomerType } from '../customer/schema/customer-type.schema';
 import { PricingService } from '../pricing/pricing.service';
 import { AvatarDto } from '../customer/dto/avatar.dto';
@@ -46,6 +45,8 @@ export class AdminService {
           password: createAdminDto.password,
           role: RolesEnum.ADMIN,
           admin: admin._id as Types.ObjectId,
+          firstName: createAdminDto.firstName,
+          lastName: createAdminDto.lastName,
         },
         session,
       );
@@ -93,6 +94,7 @@ export class AdminService {
       session.startTransaction();
       const admin = await this.adminModel.findById(id).lean();
       if (!admin) throw new NotFoundException('Admin not found');
+
       if (admin.email !== updateAdminDto.email) {
         await this.userService.updateUserEmail(admin.user, updateAdminDto.email, session);
       }

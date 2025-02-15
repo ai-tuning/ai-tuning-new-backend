@@ -128,7 +128,7 @@ export class FileService extends Document {
   solutions: Solutions;
 
   @Prop({ type: String, required: true })
-  modelName: string;
+  carModel: string;
 
   @Prop({ type: String, required: true })
   engine: string;

@@ -16,6 +16,7 @@ import { CustomerModule } from '../customer/customer.module';
 import { PricingModule } from '../pricing/pricing.module';
 import { StorageServiceModule } from '../storage-service/storage-service.module';
 import { QueueManagerModule } from '../queue-manager/queue-manager.module';
+import { ChatModule } from '../chat/chat.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { QueueManagerModule } from '../queue-manager/queue-manager.module';
     PricingModule,
     StorageServiceModule,
     QueueManagerModule,
+    ChatModule,
   ],
   controllers: [FileServiceController],
   providers: [FileServiceService, PathService],

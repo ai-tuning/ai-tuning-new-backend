@@ -5,12 +5,45 @@ import { InjectModel } from '@nestjs/mongoose';
 import { collectionsName } from '../constant';
 import { SupportTicket } from './schema/support-ticket.schema';
 import { Model, Types } from 'mongoose';
+import { StorageService } from '../storage-service/storage-service.service';
+import { existsSync, unlinkSync } from 'fs';
 
 @Injectable()
 export class SupportTicketService {
-  constructor(@InjectModel(collectionsName.supportTicket) private readonly supportTicketModel: Model<SupportTicket>) {}
-  create(createSupportTicketDto: CreateSupportTicketDto) {
-    return 'This action adds a new supportTicket';
+  constructor(
+    @InjectModel(collectionsName.supportTicket) private readonly supportTicketModel: Model<SupportTicket>,
+    private readonly storageService: StorageService,
+  ) {}
+  async create(createSupportTicketDto: CreateSupportTicketDto, file: Express.Multer.File) {
+    let isUploaded = false;
+    const supportTicket = new this.supportTicketModel(createSupportTicketDto);
+    try {
+      if (file) {
+        const uploadedFile = await this.storageService.upload(supportTicket._id.toString(), {
+          name: file.filename,
+          path: file.path,
+          size: file.size,
+        });
+        supportTicket.file = {
+          originalname: file.originalname,
+          uniqueName: file.filename,
+          url: uploadedFile,
+        };
+        isUploaded = true;
+      }
+      supportTicket.ticketId = Date.now().toString();
+      const newTickets = await supportTicket.save();
+      return newTickets;
+    } catch (error) {
+      if (isUploaded) {
+        await this.storageService.delete(supportTicket._id.toString(), file.filename);
+      }
+      throw error;
+    } finally {
+      if (file && existsSync(file.path)) {
+        unlinkSync(file.path);
+      }
+    }
   }
 
   findAll() {
@@ -18,7 +51,13 @@ export class SupportTicketService {
   }
 
   findByAdmin(adminId: Types.ObjectId) {
-    return this.supportTicketModel.find({ admin: adminId }).lean<SupportTicket[]>();
+    return this.supportTicketModel
+      .find({ admin: adminId })
+      .populate({
+        path: collectionsName.customer,
+        select: 'firstName lastName customerType',
+      })
+      .lean<SupportTicket[]>();
   }
 
   findByCustomer(customerId: Types.ObjectId) {
@@ -29,7 +68,10 @@ export class SupportTicketService {
     return `This action updates a #${id} supportTicket`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} supportTicket`;
+  async remove(id: number) {
+    const supportTicket = await this.supportTicketModel.findByIdAndDelete(id).lean<SupportTicket>();
+    if (supportTicket.file) {
+      await this.storageService.delete(supportTicket._id.toString(), supportTicket.file.url);
+    }
   }
 }

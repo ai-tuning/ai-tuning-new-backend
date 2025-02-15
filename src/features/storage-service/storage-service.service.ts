@@ -99,4 +99,12 @@ export class StorageService {
     const data = file.download({});
     return { name: file.name, data };
   }
+  async downloadOnce(link: string) {
+    try {
+      const file = await File.fromURL(link).downloadBuffer({});
+      return file;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
