@@ -39,6 +39,7 @@ import { VerificationMailModule } from './features/verification-mail/verificatio
 import { PricingModule } from './features/pricing/pricing.module';
 import { PurchaseModule } from './features/purchase/purchase.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { EmployeeRoleModule } from './features/employee-role/employee-role.module';
 
 @Module({
   imports: [
@@ -159,6 +160,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
     VerificationMailModule,
     PricingModule,
     PurchaseModule,
+    EmployeeRoleModule,
   ],
   controllers: [],
   providers: [],

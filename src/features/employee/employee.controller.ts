@@ -2,28 +2,33 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { AuthUser } from '../common/decorator/get-auth-user.decorator';
+import { IAuthUser } from '../common';
+import { Types } from 'mongoose';
 
-@Controller('employee')
+@Controller('employees')
 export class EmployeeController {
   constructor(private readonly employeeService: EmployeeService) {}
 
   @Post()
-  create(@Body() createEmployeeDto: CreateEmployeeDto) {
-    return this.employeeService.create(createEmployeeDto);
+  async create(@Body() createEmployeeDto: CreateEmployeeDto) {
+    const data = await this.employeeService.create(createEmployeeDto);
+    return { data, message: 'User created successfully' };
   }
 
   @Get()
-  findAll() {
-    return this.employeeService.findAll();
+  findByAdmin(@AuthUser() authUser: IAuthUser) {
+    return this.employeeService.findByAdmin(authUser.admin);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.employeeService.findOne(+id);
+  findOne(@Param('id') id: Types.ObjectId) {
+    return this.employeeService.findByAdmin(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
-    return this.employeeService.update(+id, updateEmployeeDto);
+  async update(@Param('id') id: Types.ObjectId, @Body() updateEmployeeDto: UpdateEmployeeDto) {
+    const data = await this.employeeService.update(id, updateEmployeeDto);
+    return { data, message: 'User updated successfully' };
   }
 }

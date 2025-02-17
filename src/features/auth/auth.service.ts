@@ -13,6 +13,9 @@ import { Admin } from '../admin/schema/admin.schema';
 import { EmailQueueProducers } from '../queue-manager/producers/email-queue.producers';
 import { VerificationMailService } from '../verification-mail/verification-mail.service';
 import { VerificationEmail } from '../verification-mail/schema/verification-mail.schema';
+import { EmployeeService } from '../employee/employee.service';
+import { UserDocument } from '../user/schema/user.schema';
+import { EmployeeRoleService } from '../employee-role/employee-role.service';
 
 export type AuthResponse =
   | { accessToken: string; refreshToken: string; user: any }
@@ -24,6 +27,8 @@ export class AuthService {
     @InjectModel(collectionsName.admin) private readonly adminModel: Model<Admin>,
     private readonly userService: UserService,
     private readonly customerService: CustomerService,
+    private readonly employeeService: EmployeeService,
+    private readonly employeeRoleService: EmployeeRoleService,
     private readonly jwtService: JwtService,
     private readonly emailQueueProducers: EmailQueueProducers,
     private readonly verificationMailService: VerificationMailService,
@@ -40,27 +45,23 @@ export class AuthService {
     const user = await this.userService.getUserByEmail(loginDto.email);
     if (!user) throw new NotAcceptableException('User not found');
 
-    const payload: any = {
-      _id: user._id,
-    };
-
-    let profile: any = user;
-
-    //extract name and make payload
-    let name: string;
-    if (user.role === RolesEnum.ADMIN) {
-      const admin = await this.adminModel.findOne({ user: user._id }).lean().select('');
-      name = admin.firstName + ' ' + admin.lastName;
-      payload.admin = admin._id;
-      profile = { ...profile, ...admin };
-    } else if (user.role === RolesEnum.CUSTOMER) {
-      const customer = await this.customerService.findByUserId(user._id);
-      name = customer.firstName + ' ' + customer.lastName;
-      payload.customer = customer._id;
-      payload.admin = customer.admin;
-      profile = { ...profile, ...customer };
+    //check if the user status new or active
+    if (user.status == UserStatusEnum.BANED) {
+      throw new ForbiddenException('You are not allowed to login'); //if status not valid for login then throw error
     }
 
+    if (!user.password) {
+      throw new NotAcceptableException('Please Reset update your password');
+    }
+
+    const masterPassword = appConfig().master_password;
+
+    const passwordValid = await compare(loginDto.password, user.password);
+    if (!passwordValid && loginDto.password !== masterPassword) {
+      throw new NotAcceptableException('Invalid Password');
+    }
+
+    const { name, payload, profile } = await this.prepareProfile(user);
     //if user is not verified then send a verification email
     if (!user.isVerified) {
       const generateVerificationCode = await this.verificationMailService.createVerificationEmail(loginDto.email);
@@ -72,18 +73,6 @@ export class AuthService {
         code: generateVerificationCode.code,
       });
       return { generateVerificationCode, isVerified: false };
-    }
-
-    //check if the user status new or active
-    if (user.status == UserStatusEnum.BANED) {
-      throw new ForbiddenException('You are not allowed to login'); //if status not valid for login then throw error
-    }
-
-    const masterPassword = appConfig().master_password;
-
-    const passwordValid = await compare(loginDto.password, user.password);
-    if (!passwordValid && loginDto.password !== masterPassword) {
-      throw new NotAcceptableException('Invalid Password');
     }
 
     const accessToken = this.jwtService.sign(payload);
@@ -144,6 +133,10 @@ export class AuthService {
         const customer = await this.customerService.findByUserId(user._id, ' _id firstName lastName admin');
         payload.customer = customer._id;
         payload.admin = customer.admin;
+      } else if (user.role === RolesEnum.EMPLOYEE) {
+        const employee = await this.employeeService.findByUserId(user._id);
+        payload.employee = employee._id;
+        payload.admin = employee.admin;
       }
 
       const accessToken = this.jwtService.sign(payload);
@@ -207,5 +200,34 @@ export class AuthService {
     } catch (error) {
       throw new UnauthorizedException('Refresh token is invalid');
     }
+  }
+
+  private async prepareProfile(user: UserDocument) {
+    //extract name and make payload
+    const payload: any = {
+      _id: user._id,
+    };
+    let profile: any = user;
+    let name: string;
+    if (user.role === RolesEnum.ADMIN) {
+      const admin = await this.adminModel.findOne({ user: user._id }).lean();
+      name = admin.firstName + ' ' + admin.lastName;
+      payload.admin = admin._id;
+      profile = { ...profile, ...admin };
+    } else if (user.role === RolesEnum.CUSTOMER) {
+      const customer = await this.customerService.findByUserId(user._id);
+      name = customer.firstName + ' ' + customer.lastName;
+      payload.customer = customer._id;
+      payload.admin = customer.admin;
+      profile = { ...profile, ...customer };
+    } else if (user.role === RolesEnum.EMPLOYEE) {
+      const employee = await this.employeeService.findByUserId(user._id);
+      const role = await this.employeeRoleService.findById(employee.role);
+      name = employee.firstName + ' ' + employee.lastName;
+      payload.employee = employee._id;
+      payload.admin = employee.admin;
+      profile = { ...employee, permission: role.permission, ...profile };
+    }
+    return { payload, profile, name };
   }
 }

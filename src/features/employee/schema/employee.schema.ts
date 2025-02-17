@@ -18,6 +18,13 @@ class Employee extends Document {
   })
   user: Types.ObjectId;
 
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: collectionsName.employeeRole,
+    required: true,
+  })
+  role: Types.ObjectId;
+
   @Prop({ type: String, required: true })
   firstName: string;
 
@@ -27,13 +34,15 @@ class Employee extends Document {
   @Prop({ type: String, required: true })
   email: string;
 
-  @Prop({ type: FileSchema })
-  avatar: FileSchema;
+  @Prop({ type: String, required: true })
+  phone: string;
+
+  @Prop({ type: String })
+  avatar: string;
 
   @Prop({
     type: String,
     enum: UserStatusEnum,
-    required: true,
     default: UserStatusEnum.ACTIVE,
   })
   status: UserStatusEnum;

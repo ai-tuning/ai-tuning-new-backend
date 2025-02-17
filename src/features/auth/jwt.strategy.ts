@@ -25,7 +25,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       _id: user._id,
       email: user.email,
       role: user.role,
-      admin: new Types.ObjectId(payload.admin),
+      admin: payload.admin ? new Types.ObjectId(payload.admin) : null,
       ...(user.role === RolesEnum.CUSTOMER && { customer: new Types.ObjectId(payload.customer) }),
       ...(user.role === RolesEnum.EMPLOYEE && { employee: new Types.ObjectId(payload.employee) }),
     };

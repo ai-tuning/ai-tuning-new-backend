@@ -10,7 +10,6 @@ import { EvcService } from '../evc/evc.service';
 import { CustomBadRequest } from '../common/validation-helper/bad-request.exception';
 import { CustomerTypeDto } from './dto/customer-type.dto';
 import { CustomerType } from './schema/customer-type.schema';
-import { FileDto } from '../common';
 import { CustomValidationPipe } from '../common/validation-helper/custom-validation-pipe';
 import { PricingService } from '../pricing/pricing.service';
 import { AvatarDto } from './dto/avatar.dto';
@@ -96,6 +95,7 @@ export class CustomerService {
   async findById(id: Types.ObjectId): Promise<CustomerDocument> {
     return this.customerModel.findById(id).lean<CustomerDocument>();
   }
+
   async findByUserId(userId: Types.ObjectId, select?: string): Promise<CustomerDocument> {
     return await this.customerModel.findOne({ user: userId }).select(select).lean<CustomerDocument>();
   }
@@ -117,6 +117,15 @@ export class CustomerService {
       if (customer.email !== updateCustomerDto.email) {
         await this.userService.updateUserEmail(customer.user, updateCustomerDto.email, session);
       }
+
+      if (customer.firstName !== updateCustomerDto.firstName || customer.lastName !== updateCustomerDto.lastName) {
+        await this.userService.updateName(
+          customer.user,
+          { firstName: updateCustomerDto.firstName, lastName: updateCustomerDto.lastName },
+          session,
+        );
+      }
+
       let isNewEvcNumber = false;
       if (updateCustomerDto.evcNumber && customer.evcNumber !== updateCustomerDto.evcNumber) {
         const isInvalid = await this.evcService.isInvalidNumber(customer.admin, updateCustomerDto.evcNumber);

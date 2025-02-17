@@ -12,6 +12,8 @@ import { AdminSchema } from '../admin/schema/admin.schema';
 import { QueueManagerModule } from '../queue-manager/queue-manager.module';
 import { VerificationMailModule } from '../verification-mail/verification-mail.module';
 import { AdminModule } from '../admin/admin.module';
+import { EmployeeModule } from '../employee/employee.module';
+import { EmployeeRoleModule } from '../employee-role/employee-role.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { AdminModule } from '../admin/admin.module';
     }),
     UserModule,
     CustomerModule,
+    EmployeeModule,
+    EmployeeRoleModule,
     QueueManagerModule,
     VerificationMailModule,
   ],

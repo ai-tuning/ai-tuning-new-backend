@@ -25,6 +25,20 @@ export class UserService {
     return await this.userModel.findOne({ email }).select(select).lean<UserDocument>();
   }
 
+  async updateName(
+    userId: Types.ObjectId,
+    names: { firstName: string; lastName: string },
+    session: ClientSession,
+  ): Promise<UserDocument> {
+    return this.userModel
+      .findOneAndUpdate(
+        { _id: userId },
+        { $set: { firstName: names.firstName, lastName: names.lastName } },
+        { new: true, session },
+      )
+      .lean<UserDocument>();
+  }
+
   async updateUserEmail(userId: Types.ObjectId, email: string, session: ClientSession): Promise<UserDocument> {
     return this.userModel
       .findOneAndUpdate({ _id: userId }, { $set: { email } }, { new: true, session })
@@ -35,5 +49,9 @@ export class UserService {
     return this.userModel
       .findOneAndUpdate({ _id: userId }, { $set: { isVerified } }, { new: true, session })
       .lean<User>();
+  }
+
+  async deleteUser(userId: Types.ObjectId, session: ClientSession) {
+    return this.userModel.findOneAndDelete({ _id: userId }, { session }).lean<UserDocument>();
   }
 }

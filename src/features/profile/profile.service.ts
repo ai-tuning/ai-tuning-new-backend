@@ -9,6 +9,7 @@ import { UpdateCustomerDto } from '../customer/dto/update-customer.dto';
 import { UpdateAdminDto } from '../admin/dto/update-admin.dto';
 import { UpdateEmployeeDto } from '../employee/dto/update-employee.dto';
 import { EmployeeService } from '../employee/employee.service';
+import { EmployeeRoleService } from '../employee-role/employee-role.service';
 
 @Injectable()
 export class ProfileService {
@@ -16,16 +17,18 @@ export class ProfileService {
     private readonly customerService: CustomerService,
     private readonly adminService: AdminService,
     private readonly employeeService: EmployeeService,
+    private readonly employeeRoleService: EmployeeRoleService,
   ) {}
 
   async getProfile(authUser: IAuthUser) {
+    delete authUser.ipAddress;
     if (authUser.role === RolesEnum.CUSTOMER) {
       const customer = await this.customerService.findByUserId(authUser._id);
-      delete authUser.ipAddress;
-
       return { ...customer, customer: authUser.customer, ...authUser };
     } else if (authUser.role === RolesEnum.EMPLOYEE) {
-      return { ...authUser };
+      const employee = await this.employeeService.findByUserId(authUser._id);
+      const role = await this.employeeRoleService.findById(employee.role);
+      return { ...employee, permission: role.permission, ...authUser };
     } else if (authUser.role === RolesEnum.ADMIN) {
       const admin = await this.adminService.findByUserId(authUser._id);
       return { ...authUser, ...admin };

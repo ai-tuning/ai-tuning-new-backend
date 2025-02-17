@@ -6,12 +6,14 @@ import { AdminModule } from '../admin/admin.module';
 import { EmployeeModule } from '../employee/employee.module';
 import { StorageServiceModule } from '../storage-service/storage-service.module';
 import { MulterModule } from '../common';
+import { EmployeeRoleModule } from '../employee-role/employee-role.module';
 
 @Module({
   imports: [
-    CustomerModule,
     AdminModule,
     EmployeeModule,
+    CustomerModule,
+    EmployeeRoleModule,
     StorageServiceModule,
     MulterModule.register({
       acceptedMimeTypes: ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'],

@@ -99,6 +99,14 @@ export class AdminService {
         await this.userService.updateUserEmail(admin.user, updateAdminDto.email, session);
       }
 
+      if (admin.firstName !== updateAdminDto.firstName || admin.lastName !== updateAdminDto.lastName) {
+        await this.userService.updateName(
+          admin.user,
+          { firstName: updateAdminDto.firstName, lastName: updateAdminDto.lastName },
+          session,
+        );
+      }
+
       if (admin.username !== updateAdminDto.username) {
         //check user name already used or not
         const adminExist = await this.adminModel.exists({ username: updateAdminDto.username, _id: { $ne: id } });
