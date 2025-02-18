@@ -51,6 +51,12 @@ export class UserService {
       .lean<User>();
   }
 
+  async updatePassword(userId: Types.ObjectId, password: string, session: ClientSession): Promise<UserDocument> {
+    return this.userModel
+      .findOneAndUpdate({ _id: userId }, { $set: { password } }, { new: true, session })
+      .lean<UserDocument>();
+  }
+
   async deleteUser(userId: Types.ObjectId, session: ClientSession) {
     return this.userModel.findOneAndDelete({ _id: userId }, { session }).lean<UserDocument>();
   }
