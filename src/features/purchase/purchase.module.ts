@@ -6,9 +6,19 @@ import { InvoiceModule } from '../invoice/invoice.module';
 import { PricingModule } from '../pricing/pricing.module';
 import { CustomerModule } from '../customer/customer.module';
 import { HttpModule } from '@nestjs/axios';
+import { AdminModule } from '../admin/admin.module';
+import { AdminPricingModule } from '../admin-pricing/admin-pricing.module';
 
 @Module({
-  imports: [HttpModule, CredentialModule, InvoiceModule, PricingModule, CustomerModule],
+  imports: [
+    HttpModule,
+    CredentialModule,
+    InvoiceModule,
+    PricingModule,
+    CustomerModule,
+    AdminModule,
+    AdminPricingModule,
+  ],
   controllers: [PurchaseController],
   providers: [PurchaseService],
 })

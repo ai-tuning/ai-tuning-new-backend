@@ -12,6 +12,7 @@ import { CustomValidationPipe } from '../common/validation-helper/custom-validat
 import { CustomerType } from '../customer/schema/customer-type.schema';
 import { PricingService } from '../pricing/pricing.service';
 import { AvatarDto } from '../customer/dto/avatar.dto';
+import { ClientSession } from 'mongoose';
 
 @Injectable()
 export class AdminService {
@@ -86,6 +87,16 @@ export class AdminService {
 
   async findByUserId(userId: Types.ObjectId, select?: string): Promise<AdminDocument> {
     return this.adminModel.findOne({ user: userId }).select(select).lean<AdminDocument>();
+  }
+
+  async getAdminCredit(adminId: Types.ObjectId): Promise<AdminDocument> {
+    return this.adminModel.findById(adminId).select('credits').lean<AdminDocument>();
+  }
+
+  async updateCredit(adminId: Types.ObjectId, amount: number, session: ClientSession) {
+    return await this.adminModel
+      .findOneAndUpdate({ _id: adminId }, { $inc: { credits: amount } }, { new: true, session })
+      .lean<AdminDocument>();
   }
 
   async update(id: Types.ObjectId, updateAdminDto: UpdateAdminDto): Promise<AdminDocument> {

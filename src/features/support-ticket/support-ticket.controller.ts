@@ -24,7 +24,7 @@ export class SupportTicketController {
     return this.supportTicketService.findAll();
   }
 
-  @AccessRole([RolesEnum.ADMIN])
+  @AccessRole([RolesEnum.ADMIN, RolesEnum.SUPER_ADMIN])
   @Get('admin')
   findByAdmin(@AuthUser() authUser: IAuthUser) {
     return this.supportTicketService.findByAdmin(authUser.admin);

@@ -1,8 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
+import * as bcrypt from 'bcrypt';
 import { InjectModel } from '@nestjs/mongoose';
-import { RolesEnum, collectionsName } from '../constant';
 import { ClientSession, Model, Types } from 'mongoose';
+import { CreateUserDto } from './dto/create-user.dto';
+import { RolesEnum, collectionsName } from '../constant';
 import { User, UserDocument } from './schema/user.schema';
 
 @Injectable()
@@ -52,6 +53,10 @@ export class UserService {
   }
 
   async updatePassword(userId: Types.ObjectId, password: string, session: ClientSession): Promise<UserDocument> {
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    password = hashedPassword;
+
     return this.userModel
       .findOneAndUpdate({ _id: userId }, { $set: { password } }, { new: true, session })
       .lean<UserDocument>();

@@ -3,7 +3,7 @@ import { ClientSession, Model } from 'mongoose';
 import { VerificationEmail } from './schema/verification-mail.schema';
 import { differenceInMinutes } from 'date-fns';
 import { InjectModel } from '@nestjs/mongoose';
-import { collectionsName } from 'src/features/constant';
+import { collectionsName, VerificationEmailEnum } from 'src/features/constant';
 
 @Injectable()
 export class VerificationMailService {
@@ -16,21 +16,37 @@ export class VerificationMailService {
     return Math.floor(Math.random() * 1000000).toString();
   }
 
-  async createVerificationEmail(email: string, session?: ClientSession): Promise<VerificationEmail> {
+  async createVerificationEmail(
+    email: string,
+    verificationType: VerificationEmailEnum,
+    session?: ClientSession,
+  ): Promise<VerificationEmail> {
     const code = this.generateRandomCode();
-    const verificationEmail = new this.verificationEmailModel({ email, code, duration: 5 });
+    const verificationEmail = new this.verificationEmailModel({
+      email,
+      verificationType: verificationType,
+      code,
+      duration: 5,
+    });
     if (session) {
       return verificationEmail.save({ session });
     }
     return verificationEmail.save();
   }
 
-  async getVerificationEmail(email: string): Promise<VerificationEmail> {
-    return this.verificationEmailModel.findOne({ email });
+  async getVerificationEmail(email: string, verificationType: VerificationEmailEnum): Promise<VerificationEmail> {
+    return this.verificationEmailModel.findOne({ email, verificationType });
   }
 
-  async verifyEmail(email: string, code: string, session: ClientSession): Promise<boolean> {
-    const data = await this.verificationEmailModel.findOne({ email, code, isUsed: false }).sort({ createdAt: -1 });
+  async verifyEmail(
+    email: string,
+    code: string,
+    verificationType: VerificationEmailEnum,
+    session: ClientSession,
+  ): Promise<boolean> {
+    const data = await this.verificationEmailModel
+      .findOne({ email, code, verificationType, isUsed: false })
+      .sort({ createdAt: -1 });
     if (!data) {
       throw new BadRequestException('Invalid verification code');
     }

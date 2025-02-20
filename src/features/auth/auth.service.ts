@@ -1,8 +1,14 @@
-import { ForbiddenException, Injectable, NotAcceptableException, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotAcceptableException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { compare } from 'bcrypt';
 import { UserService } from '../user/user.service';
 import { LoginDto } from './dto/login.dto';
-import { collectionsName, EMAIL_TYPE, RolesEnum, UserStatusEnum } from '../constant';
+import { collectionsName, EMAIL_TYPE, RolesEnum, UserStatusEnum, VerificationEmailEnum } from '../constant';
 import { appConfig } from '../config';
 import { JwtService } from '@nestjs/jwt';
 import { RegistrationDto } from './dto/registration.dto';
@@ -64,7 +70,10 @@ export class AuthService {
     const { name, payload, profile } = await this.prepareProfile(user);
     //if user is not verified then send a verification email
     if (!user.isVerified) {
-      const generateVerificationCode = await this.verificationMailService.createVerificationEmail(loginDto.email);
+      const generateVerificationCode = await this.verificationMailService.createVerificationEmail(
+        loginDto.email,
+        VerificationEmailEnum.EMAIL_VERIFICATION,
+      );
       // //send email to email queue
       this.emailQueueProducers.sendMail({
         receiver: loginDto.email,
@@ -96,25 +105,21 @@ export class AuthService {
       if (!admin) throw new NotAcceptableException('Unable to find admin for registration');
       registrationDto.admin = admin._id as Types.ObjectId;
     }
-
     const data = await this.customerService.create(registrationDto);
-    const generateVerificationCode = await this.verificationMailService.createVerificationEmail(registrationDto.email);
-
-    //send email to email queue
-    this.emailQueueProducers.sendMail({
-      receiver: registrationDto.email,
-      name: data.firstName + ' ' + data.lastName,
-      emailType: EMAIL_TYPE.verifyEmail,
-      code: generateVerificationCode.code,
-    });
-    return registrationDto;
+    return data;
   }
-  async verifyRegistrationCode(email: string, code: string) {
+
+  async verifyCode(email: string, code: string) {
     const session = await this.connection.startSession();
 
     try {
       session.startTransaction();
-      const isVerified = await this.verificationMailService.verifyEmail(email, code, session);
+      const isVerified = await this.verificationMailService.verifyEmail(
+        email,
+        code,
+        VerificationEmailEnum.EMAIL_VERIFICATION,
+        session,
+      );
 
       if (!isVerified) {
         throw new NotAcceptableException('Invalid code');
@@ -126,7 +131,7 @@ export class AuthService {
         _id: user._id,
       };
 
-      if (user.role === RolesEnum.ADMIN) {
+      if (user.role === RolesEnum.ADMIN || user.role === RolesEnum.SUPER_ADMIN) {
         const admin = await this.adminModel.findOne({ user: user._id }).lean().select('_id firstName lastName');
         payload.admin = admin._id;
       } else if (user.role === RolesEnum.CUSTOMER) {
@@ -158,16 +163,55 @@ export class AuthService {
     }
   }
 
+  async verifyCodeAndResetPassword(email: string, code: string, password: string) {
+    const session = await this.connection.startSession();
+
+    try {
+      session.startTransaction();
+      const isVerified = await this.verificationMailService.verifyEmail(
+        email,
+        code,
+        VerificationEmailEnum.FORGOT_PASSWORD,
+        session,
+      );
+
+      if (!isVerified) {
+        throw new NotAcceptableException('Invalid code');
+      }
+
+      const user = await this.userService.getUserByEmail(email);
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      await this.userService.updatePassword(user._id, password, session);
+
+      await this.userService.updateVerificationStatus(user._id, true, session);
+
+      await session.commitTransaction();
+      return user;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      await session.endSession();
+    }
+  }
+
   /**
    * resend validation code
    * @param email
    * @returns
    */
-  async resendCode(email: string) {
+  async resendCode(email: string, verificationType: VerificationEmailEnum) {
     if (!email) throw new NotAcceptableException('Email is required');
     const user = await this.userService.getUserByEmail(email);
     if (!user) throw new NotAcceptableException('User not found');
-    const generateVerificationCode = await this.verificationMailService.createVerificationEmail(email);
+    const generateVerificationCode = await this.verificationMailService.createVerificationEmail(
+      email,
+      verificationType,
+    );
     this.emailQueueProducers.sendMail({
       receiver: email,
       emailType: EMAIL_TYPE.verifyEmail,
@@ -209,7 +253,7 @@ export class AuthService {
     };
     let profile: any = user;
     let name: string;
-    if (user.role === RolesEnum.ADMIN) {
+    if (user.role === RolesEnum.ADMIN || user.role === RolesEnum.SUPER_ADMIN) {
       const admin = await this.adminModel.findOne({ user: user._id }).lean();
       name = admin.firstName + ' ' + admin.lastName;
       payload.admin = admin._id;

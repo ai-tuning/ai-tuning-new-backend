@@ -9,14 +9,16 @@ import { InjectConnection } from '@nestjs/mongoose';
 import { HttpService } from '@nestjs/axios';
 import { PAYMENT_STATUS } from '../constant';
 import { CustomerService } from '../customer/customer.service';
+import { PurchaseAdminCreditDto } from './dto/purchase-admin-credit.dto';
+import { AdminService } from '../admin/admin.service';
+import { AdminPricing } from '../admin-pricing/schema/admin-pricing.schema';
+import { AdminPricingService } from '../admin-pricing/admin-pricing.service';
 
 @Injectable()
 export class PurchaseService {
   private paypal_url: string;
 
   private returnUrl: string;
-
-  private cancelUrl: string;
 
   constructor(
     @InjectConnection() private readonly connection: Connection,
@@ -25,10 +27,11 @@ export class PurchaseService {
     private readonly invoiceService: InvoiceService,
     private readonly pricingService: PricingService,
     private readonly customerService: CustomerService,
+    private readonly adminService: AdminService,
+    private readonly adminPricingService: AdminPricingService,
   ) {
     this.paypal_url = process.env.PAYPAL_URL;
     this.returnUrl = process.env.PAYPAL_RETURN_URL;
-    this.cancelUrl = process.env.PAYPAL_CANCEL_URL;
   }
 
   async purchaseCredits(adminId: Types.ObjectId, purchaseCreditDto: PurchaseCreditDto, origin: string) {
@@ -70,21 +73,30 @@ export class PurchaseService {
     }
   }
 
-  async verifyAndSaveCredits(invoiceId: Types.ObjectId, orderId: string, origin: string) {
+  async verifyAndSaveCredits(invoiceId: Types.ObjectId, orderId: string) {
     const session = await this.connection.startSession();
     try {
       session.startTransaction();
       const invoice = await this.invoiceService.findById(invoiceId);
 
-      const capturedOrder = await this.captureOrder(invoice.admin, orderId);
+      let adminId = invoice.admin;
+      if (!invoice.customer) {
+        //if the customer not exist then it's admin purchase so we have to use super admin credential
+        adminId = new Types.ObjectId(process.env.SUPER_ADMIN_ID);
+      }
+      const capturedOrder = await this.captureOrder(adminId, orderId);
 
       if (capturedOrder.status === 'COMPLETED') {
         invoice.status = PAYMENT_STATUS.PAID;
         invoice.orderId = orderId;
         await invoice.save({ session });
 
-        //save customer credit
-        await this.customerService.updateCredit(invoice.customer, invoice.quantity, session);
+        if (invoice.customer) {
+          //save customer credit
+          await this.customerService.updateCredit(invoice.customer, invoice.quantity, session);
+        } else {
+          await this.adminService.updateCredit(invoice.admin, invoice.quantity, session);
+        }
       } else {
         return false;
       }
@@ -104,7 +116,6 @@ export class PurchaseService {
    */
   async getAccessToken(adminId: Types.ObjectId) {
     const getCredential = await this.credentialService.findByAdmin(adminId, 'paypal');
-
     // Encode the credentials in Base64 for Basic Authentication
     const credentials = btoa(`${getCredential.paypal.clientId}:${getCredential.paypal.clientSecret}`);
 
@@ -132,6 +143,7 @@ export class PurchaseService {
    */
   async createOrder(adminId: Types.ObjectId, invoiceId: Types.ObjectId, amount: number, origin: string) {
     const token = await this.getAccessToken(adminId);
+    console.log(decodeURIComponent(origin));
     const { data } = await this.httpService.axiosRef(`${this.paypal_url}/v2/checkout/orders`, {
       method: 'POST',
       headers: {
@@ -169,7 +181,7 @@ export class PurchaseService {
               landing_page: 'LOGIN',
               user_action: 'PAY_NOW',
               return_url: `${this.returnUrl}?invoiceId=${invoiceId}&origin=${origin}`,
-              cancel_url: this.cancelUrl,
+              cancel_url: `${decodeURIComponent(origin)}/payment/cancel`,
             },
           },
         },
@@ -194,5 +206,44 @@ export class PurchaseService {
       },
     });
     return data;
+  }
+
+  //=================admin credit purchase service=================================
+  async purchaseAdminCredits(adminId: Types.ObjectId, purchaseCreditDto: PurchaseAdminCreditDto, origin: string) {
+    const session = await this.connection.startSession();
+    try {
+      session.startTransaction();
+      const adminCreditPricing = await this.adminPricingService.getAdminAllPricing();
+      const unitPrice = adminCreditPricing.creditPrice;
+
+      const totalPrice = unitPrice * purchaseCreditDto.quantity;
+      const vat = 0;
+      const grandTotal = totalPrice;
+
+      const invoiceDto: CreateInvoiceDto = {
+        admin: adminId,
+        invoiceNumber: Date.now().toString(),
+        description: 'Software Development Credits',
+        quantity: purchaseCreditDto.quantity,
+        unitPrice: unitPrice,
+        totalPrice,
+        vat,
+        grandTotal,
+      };
+
+      //create invoice
+      const invoice = await this.invoiceService.create(invoiceDto, session);
+      const superAdminId = new Types.ObjectId(process.env.SUPER_ADMIN_ID);
+      //generate payment link
+      const order = await this.createOrder(superAdminId, invoice._id as Types.ObjectId, totalPrice, origin);
+
+      await session.commitTransaction();
+      return order.links[1].href;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      await session.endSession();
+    }
   }
 }

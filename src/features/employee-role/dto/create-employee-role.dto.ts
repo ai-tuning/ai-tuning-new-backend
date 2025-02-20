@@ -65,6 +65,18 @@ export class Permission {
   @IsNotEmpty()
   @IsBoolean()
   credentials: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  adminPricing: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  admins: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  adminsInvoices: boolean;
 }
 
 export class CreateEmployeeRoleDto {

@@ -1,6 +1,5 @@
-import { IsEnum, IsMongoId, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsMongoId, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Types } from 'mongoose';
-import { PAYMENT_STATUS } from 'src/features/constant';
 
 export class CreateInvoiceDto {
   @IsNotEmpty()
@@ -8,10 +7,9 @@ export class CreateInvoiceDto {
   @IsMongoId()
   admin: Types.ObjectId;
 
-  @IsNotEmpty()
-  @IsString()
+  @IsOptional()
   @IsMongoId()
-  customer: Types.ObjectId;
+  customer?: Types.ObjectId;
 
   @IsNotEmpty()
   @IsString()

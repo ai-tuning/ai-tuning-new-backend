@@ -14,3 +14,5 @@ export { SUPPORT_TYPE } from './enums/support-type.enum';
 export { SUPPORT_STATUS } from './enums/support-status.enum';
 export { EMAIL_TYPE } from './email-type';
 export { MAKE_TYPE_ENUM } from './enums/car-type.enum';
+export { VerificationEmailEnum } from './enums/verification-email.enum';
+export { ADMIN_CATEGORY } from './enums/admin-category.enum';

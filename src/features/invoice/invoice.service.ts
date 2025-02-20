@@ -30,9 +30,30 @@ export class InvoiceService {
 
   async findByAdmin(adminId: Types.ObjectId): Promise<Invoice[]> {
     return this.invoiceModel
-      .find({ admin: adminId })
+      .find({ admin: adminId, customer: { $exists: true } })
       .populate({
-        path: collectionsName.customer,
+        path: 'customer',
+        select: 'firstName lastName email phone country city address postcode state companyName',
+      })
+      .lean<Invoice[]>();
+  }
+
+  async findAdminPurchaseInvoice(adminId: Types.ObjectId): Promise<Invoice[]> {
+    return this.invoiceModel
+      .find({ admin: adminId, customer: { $exists: false } })
+      .populate({
+        path: 'admin',
+        select: 'firstName lastName email phone country city address postcode state companyName',
+      })
+      .lean<Invoice[]>();
+  }
+
+  //for super admin
+  async findAdminsInvoices(): Promise<Invoice[]> {
+    return this.invoiceModel
+      .find({ customer: { $exists: false } })
+      .populate({
+        path: 'admin',
         select: 'firstName lastName email phone country city address postcode state companyName',
       })
       .lean<Invoice[]>();

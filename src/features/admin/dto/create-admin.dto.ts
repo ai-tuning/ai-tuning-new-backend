@@ -26,7 +26,7 @@ export class CreateAdminDto {
   password: string;
 
   @IsNotEmpty()
-  @IsString(null) // Specify locale if needed, e.g., 'US'
+  @IsString(null)
   phone: string;
 
   @IsNotEmpty()

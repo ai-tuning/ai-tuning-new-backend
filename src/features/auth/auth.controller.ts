@@ -5,6 +5,8 @@ import { LoginDto } from './dto/login.dto';
 import { Public } from '../common';
 import { RegistrationDto } from './dto/registration.dto';
 import { VerificationEmailDto } from './dto/verificationEmail.dto';
+import { VerificationCodeResetPasswordDto } from './dto/verify-code-reset-password.dto';
+import { VerificationEmailEnum } from '../constant';
 
 @Controller('auth')
 export class AuthController {
@@ -61,15 +63,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('/verify-email')
   @Public()
-  async verifyRegistrationCode(
+  async verifyCode(
     @Body() verificationEmailDto: VerificationEmailDto,
     @Req() request: Request,
     @Res() response: Response,
   ) {
-    const authData = await this.authService.verifyRegistrationCode(
-      verificationEmailDto.email,
-      verificationEmailDto.code,
-    );
+    const authData = await this.authService.verifyCode(verificationEmailDto.email, verificationEmailDto.code);
     const { accessToken, refreshToken, user } = authData as {
       accessToken: string;
       refreshToken: string;
@@ -107,6 +106,14 @@ export class AuthController {
   }
 
   @HttpCode(HttpStatus.OK)
+  @Post('/verify-email-reset-password')
+  @Public()
+  async verifyCodeResetPassword(@Body() body: VerificationCodeResetPasswordDto) {
+    await this.authService.verifyCodeAndResetPassword(body.email, body.code, body.password);
+    return { message: 'Your password has been reset ' };
+  }
+
+  @HttpCode(HttpStatus.OK)
   @Post('/registration')
   @Public()
   async registration(@Body() registrationDto: RegistrationDto) {
@@ -125,8 +132,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('/resend-code')
   @Public()
-  async resendCode(@Body() resendCodeDto: { email: string }) {
-    await this.authService.resendCode(resendCodeDto.email);
+  async resendCode(@Body() resendCodeDto: { email: string; verificationType: VerificationEmailEnum }) {
+    await this.authService.resendCode(resendCodeDto.email, resendCodeDto.verificationType);
     return { message: 'Verification code sent to your email' };
   }
 

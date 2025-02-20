@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
 import { FileSchema } from 'src/features/common';
-import { collectionsName } from 'src/features/constant';
+import { ADMIN_CATEGORY, collectionsName } from 'src/features/constant';
 
 @Schema({ timestamps: true, versionKey: false })
 class Admin extends Document<Types.ObjectId> {
@@ -24,11 +24,17 @@ class Admin extends Document<Types.ObjectId> {
   @Prop({ type: String, required: true })
   lastName: string;
 
+  @Prop({ type: String, enum: ADMIN_CATEGORY, default: ADMIN_CATEGORY.STANDARD })
+  category: ADMIN_CATEGORY;
+
   @Prop({ type: String, required: true })
   email: string;
 
   @Prop({ type: String, required: true })
   phone: string;
+
+  @Prop({ type: Number, default: 0 })
+  credits: Number;
 
   @Prop({ type: String, required: true })
   countryCode: string;

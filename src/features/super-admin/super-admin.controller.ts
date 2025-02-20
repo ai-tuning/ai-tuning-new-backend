@@ -1,34 +1,33 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { SuperAdminService } from './super-admin.service';
-import { CreateSuperAdminDto } from './dto/create-super-admin.dto';
-import { UpdateSuperAdminDto } from './dto/update-super-admin.dto';
+import { AccessRole, IAuthUser } from '../common';
+import { RolesEnum } from '../constant';
+import { CreateAdminDto } from '../admin/dto/create-admin.dto';
+import { UpdateAdminDto } from '../admin/dto/update-admin.dto';
+import { Types } from 'mongoose';
+import { AuthUser } from '../common/decorator/get-auth-user.decorator';
 
 @Controller('super-admin')
 export class SuperAdminController {
   constructor(private readonly superAdminService: SuperAdminService) {}
 
-  @Post()
-  create(@Body() createSuperAdminDto: CreateSuperAdminDto) {
-    return this.superAdminService.create(createSuperAdminDto);
+  @AccessRole([RolesEnum.SUPER_ADMIN])
+  @Get('admins')
+  async getAdmins(@AuthUser() authUser: IAuthUser) {
+    return this.superAdminService.getAdmins(authUser.admin);
   }
 
-  @Get()
-  findAll() {
-    return this.superAdminService.findAll();
+  @AccessRole([RolesEnum.SUPER_ADMIN])
+  @Post('admins')
+  async createAdmin(@Body() createAdminDto: CreateAdminDto) {
+    const data = await this.superAdminService.createAdmin(createAdminDto);
+    return { message: 'Admin created successfully', data };
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.superAdminService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSuperAdminDto: UpdateSuperAdminDto) {
-    return this.superAdminService.update(+id, updateSuperAdminDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.superAdminService.remove(+id);
+  @AccessRole([RolesEnum.SUPER_ADMIN])
+  @Patch('admins/:adminId')
+  async updateAdmin(@Param('adminId') adminId: Types.ObjectId, @Body() updateAdminDto: UpdateAdminDto) {
+    const data = await this.superAdminService.updateAdmin(adminId, updateAdminDto);
+    return { message: 'Admin updated successfully', data };
   }
 }

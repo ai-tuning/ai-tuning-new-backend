@@ -43,6 +43,12 @@ export class Permission {
   invoices: boolean;
 
   @Prop({ type: Boolean, required: true })
+  purchaseInvoices: boolean;
+
+  @Prop({ type: Boolean, required: true })
+  shop: boolean;
+
+  @Prop({ type: Boolean, required: true })
   schedule: boolean;
 
   @Prop({ type: Boolean, required: true })
@@ -50,6 +56,16 @@ export class Permission {
 
   @Prop({ type: Boolean, required: true })
   credentials: boolean;
+
+  //super admin employee
+  @Prop({ type: Boolean, default: false })
+  adminPricing: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  adminInvoices: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  admins: boolean;
 }
 
 export const PermissionSchema = SchemaFactory.createForClass(Permission);

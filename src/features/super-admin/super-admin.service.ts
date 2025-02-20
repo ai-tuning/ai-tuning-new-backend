@@ -1,26 +1,29 @@
 import { Injectable } from '@nestjs/common';
-import { CreateSuperAdminDto } from './dto/create-super-admin.dto';
-import { UpdateSuperAdminDto } from './dto/update-super-admin.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { collectionsName } from '../constant';
+import { Admin } from '../admin/schema/admin.schema';
+import { AdminService } from '../admin/admin.service';
+import { CreateAdminDto } from '../admin/dto/create-admin.dto';
+import { UpdateAdminDto } from '../admin/dto/update-admin.dto';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class SuperAdminService {
-  create(createSuperAdminDto: CreateSuperAdminDto) {
-    return 'This action adds a new superAdmin';
+  constructor(
+    @InjectModel(collectionsName.admin) private readonly adminModel: Model<Admin>,
+    private readonly adminService: AdminService,
+  ) {}
+
+  async getAdmins(excludeId: Types.ObjectId) {
+    return await this.adminModel.find({ _id: { $ne: excludeId } }).lean<Admin[]>();
   }
 
-  findAll() {
-    return `This action returns all superAdmin`;
+  async createAdmin(createAdminDto: CreateAdminDto) {
+    return this.adminService.create(createAdminDto);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} superAdmin`;
-  }
-
-  update(id: number, updateSuperAdminDto: UpdateSuperAdminDto) {
-    return `This action updates a #${id} superAdmin`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} superAdmin`;
+  async updateAdmin(adminId: Types.ObjectId, updateAdminDto: UpdateAdminDto) {
+    return this.adminService.update(adminId, updateAdminDto);
   }
 }

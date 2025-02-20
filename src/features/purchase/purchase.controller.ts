@@ -4,6 +4,7 @@ import { PurchaseCreditDto } from './dto/purchase-credit.dto';
 import { Request, Response } from 'express';
 import { Types } from 'mongoose';
 import { Public } from '../common';
+import { PurchaseAdminCreditDto } from './dto/purchase-admin-credit.dto';
 
 @Controller('purchase')
 export class PurchaseController {
@@ -15,6 +16,17 @@ export class PurchaseController {
     const data = await this.purchaseService.purchaseCredits(
       purchaseCreditDto.admin,
       purchaseCreditDto,
+      encodeURIComponent(origin),
+    );
+    return data;
+  }
+
+  @Post('admin-credit/generate-link')
+  async purchaseAdminCredits(@Body() purchaseAdminCreditDto: PurchaseAdminCreditDto, @Req() request: Request) {
+    const origin = request.headers.origin;
+    const data = await this.purchaseService.purchaseAdminCredits(
+      purchaseAdminCreditDto.admin,
+      purchaseAdminCreditDto,
       encodeURIComponent(origin),
     );
     return data;
@@ -33,11 +45,7 @@ export class PurchaseController {
       return response.redirect(`${query.origin}/payment/failed`);
     }
 
-    const data = await this.purchaseService.verifyAndSaveCredits(
-      new Types.ObjectId(query.invoiceId),
-      query.token,
-      query.origin,
-    );
+    const data = await this.purchaseService.verifyAndSaveCredits(new Types.ObjectId(query.invoiceId), query.token);
     if (!data) {
       return response.redirect(`${query.origin}/payment/failed`);
     }

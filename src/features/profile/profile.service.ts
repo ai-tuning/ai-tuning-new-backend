@@ -29,11 +29,9 @@ export class ProfileService {
       const employee = await this.employeeService.findByUserId(authUser._id);
       const role = await this.employeeRoleService.findById(employee.role);
       return { ...employee, permission: role.permission, ...authUser };
-    } else if (authUser.role === RolesEnum.ADMIN) {
+    } else if (authUser.role === RolesEnum.ADMIN || authUser.role === RolesEnum.SUPER_ADMIN) {
       const admin = await this.adminService.findByUserId(authUser._id);
       return { ...authUser, ...admin };
-    } else if (authUser.role === RolesEnum.SUPER_ADMIN) {
-      return { ...authUser };
     }
   }
 
@@ -42,7 +40,7 @@ export class ProfileService {
       return await this.customerService.update(authUser.customer, updateProfileDto);
     } else if (authUser.role === RolesEnum.EMPLOYEE) {
       return await this.customerService.update(authUser.employee, updateProfileDto);
-    } else if (authUser.role === RolesEnum.ADMIN) {
+    } else if (authUser.role === RolesEnum.ADMIN || authUser.role === RolesEnum.SUPER_ADMIN) {
       return await this.adminService.update(authUser.admin, updateProfileDto);
     }
   }
@@ -63,7 +61,7 @@ export class ProfileService {
       profile = await this.customerService.changeAvatar(authUser.customer, newAvatar);
     } else if (authUser.role === RolesEnum.EMPLOYEE) {
       profile = await this.employeeService.changeAvatar(authUser.employee, newAvatar);
-    } else if (authUser.role === RolesEnum.ADMIN) {
+    } else if (authUser.role === RolesEnum.ADMIN || authUser.role === RolesEnum.SUPER_ADMIN) {
       profile = await this.adminService.changeAvatar(authUser.admin, newAvatar);
     }
 

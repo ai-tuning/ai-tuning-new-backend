@@ -23,4 +23,5 @@ export const collectionsName = {
   chat: 'chat',
   employeeRole: 'employee-role',
   permission: 'permission',
+  adminPricing: 'admin-pricing',
 };

@@ -12,7 +12,7 @@ export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
   @UseInterceptors(FileInterceptor('file'))
-  @AccessRole([RolesEnum.ADMIN, RolesEnum.CUSTOMER])
+  @AccessRole([RolesEnum.ADMIN, RolesEnum.SUPER_ADMIN, RolesEnum.CUSTOMER])
   @Post('message')
   async createCustomerChat(@Body() createChatDto: CreateChatDto, @UploadedFile() file: Express.Multer.File) {
     const data = await this.chatService.create(createChatDto, file);

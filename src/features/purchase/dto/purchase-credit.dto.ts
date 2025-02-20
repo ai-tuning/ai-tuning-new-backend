@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { IsMongoId, IsNotEmpty, IsNumber, IsString, Min } from 'class-validator';
+import { IsMongoId, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 export class PurchaseCreditDto {
   @IsNotEmpty()
@@ -7,7 +7,7 @@ export class PurchaseCreditDto {
   @IsMongoId()
   admin: Types.ObjectId;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   @IsMongoId()
   customer: Types.ObjectId;

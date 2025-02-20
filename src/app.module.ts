@@ -28,7 +28,6 @@ import { ScriptModule } from './features/script/script.module';
 import { SolutionModule } from './features/solution/solution.module';
 import { SupportTicketModule } from './features/support-ticket/support-ticket.module';
 import { EvcModule } from './features/evc/evc.module';
-import { SuperAdminModule } from './features/super-admin/super-admin.module';
 import { QueueManagerModule } from './features/queue-manager/queue-manager.module';
 import { BullModule } from '@nestjs/bull';
 import { Kess3Module } from './features/kess3/kess3.module';
@@ -40,6 +39,8 @@ import { PricingModule } from './features/pricing/pricing.module';
 import { PurchaseModule } from './features/purchase/purchase.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { EmployeeRoleModule } from './features/employee-role/employee-role.module';
+import { SuperAdminModule } from './features/super-admin/super-admin.module';
+import { AdminPricingModule } from './features/admin-pricing/admin-pricing.module';
 
 @Module({
   imports: [
@@ -151,7 +152,6 @@ import { EmployeeRoleModule } from './features/employee-role/employee-role.modul
     SolutionModule,
     SupportTicketModule,
     EvcModule,
-    SuperAdminModule,
     QueueManagerModule,
     Kess3Module,
     AutoTunerModule,
@@ -161,6 +161,8 @@ import { EmployeeRoleModule } from './features/employee-role/employee-role.modul
     PricingModule,
     PurchaseModule,
     EmployeeRoleModule,
+    SuperAdminModule,
+    AdminPricingModule,
   ],
   controllers: [],
   providers: [],

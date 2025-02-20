@@ -4,10 +4,10 @@ import { collectionsName, PAYMENT_STATUS } from 'src/features/constant';
 
 @Schema({ timestamps: true, versionKey: false })
 class Invoice extends Document {
-  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, ref: collectionsName.admin })
   admin: Types.ObjectId;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, ref: collectionsName.customer })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: collectionsName.customer })
   customer: Types.ObjectId;
 
   @Prop({ type: String, required: true })

@@ -41,7 +41,7 @@ export class ScriptController {
     return { data, message: 'Script created successfully' };
   }
 
-  @AccessRole([RolesEnum.ADMIN])
+  @AccessRole([RolesEnum.ADMIN, RolesEnum.SUPER_ADMIN])
   @Get('download/:scriptId')
   async downloadScript(@Param('scriptId') scriptId: Types.ObjectId, @Res() res: Response) {
     const filePath = await this.scriptService.downloadScript(scriptId);
@@ -49,14 +49,14 @@ export class ScriptController {
     res.download(filePath);
   }
 
-  @AccessRole([RolesEnum.ADMIN])
+  @AccessRole([RolesEnum.ADMIN, RolesEnum.SUPER_ADMIN])
   @Delete(':scriptId')
   async deleteScript(@Param('scriptId') scriptId: Types.ObjectId) {
     const deletedScript = await this.scriptService.deleteScript(scriptId);
     return { deletedScript, message: 'Script deleted successfully' };
   }
 
-  @AccessRole([RolesEnum.ADMIN])
+  @AccessRole([RolesEnum.ADMIN, RolesEnum.SUPER_ADMIN])
   @UseInterceptors(FileInterceptor('modFile'))
   @Patch('replace-script')
   async replaceScript(@Body() replaceScriptDto: ReplaceScriptDto, @UploadedFile() file: Express.Multer.File) {
