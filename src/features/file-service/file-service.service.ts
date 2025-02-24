@@ -13,6 +13,7 @@ import {
   EMAIL_TYPE,
   CHAT_BELONG,
   WinOLS_STATUS,
+  CHAT_MESSAGE_SENDER_GROUP,
 } from '../constant';
 import { FileService } from './schema/file-service.schema';
 import { ClientSession, Connection, Model, Types } from 'mongoose';
@@ -505,6 +506,7 @@ ResellerCredits= 10
             receiver: admin as Types.ObjectId,
             service: newFileService._id as Types.ObjectId,
             sender: customer.user as Types.ObjectId,
+            messageSenderGroup: CHAT_MESSAGE_SENDER_GROUP.CUSTOMER,
           },
           null,
           session,

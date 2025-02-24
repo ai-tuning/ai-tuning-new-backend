@@ -32,7 +32,7 @@ export class CreateChatDto {
   @IsNotEmpty()
   @IsString()
   @IsEnum(CHAT_MESSAGE_SENDER_GROUP)
-  messageSenderGroup: boolean;
+  messageSenderGroup: CHAT_MESSAGE_SENDER_GROUP;
 
   message?: string;
 
