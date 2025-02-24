@@ -121,6 +121,9 @@ export class FileService extends Document {
   @Prop({ type: Number, required: true, default: 0 })
   credits: number;
 
+  @Prop({ type: Number })
+  adminCredits: number;
+
   @Prop({ type: String, required: true, default: PAYMENT_STATUS.UNPAID })
   paymentStatus: string;
 
@@ -156,6 +159,9 @@ export class FileService extends Document {
 
   @Prop({ type: ModUpload })
   modUpload: ModUpload;
+
+  @Prop({ type: Boolean, default: false })
+  aiAssist: boolean;
 }
 
 export const FileServiceSchema = SchemaFactory.createForClass(FileService);

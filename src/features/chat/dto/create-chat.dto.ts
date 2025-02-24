@@ -1,6 +1,7 @@
+import { Type } from 'class-transformer';
 import { IsEnum, IsMongoId, IsNotEmpty, IsString } from 'class-validator';
 import { Types } from 'mongoose';
-import { CHAT_BELONG } from 'src/features/constant';
+import { CHAT_BELONG, CHAT_MESSAGE_SENDER_GROUP } from 'src/features/constant';
 
 export class CreateChatDto {
   @IsNotEmpty()
@@ -27,6 +28,11 @@ export class CreateChatDto {
   @IsString()
   @IsEnum(CHAT_BELONG)
   chatBelong: CHAT_BELONG;
+
+  @IsNotEmpty()
+  @IsString()
+  @IsEnum(CHAT_MESSAGE_SENDER_GROUP)
+  messageSenderGroup: boolean;
 
   message?: string;
 

@@ -28,8 +28,8 @@ export class CustomerController {
   }
 
   @Get('types')
-  async getCustomerType() {
-    return this.customerService.getCustomerTypes();
+  async getCustomerType(@AuthUser() authUser: IAuthUser) {
+    return this.customerService.getCustomerTypes(authUser);
   }
 
   @Post('types')

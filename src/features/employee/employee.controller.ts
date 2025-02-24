@@ -11,8 +11,8 @@ export class EmployeeController {
   constructor(private readonly employeeService: EmployeeService) {}
 
   @Post()
-  async create(@Body() createEmployeeDto: CreateEmployeeDto) {
-    const data = await this.employeeService.create(createEmployeeDto);
+  async create(@Body() createEmployeeDto: CreateEmployeeDto, @AuthUser() authUser: IAuthUser) {
+    const data = await this.employeeService.create(createEmployeeDto, authUser);
     return { data, message: 'User created successfully' };
   }
 

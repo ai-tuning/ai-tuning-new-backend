@@ -6,18 +6,18 @@ import { InjectModel } from '@nestjs/mongoose';
 import { collectionsName } from '../constant';
 import { Script } from './schema/script.schema';
 import { Model, Types } from 'mongoose';
-import { FileServiceService } from '../file-service/file-service.service';
 import { FileSchema, PathService } from '../common';
 import { StorageService } from '../storage-service/storage-service.service';
 import { CarControllerService } from '../car-controller/car-controller.service';
 import { CarService } from '../car/car.service';
 import { ReplaceScriptDto } from './dto/replace-script.dto';
+import { FileService } from '../file-service/schema/file-service.schema';
 
 @Injectable()
 export class ScriptService {
   constructor(
     @InjectModel(collectionsName.script) private readonly scriptModel: Model<Script>,
-    private readonly fileServiceService: FileServiceService,
+    @InjectModel(collectionsName.fileService) private readonly fileServiceModel: Model<FileService>,
     private readonly storageService: StorageService,
     private readonly carService: CarService,
     private readonly controllerService: CarControllerService,
@@ -32,14 +32,14 @@ export class ScriptService {
     let modFilesPath: string[] = [];
 
     try {
-      const car = await this.carService.findById(createScriptDto.car);
+      const car = await this.carService.findByIdAndSelect(createScriptDto.car, ['name', 'makeType']);
       if (!car) throw new NotFoundException('Car not found');
-      const controller = await this.controllerService.findById(createScriptDto.controller);
+      const controller = await this.controllerService.findByIdAndSelect(createScriptDto.controller, ['car', 'name']);
       if (!controller) throw new NotFoundException('Controller not found');
 
       //manage files
       if (createScriptDto.fileService) {
-        const fileService = await this.fileServiceService.findById(createScriptDto.fileService);
+        const fileService = await this.fileServiceModel.findById(createScriptDto.fileService);
         if (!fileService) {
           throw new NotFoundException('File service not found');
         }
@@ -71,12 +71,17 @@ export class ScriptService {
         throw new BadRequestException('Mod files must be same size as original file');
       }
 
-      const completeScriptPath = this.pathService.getCompleteScriptPath(
+      let completeScriptPath = this.pathService.getCompleteScriptPath(
         createScriptDto.admin,
         car.makeType,
         car.name,
         controller.name,
       );
+
+      if (createScriptDto.admin.toString() === process.env.SUPER_ADMIN_ID) {
+        completeScriptPath = this.pathService.getAiScriptPath(car.makeType, car.name, controller.name);
+      }
+
       if (!fs.existsSync(completeScriptPath)) {
         fs.mkdirSync(completeScriptPath, { recursive: true });
       }
@@ -144,7 +149,7 @@ export class ScriptService {
       .lean<Script[]>();
   }
 
-  private compareFileSize(originalFilePath: string, modFiles: Express.Multer.File[]) {
+  compareFileSize(originalFilePath: string, modFiles: Express.Multer.File[]) {
     let hasDifferentSize = false;
     const originalFileSize = fs.statSync(originalFilePath).size;
 
@@ -159,7 +164,7 @@ export class ScriptService {
     return hasDifferentSize;
   }
 
-  private convertDifferencesToHex(differences: { position: number; file1Byte: number; file2Byte: number }[]) {
+  convertDifferencesToHex(differences: { position: number; file1Byte: number; file2Byte: number }[]) {
     return differences.map((diff) => {
       const file1ByteHex = diff.file1Byte !== undefined ? diff.file1Byte.toString(16).padStart(2, '0') : '??';
       const file2ByteHex = diff.file2Byte !== undefined ? diff.file2Byte.toString(16).padStart(2, '0') : '??';
@@ -171,7 +176,7 @@ export class ScriptService {
     });
   }
 
-  private compareFiles(file1Buffer: Buffer, file2Buffer: Buffer) {
+  compareFiles(file1Buffer: Buffer, file2Buffer: Buffer) {
     const maxLength = Math.max(file1Buffer.length, file2Buffer.length);
     const differences = [];
 
@@ -260,7 +265,7 @@ export class ScriptService {
       if (!modFile) {
         throw new BadRequestException('File Not found');
       }
-      const fileService = await this.fileServiceService.findById(replaceScriptDto.fileService);
+      const fileService = await this.fileServiceModel.findById(replaceScriptDto.fileService);
       if (!fileService) {
         throw new BadRequestException('File Service Not found');
       }

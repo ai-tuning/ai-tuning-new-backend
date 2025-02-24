@@ -22,8 +22,8 @@ export class SolutionController {
   }
 
   @Get()
-  findByAdmin(@AuthUser() authUser: IAuthUser) {
-    return this.solutionService.findByAdmin(authUser.admin);
+  findByAdmin() {
+    return this.solutionService.findAll();
   }
 
   @Patch(':id')

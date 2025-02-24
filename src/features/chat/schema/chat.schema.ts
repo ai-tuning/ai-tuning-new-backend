@@ -1,7 +1,7 @@
 import { Prop, SchemaFactory, Schema } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
 import { FileSchema } from 'src/features/common';
-import { CHAT_BELONG } from 'src/features/constant';
+import { CHAT_BELONG, CHAT_MESSAGE_SENDER_GROUP } from 'src/features/constant';
 
 @Schema({ timestamps: true, versionKey: false })
 class Chat extends Document {
@@ -24,6 +24,9 @@ class Chat extends Document {
 
   @Prop({ type: String, enum: CHAT_BELONG, required: true })
   chatBelong: CHAT_BELONG;
+
+  @Prop({ type: String, enum: CHAT_MESSAGE_SENDER_GROUP, required: true })
+  messageSenderGroup: CHAT_MESSAGE_SENDER_GROUP;
 
   @Prop({ type: String })
   message: string;

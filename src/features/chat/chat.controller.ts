@@ -15,6 +15,7 @@ export class ChatController {
   @AccessRole([RolesEnum.ADMIN, RolesEnum.SUPER_ADMIN, RolesEnum.CUSTOMER])
   @Post('message')
   async createCustomerChat(@Body() createChatDto: CreateChatDto, @UploadedFile() file: Express.Multer.File) {
+    console.log('createChatDto', createChatDto);
     const data = await this.chatService.create(createChatDto, file);
     return { data };
   }

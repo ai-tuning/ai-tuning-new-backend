@@ -34,10 +34,7 @@ export class AuthController {
     let domain = '';
     let sameSite: 'lax' | 'strict' | 'none' | boolean = 'lax';
     const origin = request.headers.host;
-    if (origin.includes('.ecufile.eu')) {
-      domain = 'ai-tuningfiles.com';
-      sameSite = 'none';
-    } else if (origin.includes('.tuningfile-server.com')) {
+    if (origin.includes('.tuningfile-server.com')) {
       domain = 'ai-tuningfiles.com';
       sameSite = 'none';
     } else if (origin.includes('dyno-files.org')) {

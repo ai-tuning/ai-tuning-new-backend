@@ -13,6 +13,7 @@ import { CustomerType } from './schema/customer-type.schema';
 import { CustomValidationPipe } from '../common/validation-helper/custom-validation-pipe';
 import { PricingService } from '../pricing/pricing.service';
 import { AvatarDto } from './dto/avatar.dto';
+import { IAuthUser } from '../common';
 
 @Injectable()
 export class CustomerService {
@@ -158,8 +159,8 @@ export class CustomerService {
     return this.customerModel.findOneAndUpdate({ _id: customerId }, { $set: { avatar } }).lean<CustomerDocument>();
   }
 
-  async getCustomerTypes() {
-    return this.customerTypeModel.find().lean<CustomerType>();
+  async getCustomerTypes(authUser: IAuthUser) {
+    return this.customerTypeModel.find({ admin: authUser.admin }).lean<CustomerType>();
   }
 
   async createCustomerType(createCustomerTypeDto: CustomerTypeDto) {

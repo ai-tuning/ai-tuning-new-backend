@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import * as fs from 'fs';
 import * as path from 'path';
+import { promisify } from 'util';
 import {
   MAKE_TYPE_ENUM,
   collectionsName,
@@ -11,9 +12,10 @@ import {
   PAYMENT_STATUS,
   EMAIL_TYPE,
   CHAT_BELONG,
+  WinOLS_STATUS,
 } from '../constant';
 import { FileService } from './schema/file-service.schema';
-import { Connection, Model, Types } from 'mongoose';
+import { ClientSession, Connection, Model, Types } from 'mongoose';
 import { AutomatisationDto } from './dto/create-file-service.dto';
 import { CarService } from '../car/car.service';
 import { CarControllerService } from '../car-controller/car-controller.service';
@@ -33,6 +35,13 @@ import { StorageService } from '../storage-service/storage-service.service';
 import { EmailQueueProducers } from '../queue-manager/producers/email-queue.producers';
 import { ChatService } from '../chat/chat.service';
 import { AdminService } from '../admin/admin.service';
+import { Admin } from '../admin/schema/admin.schema';
+import { ScriptService } from '../script/script.service';
+import { FileProcessQueueProducers } from '../queue-manager/producers/file.queue.producer';
+import { AdminPricingService } from '../admin-pricing/admin-pricing.service';
+import { AdminPrices } from '../admin-pricing/schema/admin-pricing.schema';
+
+const timeOutAsync = promisify(setTimeout);
 
 @Injectable()
 export class FileServiceService {
@@ -49,10 +58,13 @@ export class FileServiceService {
     private readonly autoFlasherService: AutoFlasherService,
     private readonly kess3Service: Kess3Service,
     private readonly pricingService: PricingService,
+    private readonly adminPricingService: AdminPricingService,
     private readonly storageService: StorageService,
     private readonly chatService: ChatService,
     private readonly adminService: AdminService,
+    private readonly scriptService: ScriptService,
     private readonly emailQueueProducers: EmailQueueProducers,
+    private readonly fileProcessProducer: FileProcessQueueProducers,
   ) {}
 
   async findById(id: Types.ObjectId): Promise<FileService> {
@@ -62,9 +74,14 @@ export class FileServiceService {
   async findByCustomerId(customerId: Types.ObjectId): Promise<FileService[]> {
     return this.fileServiceModel.find({ customer: customerId }).lean<FileService[]>();
   }
+
   async findByAdminId(adminId: Types.ObjectId): Promise<FileService[]> {
+    let query: any = { admin: adminId };
+    if (adminId.toString() === process.env.SUPER_ADMIN_ID) {
+      query = { $or: [{ admin: adminId }, { aiAssist: true }] };
+    }
     return await this.fileServiceModel
-      .find({ admin: adminId })
+      .find(query)
       .populate({
         path: collectionsName.customer,
         select: 'firstName lastName customerType',
@@ -93,7 +110,7 @@ export class FileServiceService {
     if (!car) {
       throw new BadRequestException('Car not found');
     }
-    const controller = await this.controllerService.findById(automatisationDto.controller);
+    const controller = await this.controllerService.findByIdAndSelect(automatisationDto.controller, ['name']);
     if (!controller) {
       throw new BadRequestException('Controller not found');
     }
@@ -159,51 +176,26 @@ export class FileServiceService {
       filePath = autoFlasher.decodedFilePath;
     }
 
-    const scriptPath = this.pathService.getCompleteScriptPath(car.admin, car.makeType, car.name, controller.name);
+    //get complete script path
+    let scriptPath = this.pathService.getCompleteScriptPath(car.admin, car.makeType, car.name, controller.name);
+
+    const admin = await this.adminService.findByIdAndSelect(automatisationDto.admin, ['aiAssist']);
+    if (admin.aiAssist) {
+      //ai assist exist then forward it to ai assist
+      scriptPath = this.pathService.getAiScriptPath(car.makeType, car.name, controller.name);
+    }
+
     if (!fs.existsSync(scriptPath)) {
       fs.mkdirSync(scriptPath, { recursive: true });
     }
 
-    const solutions = await this.solutionService.findByAdmin(car.admin);
+    const solutions = await this.solutionService.findAll();
     if (!solutions.length) {
       throw new BadRequestException("Your admin doesn't have solution");
     }
-
     const fileBufferContent = await fs.promises.readFile(filePath);
 
-    const scriptFiles = await fs.promises.readdir(scriptPath);
-
-    const limit = pLimit(10);
-    //get the match script files
-    const matchingScripts = await Promise.all(
-      scriptFiles.map((scriptFile) =>
-        limit(async () => {
-          const scriptFilePath = path.join(scriptPath, scriptFile);
-          const scriptContent = await fs.promises.readFile(scriptFilePath, 'utf-8');
-          if (scriptFile.endsWith('.json') && this.isValidJSON(scriptContent)) {
-            const isMatching = this.matchContent(fileBufferContent, scriptContent);
-            return isMatching ? scriptFile : null;
-          }
-          return null;
-        }),
-      ),
-    );
-
-    console.log('matchingScripts', matchingScripts);
-    //get the matching solution based on the matching script files name
-    const matchedSolution = matchingScripts.reduce(
-      (acc, scriptFile) => {
-        if (scriptFile) {
-          const solution = this.getMatchSolution(scriptFile, solutions);
-          console.log('solution', solution);
-          if (solution) {
-            acc.push({ solution: { _id: solution._id as Types.ObjectId, name: solution.name }, fileName: scriptFile });
-          }
-        }
-        return acc;
-      },
-      [] as { fileName: string; solution: { _id: Types.ObjectId; name: string } }[],
-    );
+    const matchedSolution = await this.matchScriptAndSolution(fileBufferContent, scriptPath, solutions);
 
     const newTempFileData = await tempFileData.save();
 
@@ -211,6 +203,10 @@ export class FileServiceService {
       matchedSolution,
       tempFileData: newTempFileData,
     };
+  }
+
+  async updateWinolsStatus(fileServiceId: Types.ObjectId, winolsStatus: WinOLS_STATUS) {
+    await this.fileServiceModel.updateOne({ _id: fileServiceId }, { $set: { winolsStatus } });
   }
 
   async prepareSolution(prepareSolutionDto: PrepareSolutionDto) {
@@ -266,6 +262,26 @@ export class FileServiceService {
 
       const requiredCredits = this.calculateCredits(selectedSolutionCategory, pricing, tempFileService.makeType);
 
+      const allAdminPricing = await this.adminPricingService.getAdminAllPricing();
+
+      const adminData = await this.adminService.findByIdAndSelect(admin, ['category', 'credits', 'aiAssist']);
+
+      let requiredAdminCredits = allAdminPricing.perFilePrice;
+
+      if (adminData.aiAssist) {
+        const pricingWithCategory = allAdminPricing[tempFileService.makeType.toLowerCase()];
+        const adminPricing = pricingWithCategory[adminData.category.toLowerCase()];
+        requiredAdminCredits = this.calculateAdminCredits(selectedSolutionCategory, adminPricing);
+      }
+
+      console.log('requiredAdminCredits', requiredAdminCredits);
+
+      if (requiredAdminCredits > adminData.credits) {
+        throw new BadRequestException(
+          "Your admin don't have enough credits to perform this service, Please contact your admin",
+        );
+      }
+
       if (requiredCredits > customer.credits) {
         throw new BadRequestException("You don't have enough credits");
       }
@@ -285,6 +301,10 @@ export class FileServiceService {
       };
       newFileService.uniqueId = Date.now().toString();
 
+      //admin pricing data insert
+      newFileService.adminCredits = requiredAdminCredits;
+      newFileService.aiAssist = adminData.aiAssist;
+
       fileServicePath = this.pathService.getFileServicePath(admin, tempFileService._id as Types.ObjectId);
 
       //read the bin file
@@ -295,17 +315,22 @@ export class FileServiceService {
         binFileBuffer = await fs.promises.readFile(path.join(fileServicePath, tempFileService.decodedFile));
       }
 
-      for (const file of selectedFiles) {
-        //get the script path
-        const solutionPath = this.pathService.getCompleteScriptPath(
-          admin,
-          tempFileService.makeType,
-          car.name,
-          controller.name,
-        );
+      //get the script path
+      let scriptPath = this.pathService.getCompleteScriptPath(
+        admin,
+        tempFileService.makeType,
+        car.name,
+        controller.name,
+      );
 
+      //if ai assist is on then get the ai script
+      if (adminData.aiAssist) {
+        scriptPath = this.pathService.getAiScriptPath(tempFileService.makeType, car.name, controller.name);
+      }
+
+      for (const file of selectedFiles) {
         //get the file
-        const fileItem = path.join(solutionPath, file);
+        const fileItem = path.join(scriptPath, file);
 
         //read the file and store the content
         const contents = JSON.parse(await fs.promises.readFile(fileItem, 'utf8'));
@@ -363,17 +388,28 @@ ResellerCredits= 10
             newFileService.kess3 = tempFileService.kess3;
           }
           encodedPath = await this.encodeModifiedFile(modifiedPath, tempFileService);
+
+          console.log('encodedPath', encodedPath);
           tempFileService.modFile = path.basename(encodedPath);
         }
+
+        //update customer credit and admin credit if file is ready
         await this.customerService.updateCredit(customer._id as Types.ObjectId, -requiredCredits, session);
+
         newFileService.paymentStatus = PAYMENT_STATUS.PAID;
         newFileService.status = FILE_SERVICE_STATUS.COMPLETED;
-      } else {
-        //send the request to the queue for winols
-      }
 
-      //==========upload to the cloud===================
-      await tempFileService.save();
+        //reduce the admin credit
+        await this.adminService.updateCredit(admin, -requiredAdminCredits, session);
+
+        await tempFileService.save();
+      } else {
+        await tempFileService.save();
+        const adminData = await this.adminService.findById(admin);
+
+        //send the request to the queue for winols
+        this.fileProcessProducer.processFile({ fileServiceData: newFileService, tempFileService, admin: adminData });
+      }
 
       //original file
       const originalFilePath = path.join(fileServicePath, tempFileService.originalFile);
@@ -383,6 +419,7 @@ ResellerCredits= 10
         path: originalFilePath,
         size: originalFileSize,
       });
+
       newFileService.originalFile = {
         url: originalUpload,
         originalname: tempFileService.originalFileName,
@@ -497,12 +534,9 @@ ResellerCredits= 10
           emailType: EMAIL_TYPE.requestSolution,
           uniqueId: newFileService.uniqueId,
         });
-
-        const admin = await this.adminService.findOne(prepareSolutionDto.admin, 'email');
-
         //send to admin
         this.emailQueueProducers.sendMail({
-          receiver: admin.email,
+          receiver: adminData.email,
           name: customer.firstName + ' ' + customer.lastName,
           emailType: EMAIL_TYPE.newFileNotification,
           uniqueId: newFileService.uniqueId,
@@ -553,6 +587,44 @@ ResellerCredits= 10
     }
   }
 
+  async matchScriptAndSolution(fileBufferContent: Buffer, scriptPath: string, solutions: Solution[]) {
+    const scriptFiles = await fs.promises.readdir(scriptPath);
+
+    const limit = pLimit(10);
+    //get the match script files
+    const matchingScripts = await Promise.all(
+      scriptFiles.map((scriptFile) =>
+        limit(async () => {
+          const scriptFilePath = path.join(scriptPath, scriptFile);
+          const scriptContent = await fs.promises.readFile(scriptFilePath, 'utf-8');
+          if (scriptFile.endsWith('.json') && this.isValidJSON(scriptContent)) {
+            const isMatching = this.matchContent(fileBufferContent, scriptContent);
+            return isMatching ? scriptFile : null;
+          }
+          return null;
+        }),
+      ),
+    );
+
+    console.log('matchingScripts', matchingScripts);
+    //get the matching solution based on the matching script files name
+    const matchedSolution = matchingScripts.reduce(
+      (acc, scriptFile) => {
+        if (scriptFile) {
+          const solution = this.getMatchSolution(scriptFile, solutions);
+          console.log('solution', solution);
+          if (solution) {
+            acc.push({ solution: { _id: solution._id as Types.ObjectId, name: solution.name }, fileName: scriptFile });
+          }
+        }
+        return acc;
+      },
+      [] as { fileName: string; solution: { _id: Types.ObjectId; name: string } }[],
+    );
+
+    return matchedSolution;
+  }
+
   private matchContent(binFileBuffer: Buffer, scriptContent: string) {
     const { differences } = JSON.parse(scriptContent);
     return differences.every(
@@ -597,5 +669,439 @@ ResellerCredits= 10
       }
     }
     return totalCredits;
+  }
+
+  private calculateAdminCredits(services: SOLUTION_CATEGORY[], adminPricing: AdminPrices) {
+    console.log('service', services, 'adminPricng', adminPricing);
+    let totalCredits = 0;
+    for (const service of services) {
+      totalCredits += adminPricing[service.toLowerCase()];
+    }
+    return totalCredits;
+  }
+
+  /**
+   * File process queue for winols
+   */
+  async fileProcess(fileServiceData: FileService, tempFileService: TempFileService, admin: Admin) {
+    //change the file status to processing
+    await this.fileServiceModel.updateOne(
+      { _id: fileServiceData._id },
+      { $set: { winolsStatus: WinOLS_STATUS.WinOLS_PROGRESS } },
+    );
+
+    //get the bin file path from temp file or download from the mega drive
+    let binFilePath = '';
+
+    //find temp file
+    console.log('tempFileService===>', tempFileService);
+    //check tempfile exist or not
+    // if (tempFileService) {
+    const fileServicePath = this.pathService.getFileServicePath(
+      tempFileService.admin,
+      tempFileService._id as Types.ObjectId,
+    );
+    console.log('fileServicePath->true===>', fileServicePath);
+
+    //check service is slave or not
+    if (!tempFileService.slaveType) {
+      //if not slave then original file is the  bin file
+      binFilePath = path.join(fileServicePath, tempFileService.originalFile);
+      console.log('binFilePath->slave->false===>', binFilePath);
+    } else {
+      //if slave file then decoded file is the bin file
+      binFilePath = path.join(fileServicePath, tempFileService.decodedFile);
+      console.log('binFilePath->slave->true===>', binFilePath);
+    }
+    // } else {
+    // //download file form mega
+    // const tempFilePath = this.pathService.getTempFilePath(tempFileService.service.toString());
+    // //define the exact content of the file
+    // binFilePath = path.join(tempFilePath, fileServiceData.originalFile.uniqueName);
+    // console.log('binFilePath else case', binFilePath);
+    // //get bin file url
+    // let binFileUrl = '';
+    // if (!fileServiceData.slaveType) {
+    //   binFileUrl = fileServiceData.originalFile.url;
+    // } else {
+    //   binFileUrl = fileServiceData.decodedFile.url;
+    // }
+    // console.log('start downloading file');
+    // //download the binfile from mega drive
+    // const fileContent = await this.storageService.downloadOnce(binFileUrl);
+    // console.log('completed downloading file');
+    // //write the file content
+    // await fs.promises.writeFile(binFilePath, fileContent);
+    // console.log('completed download file written');
+    // }
+
+    //copy to the winols destination folder
+    const parsedName = path.parse(binFilePath);
+    console.log('parsedName=======>', parsedName);
+
+    //get winols input/output file path
+    let inputPath = this.pathService.getWinolsInputPath(admin.username);
+    let outputPath = this.pathService.getWinolsOutPath(admin.username, parsedName.name);
+
+    if (admin.aiAssist) {
+      //get ai assist winols input/output file path
+
+      inputPath = this.pathService.getAIWinolsInputPath();
+      outputPath = this.pathService.getAIWinolsOutPath(parsedName.name);
+    }
+
+    console.log('ai assist==========>', admin.aiAssist);
+    console.log('inputPath==========>', inputPath);
+    console.log('outputPath============>', outputPath);
+
+    //copy the binfile to the winols input folder
+    await fs.promises.copyFile(binFilePath, path.join(inputPath, fileServiceData.originalFile.uniqueName));
+    console.log('copped to the winols in folder done');
+
+    console.log('waiting for 90 seconds');
+    await timeOutAsync(90000);
+    console.log('waited for 90 seconds');
+
+    //define exist
+    let outFileExits = fs.existsSync(outputPath);
+
+    let attempts = 0;
+
+    while (!outFileExits) {
+      if (attempts > 5) {
+        break;
+      }
+      //wait for 5 seconds
+      console.log('waiting for 10 seconds');
+      await timeOutAsync(10000);
+      attempts += 1;
+      outFileExits = fs.existsSync(outputPath);
+      console.log('outFileExits==>', outFileExits, 'attempts==>', attempts);
+    }
+
+    if (!outFileExits) {
+      throw new BadRequestException('Out File not found');
+    }
+
+    console.log('out file is exist');
+    const outFiles = await fs.promises.readdir(outputPath);
+
+    console.log('outFiles=====>', outFiles);
+
+    let previousFileCount = outFiles.length;
+    let currentFileCount = outFiles.length;
+    attempts = 0;
+
+    while (true) {
+      if (attempts > 2) {
+        break;
+      }
+      //wait for 5 seconds
+      await timeOutAsync(5000);
+      const outFiles = await fs.promises.readdir(outputPath);
+      currentFileCount = outFiles.length;
+
+      if (previousFileCount !== currentFileCount) {
+        console.log('got new file');
+        attempts = 0;
+        previousFileCount = currentFileCount;
+      } else {
+        attempts += 1;
+      }
+    }
+
+    return {
+      binFilePath,
+      outFiles,
+      outputPath,
+    };
+  }
+
+  /**
+   * File process queue handler
+   */
+
+  async buildFileProcess(
+    fileServiceData: FileService,
+    tempFileService: TempFileService,
+    admin: Admin,
+    data: {
+      binFilePath: string;
+      outFiles: string[];
+      outputPath: string;
+    },
+  ) {
+    const session = await this.connection.startSession();
+    try {
+      session.startTransaction();
+      console.log('Build process start');
+      console.log(data);
+
+      //get the requested and automatic solution
+      const requested = fileServiceData.solutions.requested;
+      const automatic = fileServiceData.solutions.automatic;
+
+      console.log('solutions requested==>', requested);
+      console.log('solutions automatic==>', automatic);
+
+      await this.updateWinolsStatus(fileServiceData._id as Types.ObjectId, WinOLS_STATUS.BUILD_PROGRESS);
+
+      //get solution without automatic solution, because these are already automatic
+      const solutionWithoutAutomatic = await this.findSolutionWithoutAutomaticSolution(automatic);
+      console.log('solutionWithoutAutomatic=====>', solutionWithoutAutomatic);
+      //declare modFiles
+      const modFiles = [];
+
+      //loop over the outFiles and match with requested solution
+      for (const solution of solutionWithoutAutomatic) {
+        //get matched file
+        const matchedFile = data.outFiles.find((file) => this.getMatchSolution(file, [solution]));
+        if (matchedFile) {
+          console.log('matchedFile', matchedFile);
+          //if matched then push into mod file
+          modFiles.push({
+            name: matchedFile,
+            path: path.join(data.outputPath, matchedFile),
+          });
+          console.log(
+            'requested.indexOf(solution._id as Types.ObjectId)',
+            requested.indexOf(solution._id as Types.ObjectId),
+          );
+          //remove from requested solution
+          requested.splice(requested.indexOf(solution._id as Types.ObjectId), 1);
+
+          automatic.push(solution._id as Types.ObjectId);
+        }
+      }
+
+      console.log('new  requested==>', requested);
+      console.log('new  automatic==>', automatic);
+
+      console.log('mod file after matching===>', modFiles);
+
+      //make scrips using the modFiles which is getting from the lua
+
+      const originalFileContent = await fs.promises.readFile(data.binFilePath);
+
+      //find car and controller
+      const car = await this.carService.findByIdAndSelect(fileServiceData.car, ['name', 'makeType']);
+      const controller = await this.controllerService.findByIdAndSelect(fileServiceData.controller, ['name']);
+
+      let completeScriptPath = this.pathService.getCompleteScriptPath(
+        admin._id as Types.ObjectId,
+        car.makeType,
+        car.name,
+        controller.name,
+      );
+
+      //if ai assist enabled then get the script path of ai tuning
+      if (admin.aiAssist) {
+        completeScriptPath = this.pathService.getAiScriptPath(car.makeType, car.name, controller.name);
+      }
+
+      for (const modFile of modFiles) {
+        const modFileContent = await fs.promises.readFile(modFile.path);
+        const differences = this.scriptService.compareFiles(originalFileContent, modFileContent);
+        const hexDifferences = this.scriptService.convertDifferencesToHex(differences);
+
+        const jsonDataItem = JSON.stringify({ differences: hexDifferences }, null, 2);
+
+        const parsedName = path.parse(modFile.name);
+        console.log('parsedName from build process modfile=======>', parsedName);
+
+        const exactFilePath = path.join(completeScriptPath, parsedName.name + '-' + Date.now() + '.json');
+
+        await fs.promises.writeFile(exactFilePath, jsonDataItem);
+        console.log('new script written in ', exactFilePath);
+      }
+
+      if (!requested.length) {
+        //check customer admin credits has enough credit or not
+
+        if (admin.credits < fileServiceData.adminCredits) throw new BadRequestException('Not enough admin credits');
+
+        const customer = await this.customerService.findById(fileServiceData.customer as Types.ObjectId);
+        if (customer.credits < fileServiceData.credits) throw new BadRequestException('Not enough credits');
+
+        const buildData = await this.buildSolution(
+          fileServiceData,
+          tempFileService,
+          data.binFilePath,
+          completeScriptPath,
+          session,
+        );
+        //Send email for file confirmation
+        this.emailQueueProducers.sendMail({
+          receiver: customer.email,
+          name: customer.firstName + ' ' + customer.lastName,
+          emailType: EMAIL_TYPE.fileReady,
+          uniqueId: fileServiceData.uniqueId,
+        });
+
+        delete buildData.fileService._id;
+        delete buildData.tempFileService._id;
+
+        buildData.fileService.winolsStatus = WinOLS_STATUS.WinOLS_OK;
+
+        //update file service and temp file
+        await this.fileServiceModel.updateOne(
+          { _id: fileServiceData._id },
+          { $set: buildData.fileService },
+          { session },
+        );
+
+        await this.tempFileServiceModel.updateOne(
+          { _id: tempFileService._id },
+          { $set: buildData.tempFileService },
+          { session },
+        );
+
+        //update file service and temp file
+      } else {
+        await this.updateWinolsStatus(fileServiceData._id as Types.ObjectId, WinOLS_STATUS.WinOLS_FAILED);
+      }
+      await session.commitTransaction();
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  async findSolutionWithoutAutomaticSolution(automatic: Types.ObjectId[]) {
+    const solutions = await this.solutionService.findAll();
+
+    return solutions.filter((solution) => !automatic.includes(solution._id as Types.ObjectId));
+  }
+
+  async buildSolution(
+    fileService: FileService,
+    tempFileService: TempFileService,
+    binFilePath: string,
+    scripPath: string,
+    session: ClientSession,
+  ) {
+    const solutions = [];
+    if (fileService.solutions.requested.length) {
+      solutions.push(...fileService.solutions.requested);
+    }
+    if (fileService.solutions.automatic.length) {
+      solutions.push(...fileService.solutions.automatic);
+    }
+
+    console.log('combined solutions from build functoin', solutions);
+    console.log('Build start');
+
+    //read bin file
+    const fileBufferContent = await fs.promises.readFile(binFilePath);
+
+    //get matched solution
+    const matchedSolutions = await this.matchScriptAndSolution(fileBufferContent, scripPath, solutions);
+    console.log('matchedSolution', matchedSolutions);
+
+    for (const matchedSolution of matchedSolutions) {
+      //get the script path
+
+      //get the file
+      const fileItem = path.join(scripPath, matchedSolution.fileName);
+      console.log('file item======>', fileItem);
+
+      //read the file and store the content
+      const contents = JSON.parse(await fs.promises.readFile(fileItem, 'utf8'));
+
+      //loop over the contents and write the content
+      for (const content of contents.differences) {
+        if (content.position < fileBufferContent.length) {
+          fileBufferContent[content.position] = parseInt(content.file2ByteHex, 16);
+        }
+      }
+    }
+
+    const allSolutionName = [];
+    for (const solution of matchedSolutions) {
+      allSolutionName.push(solution.solution.name);
+    }
+    console.log('all solutoin name from build function', allSolutionName);
+
+    const modifiedFileName = `MOD_${allSolutionName.join('_')}_${tempFileService.originalFileName.replace(/Original/i, 'modified')}`;
+
+    console.log('modifiedFileName', modifiedFileName);
+
+    const fileServicePath = this.pathService.getFileServicePath(
+      tempFileService.admin,
+      tempFileService._id as Types.ObjectId,
+    );
+
+    console.log('fileServicePath', fileServicePath);
+
+    const modifiedPath = path.join(fileServicePath, modifiedFileName);
+
+    console.log('modifiedPath from build function', modifiedPath);
+
+    tempFileService.modWithoutEncoded = modifiedFileName;
+
+    //write mod file
+    await fs.promises.writeFile(modifiedPath, fileBufferContent);
+
+    //handle encode if file is slave
+    const encodedPath = await this.encodeModifiedFile(modifiedPath, tempFileService);
+
+    console.log('encodedPath from build function', encodedPath);
+
+    tempFileService.modFile = path.basename(encodedPath);
+
+    //reduce customer credit
+    await this.customerService.updateCredit(fileService.customer as Types.ObjectId, -fileService.credits, session);
+    fileService.paymentStatus = PAYMENT_STATUS.PAID;
+    fileService.status = FILE_SERVICE_STATUS.COMPLETED;
+
+    //reduce admin credit
+    await this.adminService.updateCredit(tempFileService.admin as Types.ObjectId, -fileService.credits, session);
+
+    console.log('build upload start');
+    if (modifiedPath) {
+      const modWithoutEncodedFileSize = fs.statSync(modifiedPath).size;
+      const modifiedUpload = await this.storageService.upload(fileService._id.toString(), {
+        name: path.basename(modifiedPath),
+        path: modifiedPath,
+        size: modWithoutEncodedFileSize,
+      });
+
+      if (encodedPath) {
+        fileService.modWithoutEncoded = {
+          url: modifiedUpload,
+          originalname: path.basename(modifiedPath),
+          uniqueName: path.basename(modifiedPath),
+        };
+      } else {
+        fileService.modFile = {
+          url: modifiedUpload,
+          originalname: path.basename(modifiedPath),
+          uniqueName: path.basename(modifiedPath),
+        };
+      }
+    }
+    //encoded file
+    if (encodedPath) {
+      const encodedFileSize = fs.statSync(encodedPath).size;
+      const encodedUpload = await this.storageService.upload(fileService._id.toString(), {
+        name: path.basename(encodedPath),
+        path: encodedPath,
+        size: encodedFileSize,
+      });
+      fileService.modFile = {
+        url: encodedUpload,
+        originalname: path.basename(encodedPath),
+        uniqueName: path.basename(encodedPath),
+      };
+    }
+    console.log('build upload end');
+
+    return { fileService, tempFileService };
+  }
+
+  async updateAiAssistant(fileServiceId: Types.ObjectId, aiAssist: boolean) {
+    return await this.fileServiceModel.findByIdAndUpdate(fileServiceId, { $set: { aiAssist } }, { new: true });
   }
 }

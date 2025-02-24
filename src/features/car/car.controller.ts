@@ -18,8 +18,8 @@ export class CarController {
   }
 
   @Get()
-  findByAdmin(@AuthUser() authUser: IAuthUser) {
-    return this.carService.findByAdmin(authUser.admin);
+  findAll() {
+    return this.carService.findAll();
   }
 
   @Patch(':id')

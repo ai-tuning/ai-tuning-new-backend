@@ -8,6 +8,7 @@ import { collectionsName, RolesEnum } from '../constant';
 import { Employee, EmployeeDocument } from './schema/employee.schema';
 import { AvatarDto } from '../customer/dto/avatar.dto';
 import { UserService } from '../user/user.service';
+import { IAuthUser } from '../common';
 
 @Injectable()
 export class EmployeeService {
@@ -17,13 +18,25 @@ export class EmployeeService {
     private readonly userService: UserService,
   ) {}
 
-  async create(createEmployeeDto: CreateEmployeeDto) {
+  async create(createEmployeeDto: CreateEmployeeDto, authUser: IAuthUser) {
     const session = await this.connection.startSession();
     try {
       session.startTransaction();
       const { password, ...rest } = createEmployeeDto;
 
       const employee = new this.employeeModel(rest);
+
+      delete employee.parentRole;
+
+      if (authUser.role !== RolesEnum.EMPLOYEE) {
+        employee.parentRole = authUser.role;
+      } else {
+        const getAuthEmployeeData = await this.employeeModel
+          .findById(authUser.employee)
+          .select('parentRole')
+          .lean<Employee>();
+        employee.parentRole = getAuthEmployeeData.parentRole;
+      }
 
       const user = await this.userService.create(
         {

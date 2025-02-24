@@ -15,4 +15,10 @@ class CarController extends Document {
 
 const CarControllerSchema = SchemaFactory.createForClass(CarController);
 
-export { CarControllerSchema, CarController };
+type ControllerDocument = {
+  admin: Types.ObjectId;
+  car: Types.ObjectId;
+  name: string;
+};
+
+export { CarControllerSchema, CarController, ControllerDocument };

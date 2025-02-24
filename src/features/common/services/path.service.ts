@@ -27,6 +27,17 @@ export class PathService {
   }
 
   /**
+   * get complete script path for an admin
+   * @param makeType
+   * @param car
+   * @param controller
+   * @returns
+   */
+  getAiScriptPath(makeType: string, car: string, controller: string) {
+    return join(process.cwd(), 'public', 'scripts', 'ai-scripts', makeType, car, controller);
+  }
+
+  /**
    * get complete super script path
    * @param makeType
    * @param car
@@ -58,5 +69,24 @@ export class PathService {
 
   getCarLogoPath() {
     return join(process.cwd(), 'public', 'car-logos');
+  }
+
+  //winOLS paths
+  //for other amdin
+  getWinolsInputPath(username: string) {
+    return join(process.cwd(), 'public', 'winols', username, 'in');
+  }
+
+  //for super admin/ai tuning
+  getAIWinolsInputPath() {
+    return join(process.cwd(), 'public', 'winols', 'in');
+  }
+
+  getAIWinolsOutPath(filename: string) {
+    return join(process.cwd(), 'public', 'winols', 'out', filename);
+  }
+
+  getWinolsOutPath(username: string, filename: string) {
+    return join(process.cwd(), 'public', 'winols', username, 'out', filename);
   }
 }

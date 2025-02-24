@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Res,
   UploadedFile,
@@ -48,5 +49,11 @@ export class FileServiceController {
     const data = await this.fileServiceService.downloadFile(body.url);
     res.setHeader('Content-Disposition', 'attachment; filename=' + data.name); // Optional: specify filename for download
     data.data.pipe(res);
+  }
+
+  @Patch('ai-assistant')
+  async updateAiAssistant(@Body() body: { fileServiceId: Types.ObjectId; aiAssist: boolean }) {
+    if (!body.fileServiceId) throw new BadRequestException('File service not found');
+    return await this.fileServiceService.updateAiAssistant(body.fileServiceId, body.aiAssist);
   }
 }

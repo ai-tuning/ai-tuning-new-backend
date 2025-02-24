@@ -19,7 +19,12 @@ async function bootstrap() {
   const config = app.get(ConfigService);
 
   app.enableCors({
-    origin: ['https://admin-dev.ai-tuningfiles.com', 'https://portal-dev.ai-tuningfiles.com', 'http://localhost:4000'],
+    origin: [
+      'https://admin-dev.ai-tuningfiles.com',
+      'https://portal-dev.ai-tuningfiles.com',
+      'http://localhost:4000',
+      'http://localhost:3000',
+    ],
     credentials: true,
   });
   app.setGlobalPrefix('api/v1'); //route prefix

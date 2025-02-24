@@ -34,7 +34,7 @@ class Admin extends Document<Types.ObjectId> {
   phone: string;
 
   @Prop({ type: Number, default: 0 })
-  credits: Number;
+  credits: number;
 
   @Prop({ type: String, required: true })
   countryCode: string;
@@ -50,6 +50,10 @@ class Admin extends Document<Types.ObjectId> {
 
   @Prop({ type: FileSchema })
   avatar: FileSchema;
+
+  //auto forward to ai-assist
+  @Prop({ type: Boolean, default: false })
+  aiAssist: boolean;
 }
 
 const AdminSchema = SchemaFactory.createForClass(Admin);
@@ -57,13 +61,16 @@ const AdminSchema = SchemaFactory.createForClass(Admin);
 export class AdminDocument {
   _id: Types.ObjectId;
   username: string;
+  category: ADMIN_CATEGORY;
   companyName: string;
   firstName: string;
   lastName: string;
   email: string;
+  credits: number;
   phone: string;
   address: string;
   avatar: string;
+  aiAssist: boolean;
 }
 
 export { AdminSchema, Admin };

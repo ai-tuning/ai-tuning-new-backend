@@ -7,7 +7,7 @@ import { Car } from '../car/schema/car.schema';
 import { Connection, Model, Types } from 'mongoose';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { collectionsName } from '../constant';
-import { CarController } from './schema/car-controller.schema';
+import { CarController, ControllerDocument } from './schema/car-controller.schema';
 import { PathService } from '../common';
 
 @Injectable()
@@ -72,12 +72,20 @@ export class CarControllerService {
     }
   }
 
+  async findAll() {
+    return this.carControllerModel.find().sort({ name: 1 }).lean<CarController[]>();
+  }
+
   findByAdmin(adminId: Types.ObjectId) {
     return this.carControllerModel.find({ admin: adminId }).sort({ name: 1 }).lean<CarController[]>();
   }
 
   findById(controllerId: Types.ObjectId) {
     return this.carControllerModel.findById(controllerId).lean<CarController>();
+  }
+
+  async findByIdAndSelect(id: Types.ObjectId, selects: Array<keyof ControllerDocument>) {
+    return this.carControllerModel.findById(id).select(selects.join(' ')).lean<ControllerDocument>();
   }
 
   async update(id: Types.ObjectId, updateControllerDto: UpdateCarControllerDto) {

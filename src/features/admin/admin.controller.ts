@@ -3,7 +3,8 @@ import { Types } from 'mongoose';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { AdminService } from './admin.service';
-import { Public } from '../common';
+import { AccessRole, Public } from '../common';
+import { RolesEnum } from '../constant';
 
 @Controller('admins')
 export class AdminController {
@@ -30,5 +31,18 @@ export class AdminController {
   async update(@Param('id') id: Types.ObjectId, @Body() updateAdminDto: UpdateAdminDto) {
     const updatedAdmin = await this.adminService.update(id, updateAdminDto);
     return { message: 'Admin updated successfully', data: updatedAdmin };
+  }
+
+  @Get('ai-assist/:adminId')
+  async getAiAssistStatus(@Param('adminId') adminId: Types.ObjectId) {
+    const aiAssist = await this.adminService.getAiAssistStatus(adminId);
+    return aiAssist;
+  }
+
+  @AccessRole([RolesEnum.ADMIN, RolesEnum.SUPER_ADMIN])
+  @Patch('ai-assist/:adminId')
+  async updateAiAssist(@Param('adminId') adminId: Types.ObjectId, @Body() body: { aiAssist: boolean }) {
+    const aiAssist = await this.adminService.updateAiAssist(adminId, body.aiAssist);
+    return { message: 'Ai assist updated successfully', data: aiAssist };
   }
 }

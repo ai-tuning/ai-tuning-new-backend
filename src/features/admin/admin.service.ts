@@ -85,6 +85,14 @@ export class AdminService {
     return this.adminModel.findById(id).select(select).lean<AdminDocument>();
   }
 
+  async findByIdAndSelect(id: Types.ObjectId, select: Array<keyof AdminDocument>): Promise<AdminDocument> {
+    return this.adminModel.findById(id).select(select.join(' ')).lean<AdminDocument>();
+  }
+
+  async findById(id: Types.ObjectId): Promise<AdminDocument> {
+    return this.adminModel.findById(id).lean<AdminDocument>();
+  }
+
   async findByUserId(userId: Types.ObjectId, select?: string): Promise<AdminDocument> {
     return this.adminModel.findOne({ user: userId }).select(select).lean<AdminDocument>();
   }
@@ -140,5 +148,17 @@ export class AdminService {
     await CustomValidationPipe([avatar], AvatarDto);
     //don't return the new document
     return this.adminModel.findOneAndUpdate({ _id: adminId }, { $set: { avatar } }).lean<AdminDocument>();
+  }
+
+  async updateAiAssist(adminId: Types.ObjectId, aiAssist: boolean) {
+    console.log(aiAssist);
+    return await this.adminModel
+      .findByIdAndUpdate(adminId, { $set: { aiAssist } }, { new: true })
+      .select('aiAssist')
+      .lean<AdminDocument>();
+  }
+
+  async getAiAssistStatus(adminId: Types.ObjectId) {
+    return this.adminModel.findById(adminId).select('aiAssist').lean<AdminDocument>();
   }
 }

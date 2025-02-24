@@ -28,7 +28,6 @@ export class SettingController {
    */
   @Get('schedule')
   async getSchedule(@AuthUser() authUser: IAuthUser) {
-    console.log('authUser', authUser);
     const data = await this.scheduleService.getSchedule(authUser.admin);
     return data;
   }

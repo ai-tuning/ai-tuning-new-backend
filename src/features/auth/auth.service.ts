@@ -127,22 +127,7 @@ export class AuthService {
 
       const user = await this.userService.getUserByEmail(email);
 
-      const payload: any = {
-        _id: user._id,
-      };
-
-      if (user.role === RolesEnum.ADMIN || user.role === RolesEnum.SUPER_ADMIN) {
-        const admin = await this.adminModel.findOne({ user: user._id }).lean().select('_id firstName lastName');
-        payload.admin = admin._id;
-      } else if (user.role === RolesEnum.CUSTOMER) {
-        const customer = await this.customerService.findByUserId(user._id, ' _id firstName lastName admin');
-        payload.customer = customer._id;
-        payload.admin = customer.admin;
-      } else if (user.role === RolesEnum.EMPLOYEE) {
-        const employee = await this.employeeService.findByUserId(user._id);
-        payload.employee = employee._id;
-        payload.admin = employee.admin;
-      }
+      const { payload, profile } = await this.prepareProfile(user);
 
       const accessToken = this.jwtService.sign(payload);
 
@@ -154,7 +139,7 @@ export class AuthService {
       await this.userService.updateVerificationStatus(user._id, true, session);
 
       await session.commitTransaction();
-      return { accessToken, refreshToken, user };
+      return { accessToken, refreshToken, user, profile };
     } catch (error) {
       await session.abortTransaction();
       throw error;
@@ -270,6 +255,7 @@ export class AuthService {
       name = employee.firstName + ' ' + employee.lastName;
       payload.employee = employee._id;
       payload.admin = employee.admin;
+      payload.parentRole = employee.parentRole;
       profile = { ...employee, permission: role.permission, ...profile };
     }
     return { payload, profile, name };

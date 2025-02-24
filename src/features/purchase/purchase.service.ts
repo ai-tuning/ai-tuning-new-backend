@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CredentialService } from '../credential/credential.service';
 import { Connection, Types } from 'mongoose';
 import { PurchaseCreditDto } from './dto/purchase-credit.dto';
@@ -11,7 +11,6 @@ import { PAYMENT_STATUS } from '../constant';
 import { CustomerService } from '../customer/customer.service';
 import { PurchaseAdminCreditDto } from './dto/purchase-admin-credit.dto';
 import { AdminService } from '../admin/admin.service';
-import { AdminPricing } from '../admin-pricing/schema/admin-pricing.schema';
 import { AdminPricingService } from '../admin-pricing/admin-pricing.service';
 
 @Injectable()
@@ -117,6 +116,9 @@ export class PurchaseService {
   async getAccessToken(adminId: Types.ObjectId) {
     const getCredential = await this.credentialService.findByAdmin(adminId, 'paypal');
     // Encode the credentials in Base64 for Basic Authentication
+
+    if (!getCredential.paypal) throw new BadRequestException('Paypal Credential not found');
+
     const credentials = btoa(`${getCredential.paypal.clientId}:${getCredential.paypal.clientSecret}`);
 
     try {

@@ -22,4 +22,11 @@ class Car extends Document {
 
 const CarSchema = SchemaFactory.createForClass(Car);
 
-export { CarSchema, Car };
+type CarDocument = {
+  admin: Types.ObjectId;
+  name: string;
+  makeType: MAKE_TYPE_ENUM;
+  logo: string;
+};
+
+export { CarSchema, Car, CarDocument };

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { FileServiceService } from './file-service.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { FileServiceSchema } from './schema/file-service.schema';
@@ -18,6 +18,8 @@ import { StorageServiceModule } from '../storage-service/storage-service.module'
 import { QueueManagerModule } from '../queue-manager/queue-manager.module';
 import { ChatModule } from '../chat/chat.module';
 import { AdminModule } from '../admin/admin.module';
+import { ScriptModule } from '../script/script.module';
+import { AdminPricingModule } from '../admin-pricing/admin-pricing.module';
 
 @Module({
   imports: [
@@ -40,8 +42,10 @@ import { AdminModule } from '../admin/admin.module';
     AutoFlasherModule,
     PricingModule,
     StorageServiceModule,
-    QueueManagerModule,
+    forwardRef(() => QueueManagerModule),
     ChatModule,
+    ScriptModule,
+    AdminPricingModule,
   ],
   controllers: [FileServiceController],
   providers: [FileServiceService, PathService],

@@ -19,8 +19,8 @@ export class SolutionService {
     return solution.save();
   }
 
-  findByAdmin(adminId: Types.ObjectId) {
-    return this.solutionModel.find({ admin: adminId }).lean<Solution[]>();
+  findAll() {
+    return this.solutionModel.find().lean<Solution[]>();
   }
 
   findByIdsAndDistinctName(solutions: Types.ObjectId[]) {

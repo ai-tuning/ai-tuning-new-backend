@@ -16,3 +16,6 @@ export { EMAIL_TYPE } from './email-type';
 export { MAKE_TYPE_ENUM } from './enums/car-type.enum';
 export { VerificationEmailEnum } from './enums/verification-email.enum';
 export { ADMIN_CATEGORY } from './enums/admin-category.enum';
+export { NoticeType } from './enums/notice-type.enum';
+export { CHAT_MESSAGE_SENDER_GROUP } from './enums/chat-message-sender-group.enum';
+export { DTC_STATUS } from './enums/dtc-status';

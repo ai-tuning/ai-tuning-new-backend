@@ -6,7 +6,7 @@ import { UpdateCarDto } from './dto/update-car.dto';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { collectionsName } from '../constant';
 import { Connection, Model, Types } from 'mongoose';
-import { Car } from './schema/car.schema';
+import { Car, CarDocument } from './schema/car.schema';
 import { CarController } from '../car-controller/schema/car-controller.schema';
 import { PathService } from '../common';
 
@@ -51,12 +51,20 @@ export class CarService {
     }
   }
 
+  async findAll() {
+    return this.carModel.find().sort({ name: 1 }).lean<Car[]>();
+  }
+
   async findByAdmin(adminId: Types.ObjectId) {
     return this.carModel.find({ admin: adminId }).sort({ name: 1 }).lean<Car[]>();
   }
 
   async findById(id: Types.ObjectId) {
     return this.carModel.findById(id).lean<Car>();
+  }
+
+  async findByIdAndSelect(id: Types.ObjectId, selects: Array<keyof CarDocument>) {
+    return this.carModel.findById(id).select(selects.join(' ')).lean<CarDocument>();
   }
 
   async update(id: Types.ObjectId, updateCarDto: UpdateCarDto) {

@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
 import { FileSchema } from 'src/features/common';
-import { collectionsName, UserStatusEnum } from 'src/features/constant';
+import { collectionsName, RolesEnum, UserStatusEnum } from 'src/features/constant';
 
 @Schema({ timestamps: true, versionKey: false })
 class Employee extends Document {
@@ -24,6 +24,13 @@ class Employee extends Document {
     required: true,
   })
   role: Types.ObjectId;
+
+  @Prop({
+    type: String,
+    enum: RolesEnum,
+    required: true,
+  })
+  parentRole: RolesEnum;
 
   @Prop({ type: String, required: true })
   firstName: string;
