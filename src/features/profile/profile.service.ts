@@ -35,44 +35,55 @@ export class ProfileService {
     }
   }
 
-  async updateProfile(authUser: IAuthUser, updateProfileDto: UpdateCustomerDto | UpdateAdminDto | UpdateEmployeeDto) {
-    if (authUser.role === RolesEnum.CUSTOMER) {
-      return await this.customerService.update(authUser.customer, updateProfileDto);
-    } else if (authUser.role === RolesEnum.EMPLOYEE) {
-      return await this.customerService.update(authUser.employee, updateProfileDto);
-    } else if (authUser.role === RolesEnum.ADMIN || authUser.role === RolesEnum.SUPER_ADMIN) {
-      return await this.adminService.update(authUser.admin, updateProfileDto);
-    }
+  async updateCustomerProfile(authUser: IAuthUser, updateProfileDto: UpdateCustomerDto) {
+    await this.customerService.update(authUser.customer, updateProfileDto);
+    return await this.getProfile(authUser);
   }
+
+  async updateAdminProfile(authUser: IAuthUser, updateProfileDto: UpdateAdminDto | UpdateEmployeeDto) {
+    if (authUser.role === RolesEnum.EMPLOYEE) {
+      await this.customerService.update(authUser.employee, updateProfileDto);
+    } else if (authUser.role === RolesEnum.ADMIN || authUser.role === RolesEnum.SUPER_ADMIN) {
+      await this.adminService.update(authUser.admin, updateProfileDto);
+    }
+    return await this.getProfile(authUser);
+  }
+
   async changeAvatar(authUser: IAuthUser, file: Express.Multer.File) {
     let profile: any;
-
-    //get the new avatar data
-    const newAvatar = {
-      fileType: file.mimetype,
-      originalname: file.originalname,
-      filename: file.filename,
-    };
+    if (!file) throw new NotFoundException('File not found');
 
     //update the profile based on role
     if (authUser.role === RolesEnum.CUSTOMER) {
-      const customer = await this.customerService.findById(authUser.customer);
-      if (!customer) throw new NotFoundException('Customer not found');
-      profile = await this.customerService.changeAvatar(authUser.customer, newAvatar);
+      profile = await this.customerService.changeAvatar(authUser.customer, file.filename);
     } else if (authUser.role === RolesEnum.EMPLOYEE) {
-      profile = await this.employeeService.changeAvatar(authUser.employee, newAvatar);
+      profile = await this.employeeService.changeAvatar(authUser.employee, file.filename);
     } else if (authUser.role === RolesEnum.ADMIN || authUser.role === RolesEnum.SUPER_ADMIN) {
-      profile = await this.adminService.changeAvatar(authUser.admin, newAvatar);
+      profile = await this.adminService.changeAvatar(authUser.admin, file.filename);
     }
 
-    const oldAvatar = profile.avatar;
-    if (oldAvatar) {
+    if (profile.avatar) {
       //delete the old avatar
-      const imagePath = path.join(process.cwd(), 'public', 'uploads', 'images', oldAvatar.filename);
+      const imagePath = path.join(process.cwd(), 'public', 'uploads', 'images', profile.avatar);
       if (fs.existsSync(imagePath)) fs.rmSync(imagePath);
     }
 
-    profile.avatar = newAvatar;
+    profile.avatar = file.filename;
+    return profile;
+  }
+  async changeLogo(authUser: IAuthUser, file: Express.Multer.File) {
+    if (!file) throw new NotFoundException('File not found');
+
+    //update the profile based on role
+    const profile = await this.adminService.changeLogo(authUser.admin, file.filename);
+
+    if (profile.logo) {
+      //delete the old avatar
+      const imagePath = path.join(process.cwd(), 'public', 'uploads', 'images', profile.logo);
+      if (fs.existsSync(imagePath)) fs.rmSync(imagePath);
+    }
+
+    profile.logo = file.filename;
     return profile;
   }
 }

@@ -10,10 +10,9 @@ import { EvcService } from '../evc/evc.service';
 import { CustomBadRequest } from '../common/validation-helper/bad-request.exception';
 import { CustomerTypeDto } from './dto/customer-type.dto';
 import { CustomerType } from './schema/customer-type.schema';
-import { CustomValidationPipe } from '../common/validation-helper/custom-validation-pipe';
 import { PricingService } from '../pricing/pricing.service';
-import { AvatarDto } from './dto/avatar.dto';
 import { IAuthUser } from '../common';
+import validateVat, { CountryCodes } from 'validate-vat-ts';
 
 @Injectable()
 export class CustomerService {
@@ -101,6 +100,10 @@ export class CustomerService {
     return await this.customerModel.findOne({ user: userId }).select(select).lean<CustomerDocument>();
   }
 
+  async findByIdAndSelect(id: Types.ObjectId, select: Array<keyof CustomerDocument>): Promise<CustomerDocument> {
+    return this.customerModel.findById(id).select(select.join(' ')).lean<CustomerDocument>();
+  }
+
   async updateCredit(customerId: Types.ObjectId, amount: number, session: ClientSession) {
     return await this.customerModel
       .findOneAndUpdate({ _id: customerId }, { $inc: { credits: amount } }, { new: true, session })
@@ -125,6 +128,13 @@ export class CustomerService {
           { firstName: updateCustomerDto.firstName, lastName: updateCustomerDto.lastName },
           session,
         );
+      }
+
+      if (this.isEuCountry(customer.country) && customer.vatNumber !== updateCustomerDto.vatNumber) {
+        //validate vat number
+        const validInfo = await this.validateVatNumber(customer.country as CountryCodes, updateCustomerDto.vatNumber);
+        if (!validInfo.valid) throw new BadRequestException('Vat number is not valid');
+        updateCustomerDto.address = validInfo.address;
       }
 
       let isNewEvcNumber = false;
@@ -153,8 +163,8 @@ export class CustomerService {
     }
   }
 
-  async changeAvatar(customerId: Types.ObjectId, avatar: AvatarDto) {
-    await CustomValidationPipe([avatar], AvatarDto);
+  async changeAvatar(customerId: Types.ObjectId, avatar: string) {
+    // await CustomValidationPipe([avatar], AvatarDto);
     //don't return the new document
     return this.customerModel.findOneAndUpdate({ _id: customerId }, { $set: { avatar } }).lean<CustomerDocument>();
   }
@@ -237,5 +247,46 @@ export class CustomerService {
     } finally {
       await session.endSession();
     }
+  }
+
+  async validateVatNumber(country: CountryCodes, vatNumber: string) {
+    try {
+      return await validateVat(country, vatNumber);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  isEuCountry(country: string) {
+    const euCountries = [
+      'AT',
+      'BE',
+      'BG',
+      'HR',
+      'CY',
+      'CZ',
+      'DK',
+      'EE',
+      'FI',
+      'FR',
+      'DE',
+      'GR',
+      'HU',
+      'IE',
+      'IT',
+      'LV',
+      'LT',
+      'LU',
+      'MT',
+      'NL',
+      'PL',
+      'PT',
+      'RO',
+      'SK',
+      'SI',
+      'ES',
+      'SE',
+    ];
+    return euCountries.includes(country);
   }
 }

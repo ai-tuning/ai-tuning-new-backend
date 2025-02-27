@@ -12,6 +12,7 @@ import { CustomerService } from '../customer/customer.service';
 import { PurchaseAdminCreditDto } from './dto/purchase-admin-credit.dto';
 import { AdminService } from '../admin/admin.service';
 import { AdminPricingService } from '../admin-pricing/admin-pricing.service';
+import { CountryCodes } from 'validate-vat-ts';
 
 @Injectable()
 export class PurchaseService {
@@ -40,9 +41,63 @@ export class PurchaseService {
       const pricing = await this.pricingService.findCreditPricingByAdminId(adminId);
       const unitPrice = pricing.creditPrice;
 
-      const totalPrice = unitPrice * purchaseCreditDto.quantity;
-      const vat = 0;
-      const grandTotal = totalPrice;
+      const admin = await this.adminService.findByIdAndSelect(adminId, ['vatNumber', 'vatRate', 'country']);
+
+      if (!admin) {
+        throw new BadRequestException('Invalid Admin');
+      }
+
+      // if (this.adminService.isEuCountry(admin.country) && admin.vatNumber) {
+      //   //validate admin vat
+      //   const vatDetails = await this.adminService.validateVatNumber(admin.country as CountryCodes, admin.vatNumber);
+      //   if (!vatDetails.valid) {
+      //     throw new BadRequestException('Invalid Admin VAT Number');
+      //   }
+      // }
+
+      //validate customer vat
+      const customer = await this.customerService.findByIdAndSelect(purchaseCreditDto.customer, [
+        'vatNumber',
+        'country',
+      ]);
+
+      if (!customer) {
+        throw new BadRequestException('Invalid Customer');
+      }
+
+      // if (this.customerService.isEuCountry(customer.country as CountryCodes) && customer.vatNumber) {
+      //   const customerVatDetails = await this.customerService.validateVatNumber(
+      //     customer.country as CountryCodes,
+      //     customer.vatNumber,
+      //   );
+
+      //   if (!customerVatDetails.valid) {
+      //     throw new BadRequestException('Invalid Customer VAT Number');
+      //   }
+      // }
+
+      const {
+        totalPrice,
+        vatAmount,
+        grandTotal,
+        reverseCharge = false,
+      } = this.calculateVat(
+        {
+          vatRate: admin.vatRate,
+          country: admin.country,
+        },
+        {
+          country: customer.country,
+          vatNumber: customer.vatNumber,
+        },
+        unitPrice * purchaseCreditDto.quantity,
+      );
+
+      // const totalPrice = unitPrice * purchaseCreditDto.quantity;
+      // const vat = 0;
+      // const grandTotal = totalPrice;
+
+      console.log({ totalPrice, vatAmount, grandTotal, reverseCharge });
 
       const invoiceDto: CreateInvoiceDto = {
         admin: adminId,
@@ -52,9 +107,19 @@ export class PurchaseService {
         quantity: purchaseCreditDto.quantity,
         unitPrice: unitPrice,
         totalPrice,
-        vat,
+        vat: vatAmount,
         grandTotal,
+        reverseCharge,
+        vatRate: admin.vatRate,
       };
+
+      if (customer.vatNumber) {
+        invoiceDto.customerVatNumber = customer.vatNumber;
+      }
+
+      if (admin.vatNumber) {
+        invoiceDto.adminVatNumber = admin.vatNumber;
+      }
 
       //create invoice
       const invoice = await this.invoiceService.create(invoiceDto, session);
@@ -231,6 +296,7 @@ export class PurchaseService {
         totalPrice,
         vat,
         grandTotal,
+        reverseCharge: false,
       };
 
       //create invoice
@@ -246,6 +312,54 @@ export class PurchaseService {
       throw error;
     } finally {
       await session.endSession();
+    }
+  }
+
+  //calculate vat and prices
+  calculateVat(
+    vatDetails: { country: string; vatRate: number },
+    user: { country: string; vatNumber: string },
+    price: number, //total price of something
+  ) {
+    if (!vatDetails) {
+      return { totalPrice: price, vatAmount: 0, grandTotal: price }; // No VAT details, no VAT
+    }
+
+    const buyerCountry = user.country;
+    const sellerCountry = vatDetails.country;
+    const buyerVatNumber = user.vatNumber;
+    const vatRate = vatDetails.vatRate / 100;
+
+    // console.log(buyerCountry, sellerCountry, buyerVatNumber, vatRate);
+
+    const buyerIsEU = this.adminService.isEuCountry(buyerCountry);
+    const sellerIsEU = this.adminService.isEuCountry(sellerCountry);
+
+    if (buyerIsEU && sellerIsEU) {
+      // EU to EU
+      if (sellerCountry === buyerCountry) {
+        // Same country: Always add VAT
+        const vatAmount = price * vatRate;
+        const grandTotal = price + vatAmount;
+        return { totalPrice: price, vatAmount: vatAmount, grandTotal };
+      } else {
+        console.log(buyerVatNumber);
+        // Different EU countries
+        if (buyerVatNumber) {
+          // Valid VAT number: Reverse charge
+          return { totalPrice: price, vatAmount: 0, grandTotal: price, reverseCharge: true };
+        } else {
+          // No or invalid VAT number: Add VAT
+          const vatAmount = price * vatRate;
+          const grandTotal = price + vatAmount;
+          return { totalPrice: price, vatAmount: vatAmount, grandTotal };
+        }
+      }
+    } else {
+      // Non-EU or mixed EU/non-EU: Normal VAT calculation
+      const vatAmount = price * vatRate;
+      const grandTotal = price + vatAmount;
+      return { totalPrice: price, vatAmount: vatAmount, grandTotal: grandTotal };
     }
   }
 }

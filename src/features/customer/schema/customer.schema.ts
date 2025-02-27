@@ -49,13 +49,13 @@ class Customer extends Document {
   countryCode: string;
 
   @Prop({ type: String })
-  state: string;
+  street: string;
 
   @Prop({ type: Number, default: 0 })
   credits: number;
 
-  @Prop({ type: FileSchema })
-  avatar: FileSchema;
+  @Prop({ type: String })
+  avatar: String;
 
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
@@ -74,6 +74,9 @@ class Customer extends Document {
 
   @Prop({ type: String })
   evcNumber: string;
+
+  @Prop({ type: String })
+  vatNumber: string;
 }
 
 const CustomerSchema = SchemaFactory.createForClass(Customer);
@@ -100,6 +103,8 @@ class CustomerDocument {
   customerType: Types.ObjectId;
   status: UserStatusEnum;
   evcNumber: string;
+  vatNumber: string;
+  countryCode: string;
 }
 
 export { CustomerSchema, Customer, CustomerDocument };

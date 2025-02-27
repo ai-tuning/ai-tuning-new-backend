@@ -35,7 +35,15 @@ export class CreateInvoiceDto {
   @IsNumber()
   vat: number;
 
+  vatRate?: number;
+
+  customerVatNumber?: string;
+
+  adminVatNumber?: string;
+
   @IsNotEmpty()
   @IsNumber()
   grandTotal: number;
+
+  reverseCharge: boolean;
 }

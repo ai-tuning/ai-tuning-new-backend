@@ -23,7 +23,7 @@ export class InvoiceService {
       .find({})
       .populate({
         path: collectionsName.customer,
-        select: 'firstName lastName email phone country city address postcode state companyName',
+        select: 'firstName lastName email phone country city address postcode street companyName',
       })
       .lean<Invoice[]>();
   }
@@ -33,7 +33,7 @@ export class InvoiceService {
       .find({ admin: adminId, customer: { $exists: true } })
       .populate({
         path: 'customer',
-        select: 'firstName lastName email phone country city address postcode state companyName',
+        select: 'firstName lastName email phone country city address postcode street companyName',
       })
       .lean<Invoice[]>();
   }
@@ -43,7 +43,7 @@ export class InvoiceService {
       .find({ admin: adminId, customer: { $exists: false } })
       .populate({
         path: 'admin',
-        select: 'firstName lastName email phone country city address postcode state companyName',
+        select: 'firstName lastName email phone country city address postcode street companyName',
       })
       .lean<Invoice[]>();
   }
@@ -54,7 +54,7 @@ export class InvoiceService {
       .find({ customer: { $exists: false } })
       .populate({
         path: 'admin',
-        select: 'firstName lastName email phone country city address postcode state companyName',
+        select: 'firstName lastName email phone country city address postcode street companyName',
       })
       .lean<Invoice[]>();
   }
@@ -64,7 +64,7 @@ export class InvoiceService {
       .find({ customer: customerId })
       .populate({
         path: collectionsName.customer,
-        select: 'firstName lastName email phone country city address postcode state companyName',
+        select: 'firstName lastName email phone country city address postcode street companyName',
       })
       .lean<Invoice[]>();
   }

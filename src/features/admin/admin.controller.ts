@@ -27,6 +27,16 @@ export class AdminController {
     return this.adminService.findOne(id);
   }
 
+  /**
+   * For customer
+   * @param id
+   * @returns
+   */
+  @Get('details/:adminId')
+  getAdminDetails(@Param('adminId') id: Types.ObjectId) {
+    return this.adminService.getAdminDetails(id);
+  }
+
   @Patch(':id')
   async update(@Param('id') id: Types.ObjectId, @Body() updateAdminDto: UpdateAdminDto) {
     const updatedAdmin = await this.adminService.update(id, updateAdminDto);

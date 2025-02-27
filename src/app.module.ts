@@ -129,6 +129,10 @@ import { AdminPricingModule } from './features/admin-pricing/admin-pricing.modul
       rootPath: path.join(process.cwd(), 'public', 'car-logos'), // Serve only 'car-logos' folder
       serveRoot: '/car-logos', // Keep the same route
     }),
+    ServeStaticModule.forRoot({
+      rootPath: path.join(process.cwd(), 'public', 'uploads', 'images'),
+      serveRoot: '/images',
+    }),
     SecurityModule,
     CommonModule,
     UserModule,

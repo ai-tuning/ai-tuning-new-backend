@@ -55,6 +55,7 @@ async function bootstrap() {
   app.set('trust proxy', 'loopback'); // Trust requests from the loopback address
   app.use(compression());
   app.use(helmet());
+  app.use(helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }));
   app.use(cookieParser(config.get<string>('cookie_secret')));
   app.useGlobalFilters(new AllExceptionFilter(httpAdapter));
   app.useGlobalInterceptors(new I18nInterceptor());

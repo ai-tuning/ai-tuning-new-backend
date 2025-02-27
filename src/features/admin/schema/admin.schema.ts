@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
-import { FileSchema } from 'src/features/common';
 import { ADMIN_CATEGORY, collectionsName } from 'src/features/constant';
 
 @Schema({ timestamps: true, versionKey: false })
@@ -36,6 +35,12 @@ class Admin extends Document<Types.ObjectId> {
   @Prop({ type: Number, default: 0 })
   credits: number;
 
+  @Prop({ type: String })
+  vatNumber: string;
+
+  @Prop({ type: Number })
+  vatRate: number;
+
   @Prop({ type: String, required: true })
   countryCode: string;
 
@@ -43,13 +48,19 @@ class Admin extends Document<Types.ObjectId> {
   country: string;
 
   @Prop({ type: String, required: true })
-  state: string;
+  city: string;
+
+  @Prop({ type: String })
+  street: string;
 
   @Prop({ type: String, required: true })
   address: string;
 
-  @Prop({ type: FileSchema })
-  avatar: FileSchema;
+  @Prop({ type: String })
+  avatar: string;
+
+  @Prop({ type: String })
+  logo: string;
 
   //auto forward to ai-assist
   @Prop({ type: Boolean, default: false })
@@ -70,7 +81,12 @@ export class AdminDocument {
   phone: string;
   address: string;
   avatar: string;
+  logo: string;
   aiAssist: boolean;
+  countryCode: string;
+  country: string;
+  vatNumber: string;
+  vatRate: number;
 }
 
 export { AdminSchema, Admin };

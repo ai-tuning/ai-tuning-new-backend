@@ -1,4 +1,5 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateAdminDto {
   @IsNotEmpty({ message: 'Username is required' })
@@ -37,15 +38,24 @@ export class CreateAdminDto {
   @IsString()
   avatar?: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   countryCode?: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   country?: string;
 
   @IsOptional()
   @IsString()
-  state?: string;
+  street?: string;
+
+  @IsOptional()
+  @IsString()
+  vatNumber?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  vatRate?: number;
 }

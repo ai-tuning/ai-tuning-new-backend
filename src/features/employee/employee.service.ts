@@ -105,8 +105,8 @@ export class EmployeeService {
     }
   }
 
-  async changeAvatar(employeeId: Types.ObjectId, avatar: AvatarDto) {
-    await CustomValidationPipe([avatar], AvatarDto);
+  async changeAvatar(employeeId: Types.ObjectId, avatar: string) {
+    // await CustomValidationPipe([avatar], AvatarDto);
 
     //don't return the new document
     return this.employeeModel.findOneAndUpdate({ _id: employeeId }, { $set: { avatar } }).lean<EmployeeDocument>();

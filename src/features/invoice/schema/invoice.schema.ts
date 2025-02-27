@@ -31,6 +31,18 @@ class Invoice extends Document {
   @Prop({ type: Number, required: true, default: 0.0 })
   vat: number;
 
+  @Prop({ type: Number })
+  vatRate: number;
+
+  @Prop({ type: String })
+  customerVatNumber: string;
+
+  @Prop({ type: String })
+  adminVatNumber: string;
+
+  @Prop({ type: Boolean, required: true, default: false })
+  reverseCharge: boolean;
+
   @Prop({ type: Number, required: true })
   grandTotal: number;
 

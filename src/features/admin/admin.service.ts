@@ -8,11 +8,10 @@ import { UserService } from '../user/user.service';
 import { Connection, Model, Types } from 'mongoose';
 import { CredentialService } from '../credential/credential.service';
 import { ScheduleService } from '../setting/schedule.service';
-import { CustomValidationPipe } from '../common/validation-helper/custom-validation-pipe';
 import { CustomerType } from '../customer/schema/customer-type.schema';
 import { PricingService } from '../pricing/pricing.service';
-import { AvatarDto } from '../customer/dto/avatar.dto';
 import { ClientSession } from 'mongoose';
+import validateVat, { CountryCodes } from 'validate-vat-ts';
 
 @Injectable()
 export class AdminService {
@@ -101,6 +100,13 @@ export class AdminService {
     return this.adminModel.findById(adminId).select('credits').lean<AdminDocument>();
   }
 
+  async getAdminDetails(adminId: Types.ObjectId): Promise<AdminDocument> {
+    return this.adminModel
+      .findById(adminId)
+      .select('companyName address street city country vatNumber vatRate email logo')
+      .lean<AdminDocument>();
+  }
+
   async updateCredit(adminId: Types.ObjectId, amount: number, session: ClientSession) {
     return await this.adminModel
       .findOneAndUpdate({ _id: adminId }, { $inc: { credits: amount } }, { new: true, session })
@@ -125,6 +131,13 @@ export class AdminService {
           session,
         );
       }
+      if (this.isEuCountry(admin.country) && admin.vatNumber !== updateAdminDto.vatNumber) {
+        //validate vat number
+        console.log(admin.country, updateAdminDto.vatNumber);
+        const validInfo = await this.validateVatNumber(admin.country as CountryCodes, updateAdminDto.vatNumber);
+        if (!validInfo.valid) throw new BadRequestException('Vat number is not valid');
+        updateAdminDto.address = validInfo.address;
+      }
 
       if (admin.username !== updateAdminDto.username) {
         //check user name already used or not
@@ -144,10 +157,16 @@ export class AdminService {
     }
   }
 
-  async changeAvatar(adminId: Types.ObjectId, avatar: AvatarDto) {
-    await CustomValidationPipe([avatar], AvatarDto);
+  async changeAvatar(adminId: Types.ObjectId, avatar: string) {
+    // await CustomValidationPipe([avatar], AvatarDto);
     //don't return the new document
     return this.adminModel.findOneAndUpdate({ _id: adminId }, { $set: { avatar } }).lean<AdminDocument>();
+  }
+
+  async changeLogo(adminId: Types.ObjectId, logo: string) {
+    // await CustomValidationPipe([avatar], AvatarDto);
+    //don't return the new document
+    return this.adminModel.findOneAndUpdate({ _id: adminId }, { $set: { logo } }).lean<AdminDocument>();
   }
 
   async updateAiAssist(adminId: Types.ObjectId, aiAssist: boolean) {
@@ -160,5 +179,46 @@ export class AdminService {
 
   async getAiAssistStatus(adminId: Types.ObjectId) {
     return this.adminModel.findById(adminId).select('aiAssist').lean<AdminDocument>();
+  }
+
+  async validateVatNumber(country: CountryCodes, vatNumber: string) {
+    try {
+      return await validateVat(country, vatNumber);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  isEuCountry(country: string) {
+    const euCountries = [
+      'AT',
+      'BE',
+      'BG',
+      'HR',
+      'CY',
+      'CZ',
+      'DK',
+      'EE',
+      'FI',
+      'FR',
+      'DE',
+      'GR',
+      'HU',
+      'IE',
+      'IT',
+      'LV',
+      'LT',
+      'LU',
+      'MT',
+      'NL',
+      'PL',
+      'PT',
+      'RO',
+      'SK',
+      'SI',
+      'ES',
+      'SE',
+    ];
+    return euCountries.includes(country);
   }
 }

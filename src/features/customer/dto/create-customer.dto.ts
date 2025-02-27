@@ -71,9 +71,13 @@ export class CreateCustomerDto {
 
   @IsOptional()
   @IsString()
+  vatNumber?: string;
+
+  @IsNotEmpty()
+  @IsString()
   countryCode?: string;
 
   @IsOptional()
   @IsString()
-  state?: string;
+  street?: string;
 }
