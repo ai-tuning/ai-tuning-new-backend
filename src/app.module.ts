@@ -41,6 +41,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { EmployeeRoleModule } from './features/employee-role/employee-role.module';
 import { SuperAdminModule } from './features/super-admin/super-admin.module';
 import { AdminPricingModule } from './features/admin-pricing/admin-pricing.module';
+import { DashboardModule } from './features/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -167,6 +168,7 @@ import { AdminPricingModule } from './features/admin-pricing/admin-pricing.modul
     EmployeeRoleModule,
     SuperAdminModule,
     AdminPricingModule,
+    DashboardModule,
   ],
   controllers: [],
   providers: [],

@@ -73,29 +73,109 @@ export class FileServiceService {
   }
 
   async findByCustomerId(customerId: Types.ObjectId): Promise<FileService[]> {
-    return this.fileServiceModel.find({ customer: customerId }).lean<FileService[]>();
+    return this.fileServiceModel.find({ customer: customerId }).sort({ createdAt: -1 }).lean<FileService[]>();
   }
 
   async findByAdminId(adminId: Types.ObjectId): Promise<FileService[]> {
-    let query: any = { admin: adminId };
+    let query: any = { admin: new Types.ObjectId(adminId) };
+
     if (adminId.toString() === process.env.SUPER_ADMIN_ID) {
-      query = { $or: [{ admin: adminId }, { aiAssist: true }] };
+      query = { $or: [{ admin: new Types.ObjectId(adminId) }, { aiAssist: true }] };
     }
-    return await this.fileServiceModel
-      .find(query)
-      .populate({
-        path: collectionsName.customer,
-        select: 'firstName lastName customerType',
-      })
-      .populate({
-        path: collectionsName.car,
-        select: 'name logo',
-      })
-      .populate({
-        path: collectionsName.controller,
-        select: 'name',
-      })
-      .lean<FileService[]>();
+
+    return await this.fileServiceModel.aggregate([
+      { $match: query }, // Filter by adminId or aiAssist
+
+      // Assign a numeric weight to each status for custom sorting
+      {
+        $addFields: {
+          statusPriority: {
+            $switch: {
+              branches: [
+                { case: { $eq: ['$status', FILE_SERVICE_STATUS.NEW] }, then: 1 },
+                { case: { $eq: ['$status', FILE_SERVICE_STATUS.OPEN] }, then: 2 },
+                { case: { $eq: ['$status', FILE_SERVICE_STATUS.IN_PROGRESS] }, then: 3 },
+                { case: { $eq: ['$status', FILE_SERVICE_STATUS.COMPLETED] }, then: 4 },
+                { case: { $eq: ['$status', FILE_SERVICE_STATUS.CLOSED] }, then: 5 },
+              ],
+              default: 6, // Default lowest priority for unknown status
+            },
+          },
+        },
+      },
+
+      // Sorting: First by status priority, then by createdAt in descending order
+      { $sort: { statusPriority: 1, createdAt: -1 } },
+
+      // Populate required fields
+      {
+        $lookup: {
+          from: 'customers',
+          localField: 'customer',
+          foreignField: '_id',
+          as: 'customer',
+        },
+      },
+      { $unwind: { path: '$customer', preserveNullAndEmptyArrays: true } },
+
+      {
+        $lookup: {
+          from: 'cars',
+          localField: 'car',
+          foreignField: '_id',
+          as: 'car',
+        },
+      },
+      { $unwind: { path: '$car', preserveNullAndEmptyArrays: true } },
+
+      {
+        $lookup: {
+          from: 'controllers',
+          localField: 'controller',
+          foreignField: '_id',
+          as: 'controller',
+        },
+      },
+      { $unwind: { path: '$controller', preserveNullAndEmptyArrays: true } },
+
+      // Final projection to remove unnecessary fields
+      {
+        $project: {
+          statusPriority: 0, // Remove added sorting field from output
+          customer: {
+            admin: 0,
+            email: 0,
+            phone: 0,
+            country: 0,
+            city: 0,
+            address: 0,
+            postcode: 0,
+            companyName: 0,
+            countryCode: 0,
+            credits: 0,
+            status: 0,
+            evcNumber: 0,
+            user: 0,
+            createdAt: 0,
+            updatedAt: 0,
+            vatNumber: 0,
+            street: 0,
+          },
+          car: {
+            admin: 0,
+            makeType: 0,
+            createdAt: 0,
+            updatedAt: 0,
+          },
+          controller: {
+            admin: 0,
+            car: 0,
+            createdAt: 0,
+            updatedAt: 0,
+          },
+        },
+      },
+    ]);
   }
 
   async downloadFile(url: string) {
