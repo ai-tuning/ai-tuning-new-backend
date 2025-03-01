@@ -104,6 +104,8 @@ export class AuthService {
       const admin = await this.adminModel.findOne({ username }).lean().select('_id');
       if (!admin) throw new NotAcceptableException('Unable to find admin for registration');
       registrationDto.admin = admin._id as Types.ObjectId;
+    } else {
+      registrationDto.admin = new Types.ObjectId(process.env.SUPER_ADMIN_ID);
     }
     const data = await this.customerService.create(registrationDto);
     return data;
