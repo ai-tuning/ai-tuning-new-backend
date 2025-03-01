@@ -362,7 +362,7 @@ export class FileServiceService {
 
       console.log('requiredAdminCredits', requiredAdminCredits);
 
-      if (requiredAdminCredits > adminData.credits) {
+      if (!this.isSuperAdminId(prepareSolutionDto.admin) && requiredAdminCredits > adminData.credits) {
         throw new BadRequestException('Error 01 - Please contact Portal Owner');
       }
 
