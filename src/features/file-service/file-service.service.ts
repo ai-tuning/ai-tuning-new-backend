@@ -354,7 +354,7 @@ export class FileServiceService {
 
       let requiredAdminCredits = this.isSuperAdminId(prepareSolutionDto.admin) ? 0 : allAdminPricing.perFilePrice;
 
-      if (adminData.aiAssist || this.isSuperAdminId(prepareSolutionDto.admin)) {
+      if (!this.isSuperAdminId(prepareSolutionDto.admin) && adminData.aiAssist) {
         const pricingWithCategory = allAdminPricing[tempFileService.makeType.toLowerCase()];
         const adminPricing = pricingWithCategory[adminData.category.toLowerCase()];
         requiredAdminCredits = this.calculateAdminCredits(selectedSolutionCategory, adminPricing);
