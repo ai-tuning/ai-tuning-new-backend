@@ -350,7 +350,7 @@ export class FileServiceService {
 
       const allAdminPricing = await this.adminPricingService.getAdminAllPricing();
 
-      const adminData = await this.adminService.findByIdAndSelect(admin, ['category', 'credits', 'aiAssist']);
+      const adminData = await this.adminService.findByIdAndSelect(admin, ['category', 'credits', 'aiAssist', 'email']);
 
       let requiredAdminCredits = this.isSuperAdminId(prepareSolutionDto.admin) ? 0 : allAdminPricing.perFilePrice;
 
@@ -840,7 +840,7 @@ ResellerCredits= 10
     console.log('outputPath============>', outputPath);
 
     //copy the binfile to the winols input folder
-    await fs.promises.copyFile(binFilePath, path.join(inputPath, fileServiceData.originalFile.uniqueName));
+    await fs.promises.copyFile(binFilePath, path.join(inputPath, tempFileService.originalFile));
     console.log('copped to the winols in folder done');
 
     console.log('waiting for 90 seconds');
