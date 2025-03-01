@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -21,7 +21,7 @@ import { AutomatisationDto } from './dto/create-file-service.dto';
 import { CarService } from '../car/car.service';
 import { CarControllerService } from '../car-controller/car-controller.service';
 import { TempFileService } from './schema/temp-file.schema';
-import { PathService } from '../common';
+import { IAuthUser, PathService } from '../common';
 import { SolutionService } from '../solution/solution.service';
 import { Solution } from '../solution/schema/solution.schema';
 import { AutoTunerService } from '../auto-tuner/auto-tuner.service';
@@ -1196,5 +1196,127 @@ ResellerCredits= 10
 
   async isSuperAdminId(adminId: Types.ObjectId) {
     return adminId.toString() === process.env.SUPER_ADMIN_ID.toString();
+  }
+
+  async uploadModFile(fileServiceId: Types.ObjectId, modFile: Express.Multer.File, authUser: IAuthUser) {
+    const session = await this.connection.startSession();
+    let encodedPath = '';
+    let modFileUploaded = '';
+    try {
+      session.startTransaction();
+
+      if (!modFile) {
+        throw new BadRequestException('Please provide modFile');
+      }
+
+      const fileService = await this.fileServiceModel.findById(fileServiceId).session(session);
+
+      if (!fileService) {
+        throw new NotFoundException('File not found');
+      }
+
+      const tempFileService = await this.tempFileServiceModel.findOne({ service: fileServiceId }).session(session);
+
+      const admin = await this.adminService.findByIdAndSelect(fileService.admin, ['email']);
+
+      const customer = await this.customerService.findByIdAndSelect(fileService.customer, [
+        'firstName',
+        'lastName',
+        'email',
+        'credits',
+      ]);
+
+      if (!this.isSuperAdminId(fileService.admin)) {
+        if (fileService.credits > admin.credits) {
+          throw new BadRequestException('Error 01 - Please contact Portal Owner');
+        }
+      }
+
+      if (customer.credits < fileService.credits) {
+        throw new BadRequestException("Customer don't have enough credits");
+      }
+
+      if (fileService.slaveType) {
+        encodedPath = await this.encodeModifiedFile(modFile.path, tempFileService);
+        //upload file to mega drive
+        const encodedFileSize = fs.statSync(encodedPath).size;
+        const encodedUpload = await this.storageService.upload(fileService._id.toString(), {
+          name: path.basename(encodedPath),
+          path: encodedPath,
+          size: encodedFileSize,
+        });
+        modFileUploaded = encodedUpload;
+        fileService.modFile = {
+          url: encodedUpload,
+          originalname: path.basename(encodedPath),
+          uniqueName: path.basename(encodedPath),
+        };
+      } else {
+        if (modFile) {
+          const modFileSize = fs.statSync(modFile.path).size;
+          const modifiedUpload = await this.storageService.upload(fileService._id.toString(), {
+            name: path.basename(modFile.path),
+            path: modFile.path,
+            size: modFileSize,
+          });
+          modFileUploaded = modifiedUpload;
+          fileService.modFile = {
+            url: modifiedUpload,
+            originalname: path.basename(modFile.originalname),
+            uniqueName: path.basename(modFile.filename),
+          };
+        }
+      }
+      fileService.status = FILE_SERVICE_STATUS.COMPLETED;
+      fileService.paymentStatus = PAYMENT_STATUS.PAID;
+
+      fileService.modUpload = {
+        date: new Date(),
+        uploadedBy: authUser._id,
+      };
+
+      await fileService.save({ session });
+
+      await session.commitTransaction();
+
+      //send email after all the job done
+      this.emailQueueProducers.sendMail({
+        receiver: customer.email,
+        name: customer.firstName + ' ' + customer.lastName,
+        emailType: EMAIL_TYPE.fileReady,
+        uniqueId: fileService.uniqueId,
+      });
+
+      return this.fileServiceModel
+        .findById(fileService._id)
+        .populate({
+          path: 'customer',
+          select: 'firstName lastName customerType',
+        })
+        .populate({
+          path: 'car',
+          select: 'name logo',
+        })
+        .populate({
+          path: 'controller',
+          select: 'name',
+        });
+    } catch (error) {
+      await session.abortTransaction();
+      //if any error occurred after uploading the modFile to mega then have to delete it
+      if (modFileUploaded) {
+        await this.storageService.delete(fileServiceId.toString(), modFileUploaded);
+      }
+      throw error;
+    } finally {
+      await session.endSession();
+      //delete the uploaded mod file and encoded file from local
+      if (fs.existsSync(modFile.path)) {
+        await fs.promises.rm(modFile.path, { recursive: true, force: true });
+      }
+      if (fs.existsSync(encodedPath)) {
+        await fs.promises.rm(encodedPath, { recursive: true, force: true });
+      }
+    }
   }
 }

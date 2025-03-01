@@ -16,6 +16,8 @@ import { FileServiceService } from './file-service.service';
 import { PrepareSolutionDto } from './dto/prepare-solution.dto';
 import { Types } from 'mongoose';
 import { Response } from 'express';
+import { AuthUser } from '../common/decorator/get-auth-user.decorator';
+import { IAuthUser } from '../common';
 
 @Controller('file-services')
 export class FileServiceController {
@@ -49,6 +51,17 @@ export class FileServiceController {
     const data = await this.fileServiceService.downloadFile(body.url);
     res.setHeader('Content-Disposition', 'attachment; filename=' + data.name); // Optional: specify filename for download
     data.data.pipe(res);
+  }
+
+  @UseInterceptors(FileInterceptor('modFile'))
+  @Patch('upload-mod-file')
+  async uploadModFile(
+    @Body() body: { fileServiceId: Types.ObjectId },
+    @AuthUser() authUser: IAuthUser,
+    @UploadedFile() modFile: Express.Multer.File,
+  ) {
+    const data = await this.fileServiceService.uploadModFile(body.fileServiceId, modFile, authUser);
+    return { data, message: 'Your request is submitted successfully' };
   }
 
   @Patch('ai-assistant')
