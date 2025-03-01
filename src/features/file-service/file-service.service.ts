@@ -258,7 +258,12 @@ export class FileServiceService {
     }
 
     //get complete script path
-    let scriptPath = this.pathService.getCompleteScriptPath(car.admin, car.makeType, car.name, controller.name);
+    let scriptPath = this.pathService.getCompleteScriptPath(
+      automatisationDto.admin,
+      car.makeType,
+      car.name,
+      controller.name,
+    );
 
     const admin = await this.adminService.findByIdAndSelect(automatisationDto.admin, ['aiAssist']);
     if (admin.aiAssist || this.isSuperAdminId(automatisationDto.admin)) {
