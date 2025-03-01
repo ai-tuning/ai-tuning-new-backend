@@ -18,6 +18,17 @@ export class CarService {
     @InjectConnection() private readonly connection: Connection,
     private readonly pathService: PathService,
   ) {}
+
+  // onModuleInit() {
+  //   const carsJson = require(path.join(process.cwd(), 'cars.json'));
+
+  //   carsJson.forEach(async (car: any) => {
+  //     if (car.logo) {
+  //       await this.carModel.findOneAndUpdate({ name: car.carname.trim() }, { $set: { logo: car.logo } });
+  //     }
+  //   });
+  // }
+
   async create(createCarDto: CreateCarDto) {
     const session = await this.connection.startSession();
     let carPath: string;

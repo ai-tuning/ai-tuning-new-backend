@@ -4,7 +4,7 @@ import { FUEL_TYPE, SOLUTION_CATEGORY } from 'src/features/constant';
 
 @Schema({ timestamps: true, versionKey: false })
 export class Solution extends Document {
-  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+  @Prop({ type: mongoose.Schema.Types.ObjectId })
   admin: Types.ObjectId;
 
   @Prop({ type: String, required: true })

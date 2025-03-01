@@ -4,9 +4,10 @@ import { SolutionService } from './solution.service';
 import { CreateSolutionDto } from './dto/create-solution.dto';
 import { UpdateSolutionDto } from './dto/update-solution.dto';
 import { AuthUser } from '../common/decorator/get-auth-user.decorator';
-import { IAuthUser } from '../common';
+import { AccessRole, IAuthUser } from '../common';
 import { SolutionInformationService } from './solution-information.service';
 import { SolutionInformationDto } from './dto/solutionInformation.dto';
+import { RolesEnum } from '../constant';
 
 @Controller('solutions')
 export class SolutionController {
@@ -15,6 +16,7 @@ export class SolutionController {
     private readonly solutionInformationService: SolutionInformationService,
   ) {}
 
+  @AccessRole([RolesEnum.SUPER_ADMIN])
   @Post()
   async create(@Body() createSolutionDto: CreateSolutionDto) {
     const data = await this.solutionService.create(createSolutionDto);

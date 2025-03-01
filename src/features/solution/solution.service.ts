@@ -1,14 +1,34 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common';
 import { CreateSolutionDto } from './dto/create-solution.dto';
 import { UpdateSolutionDto } from './dto/update-solution.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { collectionsName } from '../constant';
 import { Solution } from './schema/solution.schema';
 import { Model, Types } from 'mongoose';
+import * as path from 'path';
 
 @Injectable()
 export class SolutionService {
   constructor(@InjectModel(collectionsName.solution) private readonly solutionModel: Model<Solution>) {}
+
+  // async onModuleInit() {
+  //   const solutions = require(path.join(process.cwd(), 'solutions.json'));
+  //   console.log(solutions);
+  //   const solutionPayload = [];
+  //   for (const solution of solutions) {
+  //     let category = solution.category;
+  //     if (solution.category === 'Miscle') {
+  //       category = 'SPECIAL';
+  //     }
+  //     solutionPayload.push({
+  //       name: solution.solutionname,
+  //       category: category.toUpperCase(),
+  //       fuelTypes: solution.fuelOptions.toUpperCase().split(','),
+  //     });
+  //     console.log(solutionPayload);
+  //   }
+  //   await this.solutionModel.insertMany(solutionPayload);
+  // }
 
   async create(createSolutionDto: CreateSolutionDto) {
     const isExist = await this.solutionModel.findOne({ name: createSolutionDto.name, admin: createSolutionDto.admin });
