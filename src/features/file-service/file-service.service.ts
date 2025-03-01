@@ -261,7 +261,7 @@ export class FileServiceService {
     let scriptPath = this.pathService.getCompleteScriptPath(car.admin, car.makeType, car.name, controller.name);
 
     const admin = await this.adminService.findByIdAndSelect(automatisationDto.admin, ['aiAssist']);
-    if (admin.aiAssist) {
+    if (admin.aiAssist || this.isSuperAdminId(automatisationDto.admin)) {
       //ai assist exist then forward it to ai assist
       scriptPath = this.pathService.getAiScriptPath(car.makeType, car.name, controller.name);
     }
@@ -349,7 +349,7 @@ export class FileServiceService {
 
       let requiredAdminCredits = allAdminPricing.perFilePrice;
 
-      if (adminData.aiAssist) {
+      if (adminData.aiAssist || this.isSuperAdminId(prepareSolutionDto.admin)) {
         const pricingWithCategory = allAdminPricing[tempFileService.makeType.toLowerCase()];
         const adminPricing = pricingWithCategory[adminData.category.toLowerCase()];
         requiredAdminCredits = this.calculateAdminCredits(selectedSolutionCategory, adminPricing);
@@ -358,9 +358,7 @@ export class FileServiceService {
       console.log('requiredAdminCredits', requiredAdminCredits);
 
       if (requiredAdminCredits > adminData.credits) {
-        throw new BadRequestException(
-          "Your admin don't have enough credits to perform this service, Please contact your admin",
-        );
+        throw new BadRequestException('Error 01 - Please contact Portal Owner');
       }
 
       if (requiredCredits > customer.credits) {
@@ -405,7 +403,7 @@ export class FileServiceService {
       );
 
       //if ai assist is on then get the ai script
-      if (adminData.aiAssist) {
+      if (adminData.aiAssist || this.isSuperAdminId(adminData._id)) {
         scriptPath = this.pathService.getAiScriptPath(tempFileService.makeType, car.name, controller.name);
       }
 
@@ -825,7 +823,7 @@ ResellerCredits= 10
     let inputPath = this.pathService.getWinolsInputPath(admin.username);
     let outputPath = this.pathService.getWinolsOutPath(admin.username, parsedName.name);
 
-    if (admin.aiAssist) {
+    if (admin.aiAssist || this.isSuperAdminId(admin._id)) {
       //get ai assist winols input/output file path
 
       inputPath = this.pathService.getAIWinolsInputPath();
@@ -977,7 +975,7 @@ ResellerCredits= 10
       );
 
       //if ai assist enabled then get the script path of ai tuning
-      if (admin.aiAssist) {
+      if (admin.aiAssist || this.isSuperAdminId(admin._id)) {
         completeScriptPath = this.pathService.getAiScriptPath(car.makeType, car.name, controller.name);
       }
 
@@ -1185,5 +1183,9 @@ ResellerCredits= 10
 
   async updateAiAssistant(fileServiceId: Types.ObjectId, aiAssist: boolean) {
     return await this.fileServiceModel.findByIdAndUpdate(fileServiceId, { $set: { aiAssist } }, { new: true });
+  }
+
+  async isSuperAdminId(adminId: Types.ObjectId) {
+    return adminId.toString() === process.env.SUPER_ADMIN_ID.toString();
   }
 }
