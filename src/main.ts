@@ -22,6 +22,7 @@ async function bootstrap() {
     origin: [
       'https://admin-dev.ai-tuningfiles.com',
       'https://portal-dev.ai-tuningfiles.com',
+      'https://fe-multi-admin.vercel.app',
       'http://localhost:4000',
       'http://localhost:3000',
     ],
