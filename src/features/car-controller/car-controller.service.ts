@@ -98,7 +98,6 @@ export class CarControllerService {
       const isExist = await this.carControllerModel.findOne({
         name: updateControllerDto.name.trim(),
         _id: { $ne: id },
-        admin: updateControllerDto.admin,
       });
       if (isExist) {
         throw new BadRequestException('Car already exist');
@@ -115,14 +114,14 @@ export class CarControllerService {
       }
 
       oldPath = this.pathService.getCompleteScriptPath(
-        previousCar.admin,
+        updateControllerDto.admin,
         previousCar.makeType,
         previousCar.name,
         previousController.name,
       );
 
       newPath = this.pathService.getCompleteScriptPath(
-        previousCar.admin,
+        updateControllerDto.admin,
         previousCar.makeType,
         previousCar.name,
         updateControllerDto.name.trim(),

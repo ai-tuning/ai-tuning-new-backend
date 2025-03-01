@@ -88,7 +88,6 @@ export class CarService {
       const isExist = await this.carModel.findOne({
         name: updateCarDto.name.trim(),
         _id: { $ne: id },
-        admin: updateCarDto.admin,
       });
 
       if (isExist) {
@@ -102,7 +101,7 @@ export class CarService {
       oldPath = path.join(
         process.cwd(),
         'public',
-        previousCar.admin.toString(),
+        updateCarDto.admin.toString(),
         previousCar.makeType,
         previousCar.name,
       );
@@ -110,7 +109,7 @@ export class CarService {
       newPath = path.join(
         process.cwd(),
         'public',
-        previousCar.admin.toString(),
+        updateCarDto.admin.toString(),
         updateCarDto.makeType,
         updateCarDto.name.trim(),
       );

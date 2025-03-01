@@ -31,7 +31,7 @@ export class SolutionService {
   // }
 
   async create(createSolutionDto: CreateSolutionDto) {
-    const isExist = await this.solutionModel.findOne({ name: createSolutionDto.name, admin: createSolutionDto.admin });
+    const isExist = await this.solutionModel.findOne({ name: createSolutionDto.name });
     if (isExist) {
       throw new BadRequestException('Solution already exist');
     }
@@ -54,7 +54,6 @@ export class SolutionService {
     const isExist = await this.solutionModel.findOne({
       name: updateSolutionDto.name,
       _id: { $ne: id },
-      admin: updateSolutionDto.admin,
     });
     if (isExist) {
       throw new BadRequestException('Solution already exist');
