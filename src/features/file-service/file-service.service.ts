@@ -208,7 +208,7 @@ export class FileServiceService {
     );
 
     if (!fs.existsSync(fileServicePath)) {
-      fs.mkdirSync(fileServicePath, { recursive: true });
+      await fs.promises.mkdir(fileServicePath, { recursive: true });
     }
 
     const newFilePath = path.join(fileServicePath, file.filename);
@@ -838,6 +838,10 @@ ResellerCredits= 10
     console.log('ai assist==========>', admin.aiAssist);
     console.log('inputPath==========>', inputPath);
     console.log('outputPath============>', outputPath);
+
+    if (!fs.existsSync(inputPath)) {
+      await fs.promises.mkdir(inputPath, { recursive: true });
+    }
 
     //copy the binfile to the winols input folder
     await fs.promises.copyFile(binFilePath, path.join(inputPath, tempFileService.originalFile));
