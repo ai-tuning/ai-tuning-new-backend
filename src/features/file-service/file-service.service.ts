@@ -352,7 +352,7 @@ export class FileServiceService {
 
       const adminData = await this.adminService.findByIdAndSelect(admin, ['category', 'credits', 'aiAssist']);
 
-      let requiredAdminCredits = allAdminPricing.perFilePrice;
+      let requiredAdminCredits = this.isSuperAdminId(prepareSolutionDto.admin) ? 0 : allAdminPricing.perFilePrice;
 
       if (adminData.aiAssist || this.isSuperAdminId(prepareSolutionDto.admin)) {
         const pricingWithCategory = allAdminPricing[tempFileService.makeType.toLowerCase()];
