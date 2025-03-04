@@ -1,6 +1,6 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Req, Res, Param, Redirect, Get } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Req, Res, Param, Get } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { AuthResponse, AuthService } from './auth.service';
+import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { Public } from '../common';
 import { RegistrationDto } from './dto/registration.dto';
@@ -31,24 +31,8 @@ export class AuthController {
       user: any;
     };
 
-    let domain = '';
-    let sameSite: 'lax' | 'strict' | 'none' | boolean = 'lax';
-    const origin = request.headers.host;
-    if (origin.includes('.tuningfile-server.com')) {
-      domain = 'ai-tuningfiles.com';
-      sameSite = 'none';
-    } else if (origin.includes('dyno-files.org')) {
-      domain = 'ai-tuningfiles.com';
-      sameSite = 'none';
-    } else if (origin.includes('.ai-tuningfiles.com')) {
-      domain = 'ai-tuningfiles.com';
-    } else {
-      domain = 'localhost';
-    }
-
     response.cookie('ai-tuning-refresh-token', refreshToken, {
-      domain,
-      sameSite,
+      sameSite: 'none',
       path: '/',
       secure: true,
       httpOnly: true,
@@ -60,11 +44,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('/verify-email')
   @Public()
-  async verifyCode(
-    @Body() verificationEmailDto: VerificationEmailDto,
-    @Req() request: Request,
-    @Res() response: Response,
-  ) {
+  async verifyCode(@Body() verificationEmailDto: VerificationEmailDto, @Res() response: Response) {
     const authData = await this.authService.verifyCode(verificationEmailDto.email, verificationEmailDto.code);
     const { accessToken, refreshToken, user } = authData as {
       accessToken: string;
@@ -72,27 +52,8 @@ export class AuthController {
       user: any;
     };
 
-    let domain = '';
-    let sameSite: 'lax' | 'strict' | 'none' | boolean = 'lax';
-    const origin = request.headers.host;
-    if (origin.includes('.ecufile.eu')) {
-      domain = 'ai-tuningfiles.com';
-      sameSite = 'none';
-    } else if (origin.includes('.tuningfile-server.com')) {
-      domain = 'ai-tuningfiles.com';
-      sameSite = 'none';
-    } else if (origin.includes('dyno-files.org')) {
-      domain = 'ai-tuningfiles.com';
-      sameSite = 'none';
-    } else if (origin.includes('.ai-tuningfiles.com')) {
-      domain = 'ai-tuningfiles.com';
-    } else {
-      domain = 'localhost';
-    }
-
     response.cookie('ai-tuning-refresh-token', refreshToken, {
-      domain,
-      sameSite,
+      sameSite: 'none',
       path: '/',
       secure: true,
       httpOnly: true,
