@@ -16,4 +16,6 @@ export class PurchaseCreditDto {
   @IsNumber()
   @Min(1)
   quantity: number;
+
+  isEvcCredit: boolean;
 }

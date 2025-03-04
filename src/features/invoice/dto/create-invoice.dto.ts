@@ -46,4 +46,6 @@ export class CreateInvoiceDto {
   grandTotal: number;
 
   reverseCharge: boolean;
+
+  isEvcCredit: boolean;
 }

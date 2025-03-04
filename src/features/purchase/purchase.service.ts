@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CredentialService } from '../credential/credential.service';
 import { Connection, Types } from 'mongoose';
 import { PurchaseCreditDto } from './dto/purchase-credit.dto';
@@ -13,6 +13,7 @@ import { PurchaseAdminCreditDto } from './dto/purchase-admin-credit.dto';
 import { AdminService } from '../admin/admin.service';
 import { AdminPricingService } from '../admin-pricing/admin-pricing.service';
 import { CountryCodes } from 'validate-vat-ts';
+import { EvcService } from '../evc/evc.service';
 
 @Injectable()
 export class PurchaseService {
@@ -29,6 +30,7 @@ export class PurchaseService {
     private readonly customerService: CustomerService,
     private readonly adminService: AdminService,
     private readonly adminPricingService: AdminPricingService,
+    private readonly evcService: EvcService,
   ) {
     this.paypal_url = process.env.PAYPAL_URL;
     this.returnUrl = process.env.PAYPAL_RETURN_URL;
@@ -38,8 +40,6 @@ export class PurchaseService {
     const session = await this.connection.startSession();
     try {
       session.startTransaction();
-      const pricing = await this.pricingService.findCreditPricingByAdminId(adminId);
-      const unitPrice = pricing.creditPrice;
 
       const admin = await this.adminService.findByIdAndSelect(adminId, ['vatNumber', 'vatRate', 'country']);
 
@@ -47,34 +47,61 @@ export class PurchaseService {
         throw new BadRequestException('Invalid Admin');
       }
 
-      // if (this.adminService.isEuCountry(admin.country) && admin.vatNumber) {
-      //   //validate admin vat
-      //   const vatDetails = await this.adminService.validateVatNumber(admin.country as CountryCodes, admin.vatNumber);
-      //   if (!vatDetails.valid) {
-      //     throw new BadRequestException('Invalid Admin VAT Number');
-      //   }
-      // }
+      if (this.adminService.isEuCountry(admin.country) && admin.vatNumber) {
+        //validate admin vat
+        const vatDetails = await this.adminService.validateVatNumber(admin.country as CountryCodes, admin.vatNumber);
+        if (!vatDetails.valid) {
+          throw new BadRequestException('Invalid Admin VAT Number');
+        }
+      }
 
       //validate customer vat
       const customer = await this.customerService.findByIdAndSelect(purchaseCreditDto.customer, [
         'vatNumber',
         'country',
+        'evcNumber',
+        'customerType',
       ]);
 
       if (!customer) {
         throw new BadRequestException('Invalid Customer');
       }
 
-      // if (this.customerService.isEuCountry(customer.country as CountryCodes) && customer.vatNumber) {
-      //   const customerVatDetails = await this.customerService.validateVatNumber(
-      //     customer.country as CountryCodes,
-      //     customer.vatNumber,
-      //   );
+      if (purchaseCreditDto.isEvcCredit && !customer.evcNumber) {
+        throw new BadRequestException('You does not have EVC Number');
+      }
 
-      //   if (!customerVatDetails.valid) {
-      //     throw new BadRequestException('Invalid Customer VAT Number');
-      //   }
-      // }
+      // check evc number validity
+      if (purchaseCreditDto.isEvcCredit && customer.evcNumber) {
+        const isValidEvc = await this.evcService.isInvalidNumber(adminId, customer.evcNumber);
+        if (isValidEvc) {
+          throw new BadRequestException('Invalid EVC Number');
+        }
+      }
+
+      if (this.customerService.isEuCountry(customer.country as CountryCodes) && customer.vatNumber) {
+        const customerVatDetails = await this.customerService.validateVatNumber(
+          customer.country as CountryCodes,
+          customer.vatNumber,
+        );
+
+        if (!customerVatDetails.valid) {
+          throw new BadRequestException('Invalid Customer VAT Number');
+        }
+      }
+
+      const pricing = await this.pricingService.findCreditPricingByAdminId(adminId);
+      let unitPrice = pricing.creditPrice;
+      if (purchaseCreditDto.isEvcCredit) {
+        const findPrice = pricing.evcPrices.find(
+          (item) => item.customerType._id.toString() === customer.customerType.toString(),
+        );
+
+        if (!findPrice) {
+          throw new NotFoundException('Customer EVC price in not found');
+        }
+        unitPrice = findPrice.price;
+      }
 
       const {
         totalPrice,
@@ -103,7 +130,9 @@ export class PurchaseService {
         admin: adminId,
         customer: purchaseCreditDto.customer,
         invoiceNumber: Date.now().toString(),
-        description: 'Software Development Credits',
+        description: purchaseCreditDto.isEvcCredit
+          ? 'Software Development EVC Credits'
+          : 'Software Development Credits',
         quantity: purchaseCreditDto.quantity,
         unitPrice: unitPrice,
         totalPrice,
@@ -111,6 +140,7 @@ export class PurchaseService {
         grandTotal,
         reverseCharge,
         vatRate: admin.vatRate,
+        isEvcCredit: purchaseCreditDto.isEvcCredit,
       };
 
       if (customer.vatNumber) {
@@ -155,11 +185,16 @@ export class PurchaseService {
         invoice.orderId = orderId;
         await invoice.save({ session });
 
-        if (invoice.customer) {
-          //save customer credit
-          await this.customerService.updateCredit(invoice.customer, invoice.quantity, session);
+        if (invoice.isEvcCredit) {
+          const customer = await this.customerService.findByIdAndSelect(invoice.customer, ['evcNumber']);
+          await this.evcService.addEvcBalance(adminId, customer.evcNumber, invoice.quantity);
         } else {
-          await this.adminService.updateCredit(invoice.admin, invoice.quantity, session);
+          if (invoice.customer) {
+            //save customer credit
+            await this.customerService.updateCredit(invoice.customer, invoice.quantity, session);
+          } else {
+            await this.adminService.updateCredit(invoice.admin, invoice.quantity, session);
+          }
         }
       } else {
         return false;
@@ -297,6 +332,7 @@ export class PurchaseService {
         vat,
         grandTotal,
         reverseCharge: false,
+        isEvcCredit: false,
       };
 
       //create invoice
@@ -321,7 +357,7 @@ export class PurchaseService {
     user: { country: string; vatNumber: string },
     price: number, //total price of something
   ) {
-    if (!vatDetails) {
+    if (!vatDetails.vatRate) {
       return { totalPrice: price, vatAmount: 0, grandTotal: price }; // No VAT details, no VAT
     }
 

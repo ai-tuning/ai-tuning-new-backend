@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
-import { FileSchema } from 'src/features/common';
 import { collectionsName, RolesEnum, UserStatusEnum } from 'src/features/constant';
 
 @Schema({ timestamps: true, versionKey: false })

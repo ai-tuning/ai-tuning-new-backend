@@ -48,6 +48,9 @@ class Invoice extends Document {
 
   @Prop({ type: String, required: true, enum: PAYMENT_STATUS, default: PAYMENT_STATUS.UNPAID })
   status: PAYMENT_STATUS;
+
+  @Prop({ type: Boolean, default: false })
+  isEvcCredit: boolean;
 }
 
 const InvoiceSchema = SchemaFactory.createForClass(Invoice);

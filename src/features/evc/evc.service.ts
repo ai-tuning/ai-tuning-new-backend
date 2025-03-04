@@ -54,7 +54,7 @@ export class EvcService {
     return response.data;
   }
 
-  async addEvcBalance(adminId: Types.ObjectId, evcNumber: number, credits: number) {
+  async addEvcBalance(adminId: Types.ObjectId, evcNumber: string, credits: number) {
     const credential = await this.credentialService.findByAdmin(adminId, 'evc');
     const response = await this.httpService.axiosRef.get('', {
       params: {
