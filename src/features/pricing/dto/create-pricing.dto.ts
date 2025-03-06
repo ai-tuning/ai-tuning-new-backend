@@ -18,4 +18,8 @@ export class CreatePricingDto {
   @IsNotEmpty()
   @IsMongoId()
   customerType: Types.ObjectId;
+
+  @IsNotEmpty()
+  @IsMongoId()
+  solution: Types.ObjectId;
 }

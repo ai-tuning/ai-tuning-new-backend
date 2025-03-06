@@ -182,7 +182,13 @@ export class CustomerService {
         admin: new Types.ObjectId(createCustomerTypeDto.admin),
       });
 
-      await this.pricingService.pushItems(customerType.admin, customerType._id as Types.ObjectId, session);
+      await this.pricingService.pushCategoryBasedItems(customerType.admin, customerType._id as Types.ObjectId, session);
+
+      await this.pricingService.pushSolutionBasedItemsByCustomerType(
+        customerType.admin,
+        customerType._id as Types.ObjectId,
+        session,
+      );
 
       await this.pricingService.pushEvcPriceItems(customerType.admin, customerType._id as Types.ObjectId, session);
 
@@ -234,7 +240,8 @@ export class CustomerService {
       await this.customerTypeModel.findOneAndDelete({ _id: id }, { session });
 
       //delete pricing related to the customer type
-      await this.pricingService.pullItems(admin._id, id, session);
+      await this.pricingService.pullCategoryBasedItems(admin._id, id, session);
+      await this.pricingService.pullSolutionBasedItemsByCustomerType(admin._id, id, session);
 
       await this.pricingService.pullEvcPricingItem(admin._id, id, session);
 

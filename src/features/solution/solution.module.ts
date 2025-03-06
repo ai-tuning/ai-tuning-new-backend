@@ -6,6 +6,7 @@ import { collectionsName } from '../constant';
 import { SolutionSchema } from './schema/solution.schema';
 import { SolutionInformationService } from './solution-information.service';
 import { SolutionInformationSchema } from './schema/solution-information.schema';
+import { PricingModule } from '../pricing/pricing.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { SolutionInformationSchema } from './schema/solution-information.schema'
         schema: SolutionInformationSchema,
       },
     ]),
+    PricingModule,
   ],
   controllers: [SolutionController],
   providers: [SolutionService, SolutionInformationService],

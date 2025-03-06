@@ -6,29 +6,85 @@ import { Pricing } from './schema/pricing.schema';
 import { ClientSession, Model, Types } from 'mongoose';
 import { CreditPricing } from './schema/credit-pricing.schema';
 import { CreditPricingDto } from './dto/credit-pricing.dto';
+import { Solution } from '../solution/schema/solution.schema';
+import { PRICING_TYPE_ENUM } from '../constant/enums/pricing-type.enum';
+import { CustomerType } from '../customer/schema/customer-type.schema';
 
 @Injectable()
 export class PricingService {
   constructor(
     @InjectModel(collectionsName.pricing) private readonly pricingModel: Model<Pricing>,
     @InjectModel(collectionsName.creditPricing) private readonly creditPricingModel: Model<CreditPricing>,
+    @InjectModel(collectionsName.solution) private readonly solutionModel: Model<Solution>,
+    @InjectModel(collectionsName.customerType) private readonly customerTypeModel: Model<CustomerType>,
   ) {}
+
+  // async onModuleInit() {
+  //   const session = await this.pricingModel.startSession();
+  //   session.startTransaction();
+  //   try {
+  //     const customerTypes = await this.customerTypeModel.find();
+  //     for (const customerType of customerTypes) {
+  //       await this.pushSolutionBasedItemsByCustomerType(
+  //         customerType.admin,
+  //         customerType._id as Types.ObjectId,
+  //         session,
+  //       );
+  //     }
+  //     await session.commitTransaction();
+  //     await session.endSession();
+  //   } catch (error) {
+  //     await session.abortTransaction();
+  //     session.endSession();
+  //   }
+  // }
 
   async create(adminId: Types.ObjectId, customerType: Types.ObjectId, session: ClientSession) {
     //check if exist or not
     const exist = await this.pricingModel.exists({ admin: adminId });
     if (exist) throw new BadRequestException('Pricing already exist');
 
-    await this.creditPricingModel.create({
-      admin: adminId,
-      creditPrice: 0,
-      evcPrices: [
-        {
-          customerType: customerType,
-          price: 0,
-        },
-      ],
-    });
+    await this.creditPricingModel.create(
+      {
+        admin: adminId,
+        creditPrice: 0,
+        enabledPricingType: PRICING_TYPE_ENUM.CATEGORY_BASED,
+        evcPrices: [
+          {
+            customerType: customerType,
+            price: 0,
+          },
+        ],
+      },
+      { session },
+    );
+
+    const solutions = await this.solutionModel.find({}).session(session).lean<Solution[]>();
+    let solutionItems = [];
+    for (const solution of solutions) {
+      solutionItems.push(
+        ...[
+          {
+            customerType: customerType,
+            price: 0,
+            makeType: MAKE_TYPE_ENUM.CAR,
+            solution: solution._id,
+          },
+          {
+            customerType: customerType,
+            price: 0,
+            makeType: MAKE_TYPE_ENUM.BIKE,
+            solution: solution._id,
+          },
+          {
+            customerType: customerType,
+            price: 0,
+            makeType: MAKE_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
+            solution: solution._id,
+          },
+        ],
+      );
+    }
 
     //create pricing
     const pricing = new this.pricingModel({
@@ -89,6 +145,7 @@ export class PricingService {
           makeType: MAKE_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
         },
       ],
+      solutionItems: solutionItems,
     });
     return pricing.save({ session });
   }
@@ -99,19 +156,42 @@ export class PricingService {
       .populate({
         path: 'items.customerType',
         select: 'name',
-        model: collectionsName.customerType,
+      })
+      .populate({
+        path: 'solutionItems.customerType',
+        select: 'name',
+      })
+      .populate({
+        path: 'solutionItems.solution',
+        select: 'name makeTypes',
       })
       .lean<Pricing>();
   }
 
   async getPricingByCustomerType(adminId: Types.ObjectId, customerType: Types.ObjectId) {
-    const pricing = await this.pricingModel.findOne({ admin: adminId }).lean<Pricing>();
-    const filteredItems = pricing.items.filter((item) => item.customerType.toString() === customerType.toString());
-    pricing.items = filteredItems;
-    return pricing;
+    const pricing = await this.pricingModel
+      .findOne({ admin: adminId })
+      .populate({
+        path: 'solutionItems.solution',
+        select: 'name makeTypes',
+      })
+      .lean<Pricing>();
+    if (pricing.enabledPricingType === PRICING_TYPE_ENUM.CATEGORY_BASED) {
+      const filteredItems = pricing.items.filter((item) => item.customerType.toString() === customerType.toString());
+      pricing.items = filteredItems;
+      delete pricing.solutionItems;
+      return pricing;
+    } else {
+      const filteredItems = pricing.solutionItems.filter(
+        (item) => item.customerType.toString() === customerType.toString(),
+      );
+      pricing.solutionItems = filteredItems;
+      delete pricing.items;
+      return pricing;
+    }
   }
 
-  async pushItems(adminId: Types.ObjectId, customerType: Types.ObjectId, session: ClientSession) {
+  async pushCategoryBasedItems(adminId: Types.ObjectId, customerType: Types.ObjectId, session: ClientSession) {
     return this.pricingModel
       .findOneAndUpdate(
         { admin: adminId },
@@ -182,13 +262,120 @@ export class PricingService {
       .lean<Pricing>();
   }
 
-  async pullItems(adminId: Types.ObjectId, customerType: Types.ObjectId, session: ClientSession) {
+  async pullCategoryBasedItems(adminId: Types.ObjectId, customerType: Types.ObjectId, session: ClientSession) {
     const pricing = await this.pricingModel.findOne({ admin: adminId }).session(session);
     const updatedPricingItems = pricing.items.filter((item) => {
       return item.customerType.toString() !== customerType.toString();
     });
     pricing.items = updatedPricingItems;
     return await pricing.save({ session });
+  }
+
+  async pushSolutionBasedItemsByCustomerType(
+    adminId: Types.ObjectId,
+    customerType: Types.ObjectId,
+    session: ClientSession,
+  ) {
+    const solutions = await this.solutionModel.find().session(session).lean<Solution[]>();
+    let solutionItems = [];
+    for (const solution of solutions) {
+      solutionItems.push(
+        ...[
+          {
+            customerType: customerType,
+            price: 0,
+            makeType: MAKE_TYPE_ENUM.CAR,
+            solution: solution._id,
+          },
+          {
+            customerType: customerType,
+            price: 0,
+            makeType: MAKE_TYPE_ENUM.BIKE,
+            solution: solution._id,
+          },
+          {
+            customerType: customerType,
+            price: 0,
+            makeType: MAKE_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
+            solution: solution._id,
+          },
+        ],
+      );
+    }
+
+    return this.pricingModel
+      .findOneAndUpdate(
+        { admin: adminId },
+        {
+          $push: {
+            solutionItems: {
+              $each: solutionItems,
+            },
+          },
+        },
+        { new: true, session },
+      )
+      .lean<Pricing>();
+  }
+
+  async pullSolutionBasedItemsByCustomerType(
+    adminId: Types.ObjectId,
+    customerType: Types.ObjectId,
+    session: ClientSession,
+  ) {
+    const pricing = await this.pricingModel.findOne({ admin: adminId }).session(session);
+    const updatedSolutionItems = pricing.solutionItems.filter((item) => {
+      return item.customerType.toString() !== customerType.toString();
+    });
+    pricing.solutionItems = updatedSolutionItems;
+    return await pricing.save({ session });
+  }
+
+  async pushSolutionBasedItemsBySolutionId(solutionId: Types.ObjectId, session: ClientSession) {
+    const customerTypes = await this.customerTypeModel.find().distinct('_id').session(session).lean<Types.ObjectId[]>();
+    const solutionItems = customerTypes.map((customerType) => {
+      return {
+        customerType: customerType,
+        price: 0,
+        makeType: MAKE_TYPE_ENUM.CAR,
+        solution: solutionId,
+      };
+    });
+
+    return this.pricingModel
+      .updateMany(
+        {},
+        {
+          $push: {
+            solutionItems: {
+              $each: solutionItems,
+            },
+          },
+        },
+        { new: true, session },
+      )
+      .lean<Pricing>();
+  }
+
+  async pullSolutionBasedItemsBySolutionId(solutionId: Types.ObjectId, session: ClientSession) {
+    const pricing = await this.pricingModel.find().session(session);
+    const bulkWriteOperations = pricing.map((pricing) => {
+      const updatedSolutionItems = pricing.solutionItems.filter((item) => {
+        return item.solution.toString() !== solutionId.toString();
+      });
+      pricing.solutionItems = updatedSolutionItems;
+      return {
+        updateOne: {
+          filter: { _id: pricing._id },
+          update: { $set: { solutionItems: updatedSolutionItems } },
+        },
+      };
+    });
+    await this.pricingModel.bulkWrite(bulkWriteOperations, { session });
+  }
+
+  async updatePricingType(adminId: Types.ObjectId, pricingType: PRICING_TYPE_ENUM) {
+    return await this.pricingModel.findOneAndUpdate({ admin: adminId }, { $set: { enabledPricingType: pricingType } });
   }
 
   async updatePricing(adminId: Types.ObjectId, updatePricingDto: UpdatePricingDto[], makeType: MAKE_TYPE_ENUM) {
@@ -198,18 +385,33 @@ export class PricingService {
       throw new NotFoundException('Pricing not found');
     }
 
-    for (const updatedItem of updatePricingDto) {
-      const pricingItem = pricing.items.find(
-        (item) =>
-          item.makeType === makeType &&
-          item.solutionCategory === updatedItem.solutionCategory &&
-          item.customerType.toString() === updatedItem.customerType.toString(),
-      );
-      if (pricingItem) {
-        pricingItem.price = updatedItem.price;
+    if (pricing.enabledPricingType === PRICING_TYPE_ENUM.CATEGORY_BASED) {
+      for (const updatedItem of updatePricingDto) {
+        const pricingItemIndex = pricing.items.findIndex(
+          (item) =>
+            item.makeType === makeType &&
+            item.solutionCategory === updatedItem.solutionCategory &&
+            item.customerType.toString() === updatedItem.customerType.toString(),
+        );
+        if (pricingItemIndex !== -1) {
+          pricing.items[pricingItemIndex].price = updatedItem.price;
+        }
+      }
+    } else {
+      for (const updatedItem of updatePricingDto) {
+        const solutionItemIndex = pricing.solutionItems.findIndex(
+          (item) =>
+            item.makeType === makeType &&
+            item.solution.toString() === updatedItem.solution.toString() &&
+            item.customerType.toString() === updatedItem.customerType.toString(),
+        );
+
+        if (solutionItemIndex !== -1) {
+          pricing.solutionItems[solutionItemIndex].price = updatedItem.price;
+        }
       }
     }
-    return this.pricingModel.findOneAndUpdate({ admin: adminId }, pricing, { new: true });
+    return await this.pricingModel.findOneAndUpdate({ admin: adminId }, pricing);
   }
 
   async findCreditPricingByAdminId(adminId: Types.ObjectId) {
@@ -262,5 +464,9 @@ export class PricingService {
     });
     pricing.evcPrices = updatedEvcPrices;
     return await pricing.save({ session });
+  }
+
+  async updateMaxAndMinPrice(adminId: Types.ObjectId, maxPrice: number, minPrice: number) {
+    return await this.pricingModel.findOneAndUpdate({ admin: adminId }, { $set: { maxPrice, minPrice } });
   }
 }

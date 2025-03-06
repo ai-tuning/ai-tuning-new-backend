@@ -6,6 +6,7 @@ import { IAuthUser } from '../common';
 import { Types } from 'mongoose';
 import { MAKE_TYPE_ENUM } from '../constant';
 import { CreditPricingDto } from './dto/credit-pricing.dto';
+import { PRICING_TYPE_ENUM } from '../constant/enums/pricing-type.enum';
 
 @Controller('pricing')
 export class PricingController {
@@ -37,6 +38,24 @@ export class PricingController {
   @Get('credit')
   async findCreditPricingByAdmin(@AuthUser() authUser: IAuthUser) {
     return await this.pricingService.findCreditPricingByAdminId(authUser.admin);
+  }
+
+  @Patch('update-pricing-type/:adminId')
+  async updatePricingType(
+    @Param('adminId') adminId: Types.ObjectId,
+    @Body() updatePricingTypeDto: { pricingType: PRICING_TYPE_ENUM },
+  ) {
+    const data = await this.pricingService.updatePricingType(adminId, updatePricingTypeDto.pricingType);
+    return { message: 'Pricing type updated successfully' };
+  }
+
+  @Patch('update-max-min/:adminId')
+  async updateMaxMinPricing(
+    @Param('adminId') adminId: Types.ObjectId,
+    @Body() updateDto: { maxPrice: number; minPrice: number },
+  ) {
+    await this.pricingService.updateMaxAndMinPrice(adminId, updateDto.maxPrice, updateDto.minPrice);
+    return { message: 'Pricing updated successfully' };
   }
 
   @Patch('credit/:adminId')

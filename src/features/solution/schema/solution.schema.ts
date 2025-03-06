@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
-import { FUEL_TYPE, SOLUTION_CATEGORY } from 'src/features/constant';
+import { FUEL_TYPE, MAKE_TYPE_ENUM, SOLUTION_CATEGORY } from 'src/features/constant';
 
 @Schema({ timestamps: true, versionKey: false })
 export class Solution extends Document {
@@ -13,8 +13,11 @@ export class Solution extends Document {
   @Prop({ type: String, enum: SOLUTION_CATEGORY, required: true })
   category: SOLUTION_CATEGORY;
 
-  @Prop({ type: [String], required: true })
+  @Prop({ type: [String], required: true, enum: FUEL_TYPE })
   fuelTypes: FUEL_TYPE[];
+
+  @Prop({ type: [String], required: true, enums: MAKE_TYPE_ENUM })
+  makeTypes: MAKE_TYPE_ENUM[];
 }
 
 export const SolutionSchema = SchemaFactory.createForClass(Solution);

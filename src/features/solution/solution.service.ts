@@ -1,15 +1,20 @@
-import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateSolutionDto } from './dto/create-solution.dto';
 import { UpdateSolutionDto } from './dto/update-solution.dto';
-import { InjectModel } from '@nestjs/mongoose';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { collectionsName } from '../constant';
 import { Solution } from './schema/solution.schema';
-import { Model, Types } from 'mongoose';
+import { Connection, Model, Types } from 'mongoose';
 import * as path from 'path';
+import { PricingService } from '../pricing/pricing.service';
 
 @Injectable()
 export class SolutionService {
-  constructor(@InjectModel(collectionsName.solution) private readonly solutionModel: Model<Solution>) {}
+  constructor(
+    @InjectConnection() private readonly connection: Connection,
+    @InjectModel(collectionsName.solution) private readonly solutionModel: Model<Solution>,
+    private readonly pricingService: PricingService,
+  ) {}
 
   // async onModuleInit() {
   //   const solutions = require(path.join(process.cwd(), 'solutions.json'));
@@ -31,12 +36,24 @@ export class SolutionService {
   // }
 
   async create(createSolutionDto: CreateSolutionDto) {
-    const isExist = await this.solutionModel.findOne({ name: createSolutionDto.name });
-    if (isExist) {
-      throw new BadRequestException('Solution already exist');
+    const session = await this.connection.startSession();
+    try {
+      session.startTransaction();
+      const isExist = await this.solutionModel.findOne({ name: createSolutionDto.name });
+      if (isExist) {
+        throw new BadRequestException('Solution already exist');
+      }
+      const solution = new this.solutionModel(createSolutionDto);
+      const newSolution = await solution.save({ session });
+
+      await this.pricingService.pushSolutionBasedItemsBySolutionId(newSolution._id as Types.ObjectId, session);
+      await session.commitTransaction();
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      await session.endSession();
     }
-    const solution = new this.solutionModel(createSolutionDto);
-    return solution.save();
   }
 
   findAll() {
