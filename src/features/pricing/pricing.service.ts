@@ -204,12 +204,6 @@ export class PricingService {
       pricing.items = filteredItems;
       delete pricing.solutionItems;
 
-      //filter pricing limit
-      const pricingLimit = pricing.priceLimits.filter(
-        (item) => item.customerType.toString() === customerType.toString(),
-      );
-      pricing.priceLimits = pricingLimit;
-
       return pricing;
     } else {
       const filteredItems = pricing.solutionItems.filter(
@@ -217,6 +211,13 @@ export class PricingService {
       );
       pricing.solutionItems = filteredItems;
       delete pricing.items;
+
+      //filter pricing limit
+      const pricingLimit = pricing.priceLimits.filter(
+        (item) => item.customerType.toString() === customerType.toString(),
+      );
+      pricing.priceLimits = pricingLimit;
+
       return pricing;
     }
   }
