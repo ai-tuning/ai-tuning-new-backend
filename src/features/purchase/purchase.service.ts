@@ -245,7 +245,6 @@ export class PurchaseService {
    */
   async createOrder(adminId: Types.ObjectId, invoiceId: Types.ObjectId, amount: number, origin: string) {
     const token = await this.getAccessToken(adminId);
-    console.log(decodeURIComponent(origin));
     const { data } = await this.httpService.axiosRef(`${this.paypal_url}/v2/checkout/orders`, {
       method: 'POST',
       headers: {
@@ -379,7 +378,6 @@ export class PurchaseService {
         const grandTotal = price + vatAmount;
         return { totalPrice: price, vatAmount: vatAmount, grandTotal };
       } else {
-        console.log(buyerVatNumber);
         // Different EU countries
         if (buyerVatNumber) {
           // Valid VAT number: Reverse charge

@@ -41,6 +41,7 @@ import { ScriptService } from '../script/script.service';
 import { FileProcessQueueProducers } from '../queue-manager/producers/file.queue.producer';
 import { AdminPricingService } from '../admin-pricing/admin-pricing.service';
 import { AdminPrices } from '../admin-pricing/schema/admin-pricing.schema';
+import { PRICING_TYPE_ENUM } from '../constant/enums/pricing-type.enum';
 
 const timeOutAsync = promisify(setTimeout);
 
@@ -346,7 +347,12 @@ export class FileServiceService {
 
       const pricing = await this.pricingService.getPricingByCustomerType(admin, customer.customerType);
 
-      const requiredCredits = this.calculateCredits(selectedSolutionCategory, pricing, tempFileService.makeType);
+      const requiredCredits = this.calculateCredits(
+        selectedSolutionCategory,
+        allSolution,
+        pricing,
+        tempFileService.makeType,
+      );
 
       const allAdminPricing = await this.adminPricingService.getAdminAllPricing();
 
@@ -741,15 +747,45 @@ ResellerCredits= 10
     }
   }
 
-  private calculateCredits(services: SOLUTION_CATEGORY[], pricing: Pricing, makeType: MAKE_TYPE_ENUM) {
+  private calculateCredits(
+    services: SOLUTION_CATEGORY[],
+    selectedSolutions: Types.ObjectId[],
+    pricing: Pricing,
+    makeType: MAKE_TYPE_ENUM,
+  ) {
     let totalCredits = 0;
     //handle car
     if (makeType) {
-      const pricingItems = pricing.items.filter((item) => item.makeType === makeType);
-      for (const service of services) {
-        const item = pricingItems.find((item) => item.solutionCategory === service);
-        if (item) {
-          totalCredits += item.price;
+      if (pricing.enabledPricingType === PRICING_TYPE_ENUM.SOLUTION_BASED) {
+        const pricingItems = pricing.solutionItems.filter((item) => item.makeType === makeType);
+        console.log('pricingItems', pricingItems);
+        console.log('selectedSolutions', selectedSolutions);
+        for (const solution of selectedSolutions) {
+          const item = pricingItems.find(
+            (item: any) =>
+              item.solution._id.toString() === solution.toString() && item.solution.makeTypes.includes(makeType),
+          );
+          console.log('item', item);
+          if (item) {
+            totalCredits += item.price;
+          }
+        }
+
+        if (totalCredits === 0) {
+          totalCredits = pricing.minPrice;
+        }
+
+        if (totalCredits > pricing.maxPrice) {
+          totalCredits = pricing.maxPrice;
+        }
+        console.log('totalPrice', totalCredits);
+      } else {
+        const pricingItems = pricing.items.filter((item) => item.makeType === makeType);
+        for (const service of services) {
+          const item = pricingItems.find((item) => item.solutionCategory === service);
+          if (item) {
+            totalCredits += item.price;
+          }
         }
       }
     }
