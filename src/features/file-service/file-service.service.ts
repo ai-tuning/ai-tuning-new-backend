@@ -772,12 +772,15 @@ ResellerCredits= 10
         }
 
         if (totalCredits === 0) {
-          totalCredits = pricing.minPrice;
+          const minPrice = pricing.priceLimits.find((item) => item.makeType === makeType).minPrice;
+          totalCredits = minPrice;
         }
 
-        if (totalCredits > pricing.maxPrice) {
-          totalCredits = pricing.maxPrice;
+        const maxPrice = pricing.priceLimits.find((item) => item.makeType === makeType).maxPrice;
+        if (totalCredits > maxPrice) {
+          totalCredits = maxPrice;
         }
+
         console.log('totalPrice', totalCredits);
       } else {
         const pricingItems = pricing.items.filter((item) => item.makeType === makeType);

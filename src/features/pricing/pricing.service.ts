@@ -9,6 +9,7 @@ import { CreditPricingDto } from './dto/credit-pricing.dto';
 import { Solution } from '../solution/schema/solution.schema';
 import { PRICING_TYPE_ENUM } from '../constant/enums/pricing-type.enum';
 import { CustomerType } from '../customer/schema/customer-type.schema';
+import { UpdatePricingLimitDto } from './dto/update-pricing-limit.dto';
 
 @Injectable()
 export class PricingService {
@@ -25,11 +26,7 @@ export class PricingService {
   //   try {
   //     const customerTypes = await this.customerTypeModel.find();
   //     for (const customerType of customerTypes) {
-  //       await this.pushSolutionBasedItemsByCustomerType(
-  //         customerType.admin,
-  //         customerType._id as Types.ObjectId,
-  //         session,
-  //       );
+  //       await this.pushPriceLimit(customerType.admin, customerType._id as Types.ObjectId, session);
   //     }
   //     await session.commitTransaction();
   //     await session.endSession();
@@ -145,8 +142,29 @@ export class PricingService {
           makeType: MAKE_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
         },
       ],
+      priceLimits: [
+        {
+          customerType: customerType,
+          minPrice: 0,
+          maxPrice: 0,
+          makeType: MAKE_TYPE_ENUM.CAR,
+        },
+        {
+          customerType: customerType,
+          minPrice: 0,
+          maxPrice: 0,
+          makeType: MAKE_TYPE_ENUM.BIKE,
+        },
+        {
+          customerType: customerType,
+          minPrice: 0,
+          maxPrice: 0,
+          makeType: MAKE_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
+        },
+      ],
       solutionItems: solutionItems,
     });
+
     return pricing.save({ session });
   }
 
@@ -159,6 +177,10 @@ export class PricingService {
       })
       .populate({
         path: 'solutionItems.customerType',
+        select: 'name',
+      })
+      .populate({
+        path: 'priceLimits.customerType',
         select: 'name',
       })
       .populate({
@@ -176,10 +198,18 @@ export class PricingService {
         select: 'name makeTypes',
       })
       .lean<Pricing>();
+
     if (pricing.enabledPricingType === PRICING_TYPE_ENUM.CATEGORY_BASED) {
       const filteredItems = pricing.items.filter((item) => item.customerType.toString() === customerType.toString());
       pricing.items = filteredItems;
       delete pricing.solutionItems;
+
+      //filter pricing limit
+      const pricingLimit = pricing.priceLimits.filter(
+        (item) => item.customerType.toString() === customerType.toString(),
+      );
+      pricing.priceLimits = pricingLimit;
+
       return pricing;
     } else {
       const filteredItems = pricing.solutionItems.filter(
@@ -374,6 +404,50 @@ export class PricingService {
     await this.pricingModel.bulkWrite(bulkWriteOperations, { session });
   }
 
+  async pushPriceLimit(adminId: Types.ObjectId, customerType: Types.ObjectId, session: ClientSession) {
+    return this.pricingModel
+      .findOneAndUpdate(
+        { admin: adminId },
+        {
+          $push: {
+            priceLimits: {
+              $each: [
+                {
+                  customerType: customerType,
+                  minPrice: 0,
+                  maxPrice: 0,
+                  makeType: MAKE_TYPE_ENUM.CAR,
+                },
+                {
+                  customerType: customerType,
+                  minPrice: 0,
+                  maxPrice: 0,
+                  makeType: MAKE_TYPE_ENUM.BIKE,
+                },
+                {
+                  customerType: customerType,
+                  minPrice: 0,
+                  maxPrice: 0,
+                  makeType: MAKE_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
+                },
+              ],
+            },
+          },
+        },
+        { new: true, session },
+      )
+      .lean<Pricing>();
+  }
+
+  async pullPriceLimit(adminId: Types.ObjectId, customerType: Types.ObjectId, session: ClientSession) {
+    const pricing = await this.pricingModel.findOne({ admin: adminId }).session(session);
+    const updatedPriceLimit = pricing.priceLimits.filter((item) => {
+      return item.customerType.toString() !== customerType.toString();
+    });
+    pricing.priceLimits = updatedPriceLimit;
+    return await pricing.save({ session });
+  }
+
   async updatePricingType(adminId: Types.ObjectId, pricingType: PRICING_TYPE_ENUM) {
     return await this.pricingModel.findOneAndUpdate({ admin: adminId }, { $set: { enabledPricingType: pricingType } });
   }
@@ -466,7 +540,22 @@ export class PricingService {
     return await pricing.save({ session });
   }
 
-  async updateMaxAndMinPrice(adminId: Types.ObjectId, maxPrice: number, minPrice: number) {
-    return await this.pricingModel.findOneAndUpdate({ admin: adminId }, { $set: { maxPrice, minPrice } });
+  async updatePriceLimit(adminId: Types.ObjectId, updatePricingLimitDto: UpdatePricingLimitDto[]) {
+    const pricing = await this.pricingModel.findOne({ admin: adminId }).lean<Pricing>();
+    if (!pricing) {
+      throw new NotFoundException('Pricing not found');
+    }
+    for (const updatedItem of updatePricingLimitDto) {
+      const priceLimitIndex = pricing.priceLimits.findIndex(
+        (item) =>
+          item.makeType === updatedItem.makeType &&
+          item.customerType.toString() === updatedItem.customerType.toString(),
+      );
+      if (priceLimitIndex !== -1) {
+        pricing.priceLimits[priceLimitIndex].minPrice = updatedItem.minPrice;
+        pricing.priceLimits[priceLimitIndex].maxPrice = updatedItem.maxPrice;
+      }
+    }
+    return await this.pricingModel.findOneAndUpdate({ admin: adminId }, pricing);
   }
 }

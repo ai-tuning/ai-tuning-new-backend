@@ -7,6 +7,7 @@ import { Types } from 'mongoose';
 import { MAKE_TYPE_ENUM } from '../constant';
 import { CreditPricingDto } from './dto/credit-pricing.dto';
 import { PRICING_TYPE_ENUM } from '../constant/enums/pricing-type.enum';
+import { UpdatePricingLimitDto } from './dto/update-pricing-limit.dto';
 
 @Controller('pricing')
 export class PricingController {
@@ -49,12 +50,12 @@ export class PricingController {
     return { message: 'Pricing type updated successfully' };
   }
 
-  @Patch('update-max-min/:adminId')
-  async updateMaxMinPricing(
+  @Patch('update-price-limits/:adminId')
+  async updatePriceLimit(
     @Param('adminId') adminId: Types.ObjectId,
-    @Body() updateDto: { maxPrice: number; minPrice: number },
+    @Body() updatePricingLimitDto: UpdatePricingLimitDto[],
   ) {
-    await this.pricingService.updateMaxAndMinPrice(adminId, updateDto.maxPrice, updateDto.minPrice);
+    await this.pricingService.updatePriceLimit(adminId, updatePricingLimitDto);
     return { message: 'Pricing updated successfully' };
   }
 

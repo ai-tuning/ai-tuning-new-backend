@@ -189,6 +189,7 @@ export class CustomerService {
         customerType._id as Types.ObjectId,
         session,
       );
+      await this.pricingService.pushPriceLimit(customerType.admin, customerType._id as Types.ObjectId, session);
 
       await this.pricingService.pushEvcPriceItems(customerType.admin, customerType._id as Types.ObjectId, session);
 
@@ -242,6 +243,7 @@ export class CustomerService {
       //delete pricing related to the customer type
       await this.pricingService.pullCategoryBasedItems(admin._id, id, session);
       await this.pricingService.pullSolutionBasedItemsByCustomerType(admin._id, id, session);
+      await this.pricingService.pullPriceLimit(admin._id, id, session);
 
       await this.pricingService.pullEvcPricingItem(admin._id, id, session);
 

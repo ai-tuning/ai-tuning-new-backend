@@ -37,16 +37,30 @@ export class SolutionBasedItem {
 
 const SolutionBasedItemSchema = SchemaFactory.createForClass(SolutionBasedItem);
 
-@Schema({ timestamps: true, versionKey: false })
-export class Pricing {
-  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
-  admin: Types.ObjectId;
+@Schema({ timestamps: false, versionKey: false, _id: false })
+class PriceLimit {
+  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, ref: collectionsName.customerType })
+  customerType: Types.ObjectId;
+
+  @Prop({ type: String, required: true, enum: MAKE_TYPE_ENUM })
+  makeType: MAKE_TYPE_ENUM;
 
   @Prop({ type: Number, required: true })
   maxPrice: number;
 
   @Prop({ type: Number, required: true })
   minPrice: number;
+}
+
+const PriceLimitSchema = SchemaFactory.createForClass(PriceLimit);
+
+@Schema({ timestamps: true, versionKey: false })
+export class Pricing {
+  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+  admin: Types.ObjectId;
+
+  @Prop({ type: [PriceLimitSchema], required: true })
+  priceLimits: PriceLimit[];
 
   //current enabled pricing type
   @Prop({ type: String, required: true, enum: PRICING_TYPE_ENUM, default: PRICING_TYPE_ENUM.CATEGORY_BASED })
