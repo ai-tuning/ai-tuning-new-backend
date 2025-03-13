@@ -136,7 +136,6 @@ export class AdminService {
         console.log(admin.country, updateAdminDto.vatNumber);
         const validInfo = await this.validateVatNumber(admin.country as CountryCodes, updateAdminDto.vatNumber);
         if (!validInfo.valid) throw new BadRequestException('Vat number is not valid');
-        updateAdminDto.address = validInfo.address;
       }
 
       if (admin.username !== updateAdminDto.username) {
@@ -170,7 +169,6 @@ export class AdminService {
   }
 
   async updateAiAssist(adminId: Types.ObjectId, aiAssist: boolean) {
-    console.log(aiAssist);
     return await this.adminModel
       .findByIdAndUpdate(adminId, { $set: { aiAssist } }, { new: true })
       .select('aiAssist')

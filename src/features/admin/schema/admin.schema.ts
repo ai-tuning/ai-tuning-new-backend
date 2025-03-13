@@ -54,7 +54,7 @@ class Admin extends Document<Types.ObjectId> {
   street: string;
 
   @Prop({ type: String, required: true })
-  address: string;
+  postcode: string;
 
   @Prop({ type: String })
   avatar: string;
@@ -79,7 +79,7 @@ export class AdminDocument {
   email: string;
   credits: number;
   phone: string;
-  address: string;
+  postcode: string;
   avatar: string;
   logo: string;
   aiAssist: boolean;

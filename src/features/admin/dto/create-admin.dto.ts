@@ -32,7 +32,7 @@ export class CreateAdminDto {
 
   @IsNotEmpty()
   @IsString()
-  address: string;
+  postcode: string;
 
   @IsOptional()
   @IsString()
