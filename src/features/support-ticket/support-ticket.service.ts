@@ -22,12 +22,11 @@ export class SupportTicketService {
         const uploadedFile = await this.storageService.upload(supportTicket._id.toString(), {
           name: file.filename,
           path: file.path,
-          size: file.size,
         });
         supportTicket.file = {
           originalname: file.originalname,
           uniqueName: file.filename,
-          url: uploadedFile,
+          key: uploadedFile,
         };
         isUploaded = true;
       }
@@ -71,7 +70,7 @@ export class SupportTicketService {
   async remove(id: number) {
     const supportTicket = await this.supportTicketModel.findByIdAndDelete(id).lean<SupportTicket>();
     if (supportTicket.file) {
-      await this.storageService.delete(supportTicket._id.toString(), supportTicket.file.url);
+      await this.storageService.delete(supportTicket._id.toString(), supportTicket.file.key);
     }
   }
 }

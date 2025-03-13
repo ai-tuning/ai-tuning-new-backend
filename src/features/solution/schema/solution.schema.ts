@@ -18,6 +18,9 @@ export class Solution extends Document {
 
   @Prop({ type: [String], required: true, enums: MAKE_TYPE_ENUM })
   makeTypes: MAKE_TYPE_ENUM[];
+
+  @Prop({ type: Number })
+  mysqlId: number;
 }
 
 export const SolutionSchema = SchemaFactory.createForClass(Solution);

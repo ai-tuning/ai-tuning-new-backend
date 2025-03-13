@@ -41,7 +41,7 @@ export class PricingService {
     const exist = await this.pricingModel.exists({ admin: adminId });
     if (exist) throw new BadRequestException('Pricing already exist');
 
-    await this.creditPricingModel.create(
+    await this.creditPricingModel.insertOne(
       {
         admin: adminId,
         creditPrice: 0,

@@ -24,7 +24,7 @@ class Customer extends Document {
   @Prop({ type: String, required: true })
   lastName: string;
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: true, unique: true })
   email: string;
 
   @Prop({ type: String, required: true })
@@ -45,7 +45,7 @@ class Customer extends Document {
   @Prop({ type: String })
   companyName: string;
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: String })
   countryCode: string;
 
   @Prop({ type: String })
@@ -77,6 +77,10 @@ class Customer extends Document {
 
   @Prop({ type: String })
   vatNumber: string;
+
+  //migration record
+  @Prop({ type: Number })
+  mysqlId: number;
 }
 
 const CustomerSchema = SchemaFactory.createForClass(Customer);

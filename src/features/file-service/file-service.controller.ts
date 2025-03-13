@@ -46,11 +46,10 @@ export class FileServiceController {
   }
 
   @Post('download')
-  async downloadFile(@Res() res: Response, @Body() body: { url: string }) {
-    if (!body.url) throw new BadRequestException('File not found');
-    const data = await this.fileServiceService.downloadFile(body.url);
-    res.setHeader('Content-Disposition', 'attachment; filename=' + data.name); // Optional: specify filename for download
-    data.data.pipe(res);
+  async downloadFile(@Res() res: Response, @Body() body: { key: string }) {
+    if (!body.key) throw new BadRequestException('File not found');
+    const data = await this.fileServiceService.downloadFile(body.key);
+    data.pipe(res);
   }
 
   @UseInterceptors(FileInterceptor('modFile'))

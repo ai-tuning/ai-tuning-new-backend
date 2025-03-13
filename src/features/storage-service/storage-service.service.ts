@@ -1,110 +1,130 @@
 import * as fs from 'fs';
-import { Storage, File } from 'megajs';
 import { Injectable } from '@nestjs/common';
 import { appConfig } from '../config';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  ListObjectsV2Command,
+  GetObjectCommand,
+  ListObjectsCommand,
+} from '@aws-sdk/client-s3';
+import { Readable } from 'stream';
+import { Upload } from '@aws-sdk/lib-storage';
 
 @Injectable()
 export class StorageService {
-  storage: Storage;
+  private client: S3Client;
+  private bucketName: string;
+
   constructor() {
     const config = appConfig();
-    this.storage = new Storage({
-      email: config.mega_email,
-      password: config.mega_password,
-      userAgent:
-        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    this.bucketName = config.s3_bucket_name;
+    this.client = new S3Client({
+      endpoint: config.s3_storage_url,
+      forcePathStyle: true,
+      credentials: {
+        accessKeyId: config.s3_client_id,
+        secretAccessKey: config.s3_client_secret,
+      },
+      region: 'US-central',
     });
   }
-
   /**
-   * This function will check folder we create manually in mega
-   * @param name
-   * @returns
+   * Upload a file to S3
+   * @param dirName Folder name (acts as a prefix in S3)
+   * @param file File object
+   * @returns Public URL of the uploaded file
    */
-  hasDir(name: string, storage: Storage) {
-    const lowerCaseName = name.toLowerCase();
-    const hasDir = storage.root.children.find((file) => file.name === lowerCaseName);
-    return hasDir;
+  async upload(dirName: string, file: { name: string; path: string }) {
+    const key = `${dirName}/${file.name}`;
+    const fileContent = fs.createReadStream(file.path);
+
+    const upload = new Upload({
+      client: this.client,
+      params: {
+        Bucket: this.bucketName,
+        Key: key,
+        Body: fileContent,
+      },
+    });
+    await upload.done();
+    return key;
   }
 
   /**
-   * create directory if not exist
-   * @param parent
-   * @param child
-   * @returns
+   * Upload a file to S3
+   * @param dirName Folder name (acts as a prefix in S3)
+   * @param file File object
+   * @returns Public URL of the uploaded file
    */
-  async createDir(name: string, storage: Storage) {
-    const lowerCaseName = name.toLowerCase();
-    const hasFolder = this.hasDir(lowerCaseName, storage);
-    if (!hasFolder) {
-      await storage.mkdir(lowerCaseName);
-    }
-  }
-  /**
-   * create and upload file on mega
-   * @param file
-   * @param dir
-   * @returns
-   */
-  async upload(dirName: string, file: { name: string; size: number; path: string }) {
-    const storage = this.storage;
+  async bulkUpload(dirName: string, files: { name: string; path: string; keyIdentifier: string }[]) {
+    const uploads = files.map(async (file) => {
+      const key = `${dirName}/${file.name}`;
+      const fileContent = fs.createReadStream(file.path);
 
-    const lowerCaseName = dirName.toLowerCase();
+      const upload = new Upload({
+        client: this.client,
+        params: {
+          Bucket: this.bucketName,
+          Key: key,
+          Body: fileContent,
+        },
+      });
+      await upload.done();
+      return { key, keyIdentifier: file.keyIdentifier };
+    });
 
-    await this.createDir(lowerCaseName, storage);
-    //find the parent
-
-    const createdDir = storage.find((file) => file.name === lowerCaseName);
-    //upload to the root
-    const uploadStream = storage.upload({ name: file.name, size: file.size });
-
-    const fileStream = fs.createReadStream(file.path);
-    fileStream.pipe(uploadStream);
-
-    const uploaded = await uploadStream.complete;
-
-    //move to the child dir
-    await uploaded.moveTo(createdDir);
-    // return the link
-    const link = await uploaded.link({});
-    return link;
+    const data = await Promise.all(uploads);
+    return data;
   }
 
   /**
-   * Delete file using link and directory
-   * @param dir
-   * @param link
+   * Delete a file from S3
+   * @param dirName Folder name (prefix in S3)
+   * @param fileName Name of the file to delete
    */
-  async delete(dirName: string, link: string) {
-    const lowerCaseName = dirName.toLowerCase();
-    const dir = this.storage.find((file) => file.name === lowerCaseName);
-    const file = dir.children.find(async (file) => (await file.link({})) === link);
-    await file.delete();
+  async delete(dirName: string, fileName: string) {
+    const key = `${dirName}/${fileName}`;
+    await this.client.send(
+      new DeleteObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+      }),
+    );
   }
 
   /**
-   * Delete the entire folder
-   * @param dirName
+   * Delete an entire folder (S3 doesn't have real folders, so we delete all objects under the prefix)
+   * @param dirName Folder name (prefix in S3)
    */
   async deleteFolder(dirName: string) {
-    const lowerCaseName = dirName.toLowerCase();
-    const dir = this.storage.find((file) => file.name === lowerCaseName);
-    await dir.delete();
-  }
+    const listCommand = new ListObjectsV2Command({
+      Bucket: this.bucketName,
+      Prefix: `${dirName}/`,
+    });
 
-  async download(link: string) {
-    const file = File.fromURL(link);
-    await file.loadAttributes();
+    const { Contents } = await this.client.send(listCommand);
+    if (!Contents) return;
 
-    const data = file.download({});
-    return { name: file.name, data };
-  }
-  async downloadOnce(link: string) {
-    try {
-      const file = await File.fromURL(link).downloadBuffer({});
-      return file;
-    } catch (error) {
-      throw error;
+    for (const object of Contents) {
+      await this.delete(dirName, object.Key.replace(`${dirName}/`, ''));
     }
+  }
+
+  /**
+   * Download a file from S3
+   * @param dirName Folder name (prefix in S3)
+   * @param fileName Name of the file
+   * @returns Readable stream of the file
+   */
+  async download(key: string): Promise<Readable> {
+    const { Body } = await this.client.send(
+      new GetObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+      }),
+    );
+    return Body as Readable;
   }
 }

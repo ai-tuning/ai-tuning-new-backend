@@ -45,6 +45,10 @@ const appConfig = () => ({
   encryption_key: process.env.ENCRYPTION_KEY,
   mega_email: process.env.MEGA_EMAIL,
   mega_password: process.env.MEGA_PASSWORD,
+  s3_client_id: process.env.S3_CLIENT_ID,
+  s3_client_secret: process.env.S3_CLIENT_SECRET,
+  s3_bucket_name: process.env.S3_BUCKET_NAME,
+  s3_storage_url: process.env.S3_STORAGE_URL,
 });
 
 type AppConfig = ReturnType<typeof appConfig>;

@@ -42,6 +42,7 @@ import { EmployeeRoleModule } from './features/employee-role/employee-role.modul
 import { SuperAdminModule } from './features/super-admin/super-admin.module';
 import { AdminPricingModule } from './features/admin-pricing/admin-pricing.module';
 import { DashboardModule } from './features/dashboard/dashboard.module';
+import { MigrationModule } from './features/migration/migration.module';
 
 @Module({
   imports: [
@@ -169,6 +170,7 @@ import { DashboardModule } from './features/dashboard/dashboard.module';
     SuperAdminModule,
     AdminPricingModule,
     DashboardModule,
+    MigrationModule,
   ],
   controllers: [],
   providers: [],

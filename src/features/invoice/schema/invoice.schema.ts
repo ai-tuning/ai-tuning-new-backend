@@ -22,8 +22,8 @@ class Invoice extends Document {
   @Prop({ type: Number, required: true })
   quantity: number;
 
-  @Prop({ type: String, required: true })
-  unitPrice: string;
+  @Prop({ type: Number, required: true })
+  unitPrice: number;
 
   @Prop({ type: Number, required: true })
   totalPrice: number;
@@ -51,6 +51,9 @@ class Invoice extends Document {
 
   @Prop({ type: Boolean, default: false })
   isEvcCredit: boolean;
+
+  @Prop({ type: Number })
+  mysqlId: number;
 }
 
 const InvoiceSchema = SchemaFactory.createForClass(Invoice);

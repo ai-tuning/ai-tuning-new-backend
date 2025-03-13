@@ -179,8 +179,8 @@ export class FileServiceService {
     ]);
   }
 
-  async downloadFile(url: string) {
-    return this.storageService.download(url);
+  async downloadFile(key: string) {
+    return await this.storageService.download(key);
   }
 
   async automatisation(automatisationDto: AutomatisationDto, file: Express.Multer.File) {
@@ -501,87 +501,155 @@ ResellerCredits= 10
         this.fileProcessProducer.processFile({ fileServiceData: newFileService, tempFileService, admin: adminData });
       }
 
+      const uploadPayLoad: { name: string; path: string; keyIdentifier: string }[] = [];
+
       //original file
       const originalFilePath = path.join(fileServicePath, tempFileService.originalFile);
-      const originalFileSize = fs.statSync(originalFilePath).size;
-      const originalUpload = await this.storageService.upload(newFileService._id.toString(), {
+
+      uploadPayLoad.push({
+        keyIdentifier: 'originalFile',
         name: tempFileService.originalFile,
         path: originalFilePath,
-        size: originalFileSize,
       });
 
-      newFileService.originalFile = {
-        url: originalUpload,
-        originalname: tempFileService.originalFileName,
-        uniqueName: tempFileService.originalFile,
-      };
+      // const originalUpload = await this.storageService.upload(newFileService._id.toString(), {
+      //   name: tempFileService.originalFile,
+      //   path: originalFilePath,
+      // });
+
+      // newFileService.originalFile = {
+      //   key: originalUpload,
+      //   originalname: tempFileService.originalFileName,
+      //   uniqueName: tempFileService.originalFile,
+      // };
 
       //upload ini file
       const iniFilePath = path.join(fileServicePath, tempFileService.iniFile);
-      const iniFileSize = fs.statSync(iniFilePath).size;
-      const iniUpload = await this.storageService.upload(newFileService._id.toString(), {
+
+      uploadPayLoad.push({
+        keyIdentifier: 'iniFile',
         name: tempFileService.iniFile,
         path: iniFilePath,
-        size: iniFileSize,
       });
-      newFileService.iniFile = {
-        url: iniUpload,
-        originalname: tempFileService.iniFile,
-        uniqueName: tempFileService.iniFile,
-      };
+
+      // const iniUpload = await this.storageService.upload(newFileService._id.toString(), {
+      //   name: tempFileService.iniFile,
+      //   path: iniFilePath,
+      // });
+
+      // newFileService.iniFile = {
+      //   key: iniUpload,
+      //   originalname: tempFileService.iniFile,
+      //   uniqueName: tempFileService.iniFile,
+      // };
 
       if (tempFileService.decodedFile) {
         //decoded file
         const decodedFilePath = path.join(fileServicePath, tempFileService.decodedFile);
-        const decodedFileSize = fs.statSync(decodedFilePath).size;
-        const decodedUpload = await this.storageService.upload(newFileService._id.toString(), {
+        // const decodedUpload = await this.storageService.upload(newFileService._id.toString(), {
+        //   name: tempFileService.decodedFile,
+        //   path: decodedFilePath,
+        // });
+        // newFileService.decodedFile = {
+        //   key: decodedUpload,
+        //   originalname: tempFileService.decodedFile,
+        //   uniqueName: tempFileService.decodedFile,
+        // };
+
+        uploadPayLoad.push({
+          keyIdentifier: 'decodedFile',
           name: tempFileService.decodedFile,
           path: decodedFilePath,
-          size: decodedFileSize,
         });
-        newFileService.decodedFile = {
-          url: decodedUpload,
-          originalname: tempFileService.decodedFile,
-          uniqueName: tempFileService.decodedFile,
-        };
       }
 
       if (modifiedPath) {
-        const modWithoutEncodedFileSize = fs.statSync(modifiedPath).size;
-        const modifiedUpload = await this.storageService.upload(newFileService._id.toString(), {
+        // const modifiedUpload = await this.storageService.upload(newFileService._id.toString(), {
+        //   name: path.basename(modifiedPath),
+        //   path: modifiedPath,
+        // });
+
+        uploadPayLoad.push({
+          keyIdentifier: 'modFile',
           name: path.basename(modifiedPath),
           path: modifiedPath,
-          size: modWithoutEncodedFileSize,
         });
 
-        if (encodedPath) {
-          newFileService.modWithoutEncoded = {
-            url: modifiedUpload,
-            originalname: path.basename(modifiedPath),
-            uniqueName: path.basename(modifiedPath),
-          };
-        } else {
-          newFileService.modFile = {
-            url: modifiedUpload,
-            originalname: path.basename(modifiedPath),
-            uniqueName: path.basename(modifiedPath),
-          };
-        }
+        // if (encodedPath) {
+        //   newFileService.modWithoutEncoded = {
+        //     key: modifiedUpload,
+        //     originalname: path.basename(modifiedPath),
+        //     uniqueName: path.basename(modifiedPath),
+        //   };
+        // } else {
+        //   newFileService.modFile = {
+        //     key: modifiedUpload,
+        //     originalname: path.basename(modifiedPath),
+        //     uniqueName: path.basename(modifiedPath),
+        //   };
+        // }
       }
 
       //encoded file
       if (encodedPath) {
-        const encodedFileSize = fs.statSync(encodedPath).size;
-        const encodedUpload = await this.storageService.upload(newFileService._id.toString(), {
+        // const encodedUpload = await this.storageService.upload(newFileService._id.toString(), {
+        //   name: path.basename(encodedPath),
+        //   path: encodedPath,
+        // });
+        // newFileService.modFile = {
+        //   key: encodedUpload,
+        //   originalname: path.basename(encodedPath),
+        //   uniqueName: path.basename(encodedPath),
+        // };
+        uploadPayLoad.push({
+          keyIdentifier: 'encodedFile',
           name: path.basename(encodedPath),
           path: encodedPath,
-          size: encodedFileSize,
         });
-        newFileService.modFile = {
-          url: encodedUpload,
-          originalname: path.basename(encodedPath),
-          uniqueName: path.basename(encodedPath),
-        };
+      }
+
+      const uploadFiles = await this.storageService.bulkUpload(newFileService._id.toString(), uploadPayLoad);
+
+      for (const upload of uploadFiles) {
+        if (upload.keyIdentifier === 'originalFile') {
+          newFileService.originalFile = {
+            key: upload.key,
+            originalname: tempFileService.originalFileName,
+            uniqueName: tempFileService.originalFile,
+          };
+        } else if (upload.keyIdentifier === 'iniFile') {
+          newFileService.iniFile = {
+            key: upload.key,
+            originalname: tempFileService.iniFile,
+            uniqueName: tempFileService.iniFile,
+          };
+        } else if (upload.keyIdentifier === 'decodedFile') {
+          newFileService.decodedFile = {
+            key: upload.key,
+            originalname: tempFileService.decodedFile,
+            uniqueName: tempFileService.decodedFile,
+          };
+        } else if (upload.keyIdentifier === 'modFile') {
+          if (encodedPath) {
+            newFileService.modWithoutEncoded = {
+              key: upload.key,
+              originalname: path.basename(modifiedPath),
+              uniqueName: path.basename(modifiedPath),
+            };
+          } else {
+            newFileService.modFile = {
+              key: upload.key,
+              originalname: path.basename(modifiedPath),
+              uniqueName: path.basename(modifiedPath),
+            };
+          }
+        } else if (upload.keyIdentifier === 'encodedFile') {
+          newFileService.modFile = {
+            key: upload.key,
+            originalname: path.basename(encodedPath),
+            uniqueName: path.basename(encodedPath),
+          };
+        }
       }
 
       if (prepareSolutionDto.comments) {
@@ -1189,22 +1257,20 @@ ResellerCredits= 10
 
     console.log('build upload start');
     if (modifiedPath) {
-      const modWithoutEncodedFileSize = fs.statSync(modifiedPath).size;
       const modifiedUpload = await this.storageService.upload(fileService._id.toString(), {
         name: path.basename(modifiedPath),
         path: modifiedPath,
-        size: modWithoutEncodedFileSize,
       });
 
       if (encodedPath) {
         fileService.modWithoutEncoded = {
-          url: modifiedUpload,
+          key: modifiedUpload,
           originalname: path.basename(modifiedPath),
           uniqueName: path.basename(modifiedPath),
         };
       } else {
         fileService.modFile = {
-          url: modifiedUpload,
+          key: modifiedUpload,
           originalname: path.basename(modifiedPath),
           uniqueName: path.basename(modifiedPath),
         };
@@ -1212,14 +1278,12 @@ ResellerCredits= 10
     }
     //encoded file
     if (encodedPath) {
-      const encodedFileSize = fs.statSync(encodedPath).size;
       const encodedUpload = await this.storageService.upload(fileService._id.toString(), {
         name: path.basename(encodedPath),
         path: encodedPath,
-        size: encodedFileSize,
       });
       fileService.modFile = {
-        url: encodedUpload,
+        key: encodedUpload,
         originalname: path.basename(encodedPath),
         uniqueName: path.basename(encodedPath),
       };
@@ -1278,29 +1342,25 @@ ResellerCredits= 10
       if (fileService.slaveType) {
         encodedPath = await this.encodeModifiedFile(modFile.path, tempFileService);
         //upload file to mega drive
-        const encodedFileSize = fs.statSync(encodedPath).size;
         const encodedUpload = await this.storageService.upload(fileService._id.toString(), {
           name: path.basename(encodedPath),
           path: encodedPath,
-          size: encodedFileSize,
         });
         modFileUploaded = encodedUpload;
         fileService.modFile = {
-          url: encodedUpload,
+          key: encodedUpload,
           originalname: path.basename(encodedPath),
           uniqueName: path.basename(encodedPath),
         };
       } else {
         if (modFile) {
-          const modFileSize = fs.statSync(modFile.path).size;
           const modifiedUpload = await this.storageService.upload(fileService._id.toString(), {
             name: path.basename(modFile.path),
             path: modFile.path,
-            size: modFileSize,
           });
           modFileUploaded = modifiedUpload;
           fileService.modFile = {
-            url: modifiedUpload,
+            key: modifiedUpload,
             originalname: path.basename(modFile.originalname),
             uniqueName: path.basename(modFile.filename),
           };

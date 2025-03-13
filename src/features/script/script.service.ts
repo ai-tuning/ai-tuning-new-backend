@@ -48,13 +48,11 @@ export class ScriptService {
         //download the original file
         if (fileService.slaveType) {
           originalFilePath = this.pathService.getTempFilePath(fileService.decodedFile.uniqueName);
-          console.log(originalFilePath);
         } else {
           originalFilePath = this.pathService.getTempFilePath(fileService.originalFile.uniqueName);
-          console.log(originalFilePath);
         }
 
-        const fileData = await this.storageService.downloadOnce(fileService.originalFile.url);
+        const fileData = await this.storageService.download(fileService.originalFile.key);
         await fs.promises.writeFile(originalFilePath, fileData);
       } else {
         if (!originalFile) throw new BadRequestException('Original file is required');
@@ -273,12 +271,17 @@ export class ScriptService {
       const car = await this.carService.findById(fileService.car);
       const controller = await this.controllerService.findById(fileService.controller);
 
-      const scriptPath = this.pathService.getCompleteScriptPath(
+      let scriptPath = this.pathService.getCompleteScriptPath(
         fileService.admin,
         car.makeType,
         car.name,
         controller.name,
       );
+
+      if (fileService.admin.toString() === process.env.SUPER_ADMIN_ID) {
+        scriptPath = this.pathService.getAiScriptPath(car.makeType, car.name, controller.name);
+      }
+
       const files = await fs.promises.readdir(scriptPath);
 
       if (!files.length) {
@@ -287,7 +290,7 @@ export class ScriptService {
 
       const matchFile = files.find((file) => {
         const lowercaseFilename = file.toLowerCase().replace(/\s+/g, ''); // Remove spaces from the solution name
-        lowercaseFilename.includes(replaceScriptDto.scriptToReplace.toLowerCase().replace(/\s+/g, '')); // Remove spaces from the solution name
+        return lowercaseFilename.includes(replaceScriptDto.scriptToReplace.toLowerCase().replace(/\s+/g, '')); // Remove spaces from the solution name
       });
 
       if (!matchFile) {
@@ -301,7 +304,7 @@ export class ScriptService {
         filePath = this.pathService.getTempFilePath(fileService.originalFile.uniqueName);
       }
       //download the original file
-      const fileData = await this.storageService.downloadOnce(fileService.originalFile.url);
+      const fileData = await this.storageService.download(fileService.originalFile.key);
       await fs.promises.writeFile(filePath, fileData);
 
       if (!fs.existsSync(filePath)) {
@@ -336,7 +339,6 @@ export class ScriptService {
     } catch (error) {
       throw error;
     } finally {
-      console.log('Deleting files');
       if (fs.existsSync(modFile.path)) {
         fs.rmSync(modFile.path, { recursive: true, force: true });
       }

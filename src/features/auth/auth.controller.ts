@@ -83,6 +83,7 @@ export class AuthController {
   @Post('/registration/:username')
   @Public()
   async registrationWithUsername(@Param('username') username: string, @Body() registrationDto: RegistrationDto) {
+    console.log('username', username);
     const data = await this.authService.registration(registrationDto, username);
     return { data, message: 'Registration Success' };
   }

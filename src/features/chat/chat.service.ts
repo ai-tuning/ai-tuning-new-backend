@@ -23,12 +23,11 @@ export class ChatService {
         const uploadedFile = await this.storageService.upload(createChatDto.service.toString(), {
           name: file.filename,
           path: file.path,
-          size: file.size,
         });
         chat.file = {
           originalname: file.originalname,
           uniqueName: file.filename,
-          url: uploadedFile,
+          key: uploadedFile,
         };
         chat.mimeType = file.mimetype;
         isUploaded = true;
@@ -80,7 +79,7 @@ export class ChatService {
 
   async remove(id: Types.ObjectId) {
     const data = await this.chatModel.findByIdAndDelete(id).lean<Chat>();
-    if (data.file) await this.storageService.delete(data.service.toString(), data.file.url);
+    if (data.file) await this.storageService.delete(data.service.toString(), data.file.key);
     return data;
   }
 }

@@ -18,6 +18,9 @@ class Car extends Document {
 
   @Prop({ type: String })
   logo: string;
+
+  @Prop({ type: Number })
+  mysqlId: number;
 }
 
 const CarSchema = SchemaFactory.createForClass(Car);
