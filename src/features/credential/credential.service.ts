@@ -47,6 +47,11 @@ export class CredentialService {
       updateCredentialDto.autoFlasher.apiKey = this.encryptData(updateCredentialDto.autoFlasher.apiKey);
     }
 
+    if (updateCredentialDto.autoTuner) {
+      updateCredentialDto.autoTuner.apiKey = this.encryptData(updateCredentialDto.autoTuner.apiKey);
+      updateCredentialDto.autoTuner.tunerId = this.encryptData(updateCredentialDto.autoTuner.tunerId);
+    }
+
     const credential = await this.credentialModel.findOneAndUpdate(
       {
         admin: adminId,
