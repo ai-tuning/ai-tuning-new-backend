@@ -13,6 +13,7 @@ import { CarControllerSchema } from '../car-controller/schema/car-controller.sch
 import { PathService } from '../common';
 import { SolutionSchema } from '../solution/schema/solution.schema';
 import { CustomerTypeSchema } from '../customer/schema/customer-type.schema';
+import { UserSchema } from '../user/schema/user.schema';
 
 @Module({
   imports: [
@@ -43,6 +44,10 @@ import { CustomerTypeSchema } from '../customer/schema/customer-type.schema';
       {
         name: collectionsName.customerType,
         schema: CustomerTypeSchema,
+      },
+      {
+        name: collectionsName.user,
+        schema: UserSchema,
       },
     ]),
   ],
