@@ -25,6 +25,7 @@ export class InvoiceService {
         path: collectionsName.customer,
         select: 'firstName lastName email phone country city address postcode street companyName',
       })
+      .sort({ createdAt: -1 })
       .lean<Invoice[]>();
   }
 
@@ -35,6 +36,7 @@ export class InvoiceService {
         path: 'customer',
         select: 'firstName lastName email phone country city address postcode street companyName',
       })
+      .sort({ createdAt: -1 })
       .lean<Invoice[]>();
   }
 
@@ -45,6 +47,7 @@ export class InvoiceService {
         path: 'admin',
         select: 'firstName lastName email phone country city address postcode street companyName',
       })
+      .sort({ createdAt: -1 })
       .lean<Invoice[]>();
   }
 
@@ -56,6 +59,7 @@ export class InvoiceService {
         path: 'admin',
         select: 'firstName lastName email phone country city address postcode street companyName',
       })
+      .sort({ createdAt: -1 })
       .lean<Invoice[]>();
   }
 
@@ -66,6 +70,7 @@ export class InvoiceService {
         path: collectionsName.customer,
         select: 'firstName lastName email phone country city address postcode street companyName',
       })
+      .sort({ createdAt: -1 })
       .lean<Invoice[]>();
   }
 
