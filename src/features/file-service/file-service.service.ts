@@ -3,7 +3,7 @@ import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
-import { nanoid } from 'nanoid';
+import * as shortid from 'shortid';
 import {
   MAKE_TYPE_ENUM,
   collectionsName,
@@ -227,7 +227,7 @@ export class FileServiceService {
 
     //resolve the slave file
     if (automatisationDto.slaveType === SLAVE_TYPE.KESS3) {
-      const customerUnique = nanoid(12);
+      const customerUnique = shortid.generate();
 
       const kess3 = await this.kess3Service.decodeFile({
         adminId: automatisationDto.admin,
