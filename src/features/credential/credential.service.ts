@@ -212,6 +212,7 @@ export class CredentialService {
     }
     if (credential.alienTech) {
       for (const key in credential.alienTech) {
+        if (key === 'accessToken') continue;
         if (credential.alienTech[key]) {
           credential.alienTech[key] = this.decryptData(credential.alienTech[key]);
         }
