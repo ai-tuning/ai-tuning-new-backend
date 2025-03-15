@@ -29,6 +29,7 @@ export class Kess3Service {
     filePath: string,
     adminId: Types.ObjectId,
     additionalInfo: { name: string; email: string },
+    token: string,
   ) {
     const formData = new FormData();
 
@@ -37,11 +38,8 @@ export class Kess3Service {
     if (additionalInfo) {
       formData.append('userInfo', JSON.stringify(additionalInfo));
     }
-    const apiService = await this.apiService(adminId);
-    console.log('upload started');
 
-    console.log('apiService', apiService);
-
+    const apiService = this.apiService(adminId, token);
     const response = await apiService({
       method: 'post',
       headers: {
@@ -60,8 +58,8 @@ export class Kess3Service {
    * @param asyncOperationGuid
    * @returns
    */
-  private async getAsyncInformation(adminId: Types.ObjectId, asyncOperationGuid: string) {
-    const apiService = await this.apiService(adminId);
+  private async getAsyncInformation(adminId: Types.ObjectId, asyncOperationGuid: string, token: string) {
+    const apiService = this.apiService(adminId, token);
     const response = await apiService({
       url: `/api/async-operations/${asyncOperationGuid}`,
     });
@@ -81,6 +79,7 @@ export class Kess3Service {
     fileSlotGUID: string,
     mode: string,
     bootBenchComponents: any[],
+    token: string,
   ) {
     let fileType = 'OBDDecoded';
     let url = `/api/kess3/file-slots/${fileSlotGUID}/files/?fileType=${fileType}&download=true`;
@@ -97,7 +96,7 @@ export class Kess3Service {
       }
       url = `/api/kess3/file-slots/${fileSlotGUID}/files/?fileType=${fileType}&download=true`;
     }
-    const apiService = await this.apiService(adminId);
+    const apiService = this.apiService(adminId, token);
     const { data } = await apiService({
       method: 'get',
       url,
@@ -130,8 +129,9 @@ export class Kess3Service {
     tempFileId: Types.ObjectId,
     fileSlotGUID: string,
     fileGUID: string,
+    token: string,
   ) {
-    const apiService = await this.apiService(adminId);
+    const apiService = this.apiService(adminId, token);
     const { data } = await apiService({
       method: 'get',
       url: `/api/kess3/file-slots/${fileSlotGUID}/files/${fileGUID}?download=true`,
@@ -155,8 +155,8 @@ export class Kess3Service {
    * @param adminId
    * @returns
    */
-  private async getFileSlots(adminId: Types.ObjectId) {
-    const alienTechApi = await this.apiService(adminId);
+  private async getFileSlots(adminId: Types.ObjectId, token) {
+    const alienTechApi = this.apiService(adminId, token);
     const response = await alienTechApi({
       method: 'get',
       url: `/api/kess3/file-slots`,
@@ -170,8 +170,8 @@ export class Kess3Service {
    * @param fileSlotGUID
    * @returns
    */
-  private async closeFileSlot(adminId: Types.ObjectId, fileSlotGUID: string) {
-    const alienTechApi = await this.apiService(adminId);
+  private async closeFileSlot(adminId: Types.ObjectId, fileSlotGUID: string, token: string) {
+    const alienTechApi = this.apiService(adminId, token);
 
     const response = await alienTechApi({
       method: 'post',
@@ -185,8 +185,8 @@ export class Kess3Service {
    * @param fileSlotGUID
    * @returns
    */
-  private async reOpenFileSlot(adminId: Types.ObjectId, fileSlotGUID: string) {
-    const apiService = await this.apiService(adminId);
+  private async reOpenFileSlot(adminId: Types.ObjectId, fileSlotGUID: string, token: string) {
+    const apiService = this.apiService(adminId, token);
     const response = await apiService({
       method: 'post',
       url: `/api/kess3/file-slots/${fileSlotGUID}/reopen`,
@@ -207,12 +207,13 @@ export class Kess3Service {
     interval: number,
     timeout: number,
     asyncOperationGuid: string,
+    token: string,
   ): Promise<any> {
     const start = Date.now();
     return new Promise((resolve, reject) => {
       const poll = async () => {
         try {
-          const data = await this.getAsyncInformation(adminId, asyncOperationGuid);
+          const data = await this.getAsyncInformation(adminId, asyncOperationGuid, token);
           console.log('kess3 async operation=======>', data);
           if (data.isCompleted && data.isSuccessful) {
             resolve(data); // Resolve with the complete data
@@ -243,17 +244,18 @@ export class Kess3Service {
    */
   async decodeFile(decodeFileServiceDto: DecodeKess3FileDto) {
     let slotGUID = null;
+    const token = await this.getToken(decodeFileServiceDto.adminId);
     try {
       if (!fs.existsSync(decodeFileServiceDto.filePath)) {
         throw new Error('Decoded File not found');
       }
-
       //upload for encoded file
       const uploadInfo = await this.uploadEncodedFile(
         decodeFileServiceDto.uniqueId,
         decodeFileServiceDto.filePath,
         decodeFileServiceDto.adminId,
         { name: decodeFileServiceDto.name, email: decodeFileServiceDto.email },
+        token,
       );
       //resolve async operation
       const { guid } = uploadInfo;
@@ -266,6 +268,7 @@ export class Kess3Service {
         uploadInfo.recommendedPollingInterval,
         60000,
         guid,
+        token,
       );
       //save the file
       const decodedFile = await this.downloadDecodeFile(
@@ -274,8 +277,9 @@ export class Kess3Service {
         asyncInformation.slotGUID,
         asyncInformation.result.kess3Mode,
         asyncInformation.result.bootBenchComponents,
+        token,
       );
-      await this.closeFileSlot(decodeFileServiceDto.adminId, asyncInformation.slotGUID);
+      await this.closeFileSlot(decodeFileServiceDto.adminId, asyncInformation.slotGUID, token);
 
       //update decoded file path to request object
       return {
@@ -292,7 +296,7 @@ export class Kess3Service {
     } catch (error) {
       console.log(error.response);
       if (slotGUID) {
-        await this.closeFileSlot(decodeFileServiceDto.adminId, slotGUID);
+        await this.closeFileSlot(decodeFileServiceDto.adminId, slotGUID, token);
       }
       if (decodeFileServiceDto.filePath && fs.existsSync(decodeFileServiceDto.filePath)) {
         fs.unlinkSync(decodeFileServiceDto.filePath);
@@ -307,11 +311,12 @@ export class Kess3Service {
     fileSlotGUID: string,
     fileType: string,
     modifiedFilePath: string,
+    token: string,
   ) {
     const formData = new FormData();
     console.log('modified file path from upload modified file', modifiedFilePath);
     formData.append('file', fs.createReadStream(modifiedFilePath));
-    const apiService = await this.apiService(adminId);
+    const apiService = this.apiService(adminId, token);
     const response = await apiService({
       method: 'put',
       url: `/api/kess3/upload-modified-file/${uniqueId}/${fileSlotGUID}/${fileType}`,
@@ -341,21 +346,25 @@ export class Kess3Service {
       fileType = 'OBDModified';
     }
 
+    const token = await this.getToken(adminId);
+
     //re open the file slot guid
-    await this.reOpenFileSlot(adminId, encodePayload.fileSlotGUID);
+    await this.reOpenFileSlot(adminId, encodePayload.fileSlotGUID, token);
     console.log('re-opened');
     console.log('modified file', encodePayload.filePath);
+
     const modifiedUploadedData = await this.uploadModifiedFile(
       adminId,
       encodePayload.uniqueId,
       encodePayload.fileSlotGUID,
       fileType,
       encodePayload.filePath,
+      token,
     );
 
     //update decoded file path to request object
     let response: AxiosResponse<any, any> = null;
-    const apiService = await this.apiService(adminId);
+    const apiService = this.apiService(adminId, token);
     if (encodePayload.mode === 'OBD') {
       response = await apiService({
         method: 'post',
@@ -387,15 +396,17 @@ export class Kess3Service {
         response.data.recommendedPollingInterval,
         60000,
         response.data.guid,
+        token,
       );
       console.log('encoded async information', asyncInformation);
-      await this.closeFileSlot(adminId, encodePayload.fileSlotGUID);
+      await this.closeFileSlot(adminId, encodePayload.fileSlotGUID, token);
 
       const encodedData = await this.downloadEncodeFile(
         adminId,
         encodePayload.tempFileId,
         asyncInformation.slotGUID,
         asyncInformation.result.kess3FileGUID,
+        token,
       );
       return encodedData.filePath;
     }
@@ -409,16 +420,29 @@ export class Kess3Service {
    */
   private async acquireToken(adminId: Types.ObjectId) {
     console.log('get access token');
-    const apiService = await this.apiService(adminId);
+
     //pull credential from db
     const credential = await this.credentialService.findByAdmin(adminId, 'alienTech');
     //throw error if credential not found
     if (!credential) throw new BadRequestException('Alien Tech Credential not found');
 
-    const response = await apiService.post('/api/access-tokens/request', {
+    const response = await this.httpService.axiosRef.post('/api/access-tokens/request', {
       clientApplicationGUID: credential.alienTech.clientId,
       secretKey: credential.alienTech.clientSecret,
     });
+
+    this.httpService.axiosRef.interceptors.request.use(
+      async (config) => {
+        // Get the token from a secure store (could be a database, environment variable, etc.)
+        config.headers['X-Alientech-ReCodAPI-LLC'] = response.data.accessToken;
+
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      },
+    );
+
     await this.credentialService.updateAlienTechAccessToken(adminId, response.data.accessToken);
     return response.data.accessToken;
   }
@@ -435,10 +459,8 @@ export class Kess3Service {
   }
 
   //axios instances
-  private async apiService(adminId: Types.ObjectId) {
+  private apiService(adminId: Types.ObjectId, token: string) {
     // Add a request interceptor to attach the access token to requests
-    const token = await this.getToken(adminId);
-    console.log('token', token);
 
     this.httpService.axiosRef.interceptors.request.use(
       async (config) => {
