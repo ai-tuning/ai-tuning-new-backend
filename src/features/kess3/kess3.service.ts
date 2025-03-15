@@ -250,7 +250,7 @@ export class Kess3Service {
 
       //upload for encoded file
       const uploadInfo = await this.uploadEncodedFile(
-        'user541698',
+        decodeFileServiceDto.customerId,
         decodeFileServiceDto.filePath,
         decodeFileServiceDto.adminId,
         { name: decodeFileServiceDto.name, email: decodeFileServiceDto.email },
