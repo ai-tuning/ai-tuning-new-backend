@@ -7,7 +7,7 @@ import { HttpService } from '@nestjs/axios';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CredentialService } from '../credential/credential.service';
 import { DecodeKess3FileDto, EncodeKess3FileDto } from './dto/kess3-encode-decode.dto';
-import { CustomValidationPipe, PathService } from '../common';
+import { PathService } from '../common';
 
 @Injectable()
 export class Kess3Service {
@@ -330,10 +330,7 @@ export class Kess3Service {
    * @returns
    */
   async encodeFile(encodePayload: EncodeKess3FileDto, adminId: Types.ObjectId) {
-    await CustomValidationPipe([encodePayload], EncodeKess3FileDto);
-
     let fileType = '';
-
     if (encodePayload.mode === 'BootBench') {
       if (encodePayload.fileType === 'BootBenchDecodedFlash') {
         fileType = 'BootBenchModifiedFlash';
