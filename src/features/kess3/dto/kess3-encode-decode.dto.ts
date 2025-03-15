@@ -8,7 +8,7 @@ export class DecodeKess3FileDto {
 
   @IsNotEmpty()
   @IsString()
-  customerId: string;
+  uniqueId: string;
 
   @IsNotEmpty()
   @IsString()
@@ -33,7 +33,7 @@ export class EncodeKess3FileDto {
 
   @IsNotEmpty()
   @IsString()
-  customerId: string;
+  uniqueId: string;
 
   @IsNotEmpty()
   @IsMongoId()

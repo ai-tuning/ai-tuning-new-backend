@@ -3,6 +3,7 @@ import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
+import { nanoid } from 'nanoid';
 import {
   MAKE_TYPE_ENUM,
   collectionsName,
@@ -209,13 +210,13 @@ export class FileServiceService {
     );
 
     if (!fs.existsSync(fileServicePath)) {
-      fs.mkdirSync(fileServicePath, { recursive: true });
+      await fs.promises.mkdir(fileServicePath, { recursive: true });
     }
 
     const newFilePath = path.join(fileServicePath, file.filename);
 
     // move the file to file service path
-    fs.renameSync(filePath, newFilePath);
+    await fs.promises.rename(filePath, newFilePath);
 
     //set file path with new path
     filePath = newFilePath;
@@ -226,14 +227,17 @@ export class FileServiceService {
 
     //resolve the slave file
     if (automatisationDto.slaveType === SLAVE_TYPE.KESS3) {
+      const customerUnique = nanoid(12);
+
       const kess3 = await this.kess3Service.decodeFile({
         adminId: automatisationDto.admin,
         tempFileId: tempFileData._id as Types.ObjectId,
-        customerId: automatisationDto.customer.toString(),
+        uniqueId: customerUnique,
         email: customer.email,
         name: customer.firstName + ' ' + customer.lastName,
         filePath,
       });
+
       tempFileData.kess3 = kess3;
       tempFileData.decodedFile = kess3.decodedFileName;
       filePath = kess3.decodedFilePath;
@@ -424,6 +428,7 @@ export class FileServiceService {
             fileType: tempFileService.kess3.fileType,
             isCVNCorrectionPossible: tempFileService.kess3.isCVNCorrectionPossible,
             mode: tempFileService.kess3.mode,
+            uniqueId: tempFileService.kess3.uniqueId,
           };
         }
       }
@@ -672,7 +677,7 @@ ResellerCredits= 10
     if (tempFileService.slaveType === SLAVE_TYPE.KESS3) {
       return this.kess3Service.encodeFile(
         {
-          customerId: tempFileService.customer.toString(),
+          uniqueId: tempFileService.kess3.uniqueId,
           tempFileId: tempFileService._id as Types.ObjectId,
           filePath: modifiedFilePath,
           fileSlotGUID: tempFileService.kess3.fileSlotGUID,

@@ -19,13 +19,13 @@ export class Kess3Service {
 
   /**
    * upload encoded file for decoding
-   * @param customerCode
+   * @param uniqueId
    * @param filePath
    * @param additionalInfo
    * @returns
    */
   private async uploadEncodedFile(
-    customerId: string,
+    uniqueId: string,
     filePath: string,
     adminId: Types.ObjectId,
     additionalInfo: { name: string; email: string },
@@ -47,7 +47,7 @@ export class Kess3Service {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-      url: `/api/kess3/decode-read-file/${customerId}`,
+      url: `/api/kess3/decode-read-file/${uniqueId}`,
       data: formData,
     });
     console.log('upload ended');
@@ -250,7 +250,7 @@ export class Kess3Service {
 
       //upload for encoded file
       const uploadInfo = await this.uploadEncodedFile(
-        decodeFileServiceDto.customerId,
+        decodeFileServiceDto.uniqueId,
         decodeFileServiceDto.filePath,
         decodeFileServiceDto.adminId,
         { name: decodeFileServiceDto.name, email: decodeFileServiceDto.email },
@@ -287,6 +287,7 @@ export class Kess3Service {
         decodedFileName: decodedFile.name,
         filePath: decodeFileServiceDto.filePath,
         filename: decodeFileServiceDto.name,
+        uniqueId: decodeFileServiceDto.uniqueId,
       };
     } catch (error) {
       console.log(error.response);
@@ -302,7 +303,7 @@ export class Kess3Service {
 
   private async uploadModifiedFile(
     adminId: Types.ObjectId,
-    customerId: string,
+    uniqueId: string,
     fileSlotGUID: string,
     fileType: string,
     modifiedFilePath: string,
@@ -313,7 +314,7 @@ export class Kess3Service {
     const apiService = await this.apiService(adminId);
     const response = await apiService({
       method: 'put',
-      url: `/api/kess3/upload-modified-file/${customerId}/${fileSlotGUID}/${fileType}`,
+      url: `/api/kess3/upload-modified-file/${uniqueId}/${fileSlotGUID}/${fileType}`,
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -349,7 +350,7 @@ export class Kess3Service {
     console.log('modified file', encodePayload.filePath);
     const modifiedUploadedData = await this.uploadModifiedFile(
       adminId,
-      encodePayload.customerId,
+      encodePayload.uniqueId,
       encodePayload.fileSlotGUID,
       fileType,
       encodePayload.filePath,
@@ -363,7 +364,7 @@ export class Kess3Service {
         method: 'post',
         url: `/api/kess3/encode-obd-file`,
         data: {
-          userCustomerCode: encodePayload.customerId,
+          userCustomerCode: encodePayload.uniqueId,
           kess3FileSlotGUID: encodePayload.fileSlotGUID,
           modifiedFileGUID: modifiedUploadedData.guid,
           willCorrectCVN: encodePayload.isCVNCorrectionPossible,
@@ -374,7 +375,7 @@ export class Kess3Service {
         method: 'post',
         url: `/api/kess3/encode-boot-bench-file`,
         data: {
-          userCustomerCode: encodePayload.customerId,
+          userCustomerCode: encodePayload.uniqueId,
           kess3FileSlotGUID: encodePayload.fileSlotGUID,
           ...(fileType === 'BootBenchModifiedFlash'
             ? { flashFileGUID: modifiedUploadedData.guid }

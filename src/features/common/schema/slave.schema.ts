@@ -12,6 +12,9 @@ export class Kess3 {
 
   @Prop({ type: Boolean, required: true })
   isCVNCorrectionPossible: boolean;
+
+  @Prop({ type: String, required: true })
+  uniqueId: string;
 }
 
 export class AutoTuner {
