@@ -37,7 +37,7 @@ export class Kess3Service {
     if (additionalInfo) {
       formData.append('userInfo', JSON.stringify(additionalInfo));
     }
-    const apiService = this.apiService(adminId);
+    const apiService = await this.apiService(adminId);
     console.log('upload started');
 
     console.log('apiService', apiService);
@@ -61,7 +61,7 @@ export class Kess3Service {
    * @returns
    */
   private async getAsyncInformation(adminId: Types.ObjectId, asyncOperationGuid: string) {
-    const apiService = this.apiService(adminId);
+    const apiService = await this.apiService(adminId);
     const response = await apiService({
       url: `/api/async-operations/${asyncOperationGuid}`,
     });
@@ -97,7 +97,7 @@ export class Kess3Service {
       }
       url = `/api/kess3/file-slots/${fileSlotGUID}/files/?fileType=${fileType}&download=true`;
     }
-    const apiService = this.apiService(adminId);
+    const apiService = await this.apiService(adminId);
     const { data } = await apiService({
       method: 'get',
       url,
@@ -131,7 +131,7 @@ export class Kess3Service {
     fileSlotGUID: string,
     fileGUID: string,
   ) {
-    const apiService = this.apiService(adminId);
+    const apiService = await this.apiService(adminId);
     const { data } = await apiService({
       method: 'get',
       url: `/api/kess3/file-slots/${fileSlotGUID}/files/${fileGUID}?download=true`,
@@ -156,7 +156,7 @@ export class Kess3Service {
    * @returns
    */
   private async getFileSlots(adminId: Types.ObjectId) {
-    const alienTechApi = this.apiService(adminId);
+    const alienTechApi = await this.apiService(adminId);
     const response = await alienTechApi({
       method: 'get',
       url: `/api/kess3/file-slots`,
@@ -171,7 +171,7 @@ export class Kess3Service {
    * @returns
    */
   private async closeFileSlot(adminId: Types.ObjectId, fileSlotGUID: string) {
-    const alienTechApi = this.apiService(adminId);
+    const alienTechApi = await this.apiService(adminId);
 
     const response = await alienTechApi({
       method: 'post',
@@ -186,7 +186,7 @@ export class Kess3Service {
    * @returns
    */
   private async reOpenFileSlot(adminId: Types.ObjectId, fileSlotGUID: string) {
-    const apiService = this.apiService(adminId);
+    const apiService = await this.apiService(adminId);
     const response = await apiService({
       method: 'post',
       url: `/api/kess3/file-slots/${fileSlotGUID}/reopen`,
@@ -310,7 +310,7 @@ export class Kess3Service {
     const formData = new FormData();
     console.log('modified file path from upload modified file', modifiedFilePath);
     formData.append('file', fs.createReadStream(modifiedFilePath));
-    const apiService = this.apiService(adminId);
+    const apiService = await this.apiService(adminId);
     const response = await apiService({
       method: 'put',
       url: `/api/kess3/upload-modified-file/${customerId}/${fileSlotGUID}/${fileType}`,
@@ -357,7 +357,7 @@ export class Kess3Service {
 
     //update decoded file path to request object
     let response: AxiosResponse<any, any> = null;
-    const apiService = this.apiService(adminId);
+    const apiService = await this.apiService(adminId);
     if (encodePayload.mode === 'OBD') {
       response = await apiService({
         method: 'post',
@@ -411,7 +411,7 @@ export class Kess3Service {
    */
   private async acquireToken(adminId: Types.ObjectId) {
     console.log('get access token');
-    const apiService = this.apiService(adminId);
+    const apiService = await this.apiService(adminId);
     //pull credential from db
     const credential = await this.credentialService.findByAdmin(adminId, 'alienTech');
     //throw error if credential not found
@@ -437,13 +437,14 @@ export class Kess3Service {
   }
 
   //axios instances
-  private apiService(adminId: Types.ObjectId) {
+  private async apiService(adminId: Types.ObjectId) {
     // Add a request interceptor to attach the access token to requests
+    const token = await this.getToken(adminId);
+    console.log('token', token);
+
     this.httpService.axiosRef.interceptors.request.use(
       async (config) => {
         // Get the token from a secure store (could be a database, environment variable, etc.)
-        const token = await this.getToken(adminId);
-        console.log('token', token);
         if (token) {
           config.headers['X-Alientech-ReCodAPI-LLC'] = token;
         }
