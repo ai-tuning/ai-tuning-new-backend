@@ -38,6 +38,10 @@ export class Kess3Service {
       formData.append('userInfo', JSON.stringify(additionalInfo));
     }
     const apiService = this.apiService(adminId);
+    console.log('upload started');
+
+    console.log('apiService', apiService);
+
     const response = await apiService({
       method: 'post',
       headers: {
@@ -46,6 +50,8 @@ export class Kess3Service {
       url: `/api/kess3/decode-read-file/${customerId}`,
       data: formData,
     });
+    console.log('upload ended');
+
     return response.data;
   }
 
@@ -238,6 +244,10 @@ export class Kess3Service {
   async decodeFile(decodeFileServiceDto: DecodeKess3FileDto) {
     let slotGUID = null;
     try {
+      if (!fs.existsSync(decodeFileServiceDto.filePath)) {
+        throw new Error('Decoded File not found');
+      }
+
       //upload for encoded file
       const uploadInfo = await this.uploadEncodedFile(
         decodeFileServiceDto.customerId,
@@ -247,6 +257,9 @@ export class Kess3Service {
       );
       //resolve async operation
       const { guid } = uploadInfo;
+
+      console.log('uploadInfo', uploadInfo);
+
       slotGUID = uploadInfo.slotGUID;
       const asyncInformation = await this.resolveAsyncOperation(
         decodeFileServiceDto.adminId,
@@ -430,6 +443,7 @@ export class Kess3Service {
       async (config) => {
         // Get the token from a secure store (could be a database, environment variable, etc.)
         const token = await this.getToken(adminId);
+        console.log('token', token);
         if (token) {
           config.headers['X-Alientech-ReCodAPI-LLC'] = token;
         }
