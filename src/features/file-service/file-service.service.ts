@@ -209,13 +209,13 @@ export class FileServiceService {
     );
 
     if (!fs.existsSync(fileServicePath)) {
-      await fs.promises.mkdir(fileServicePath, { recursive: true });
+      fs.mkdirSync(fileServicePath, { recursive: true });
     }
 
     const newFilePath = path.join(fileServicePath, file.filename);
 
     // move the file to file service path
-    await fs.promises.rename(filePath, newFilePath);
+    fs.renameSync(filePath, newFilePath);
 
     //set file path with new path
     filePath = newFilePath;

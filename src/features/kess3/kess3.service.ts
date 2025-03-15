@@ -250,7 +250,7 @@ export class Kess3Service {
 
       //upload for encoded file
       const uploadInfo = await this.uploadEncodedFile(
-        decodeFileServiceDto.customerId,
+        'user541698',
         decodeFileServiceDto.filePath,
         decodeFileServiceDto.adminId,
         { name: decodeFileServiceDto.name, email: decodeFileServiceDto.email },
@@ -289,7 +289,7 @@ export class Kess3Service {
         filename: decodeFileServiceDto.name,
       };
     } catch (error) {
-      console.log(error);
+      console.log(error.response);
       if (slotGUID) {
         await this.closeFileSlot(decodeFileServiceDto.adminId, slotGUID);
       }
