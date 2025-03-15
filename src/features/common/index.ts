@@ -11,3 +11,4 @@ export { MulterModule } from './multure.module';
 export { FileDto } from './validation-helper/file.dto';
 export { PathService } from './services/path.service';
 export { fileFilter, makeUniqueFileName } from './validation-helper/multer-file-validation';
+export { CustomValidationPipe } from './validation-helper/custom-validation-pipe';

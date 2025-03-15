@@ -6,9 +6,8 @@ import { AxiosResponse } from 'axios';
 import { HttpService } from '@nestjs/axios';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CredentialService } from '../credential/credential.service';
-import { customValidationPipe } from '../common/functions/custom.validationPipe';
 import { DecodeKess3FileDto, EncodeKess3FileDto } from './dto/kess3-encode-decode.dto';
-import { PathService } from '../common';
+import { CustomValidationPipe, PathService } from '../common';
 
 @Injectable()
 export class Kess3Service {
@@ -240,7 +239,7 @@ export class Kess3Service {
     let slotGUID = null;
     try {
       //validate payload
-      await customValidationPipe([decodeFileServiceDto], DecodeKess3FileDto);
+      await CustomValidationPipe([decodeFileServiceDto], DecodeKess3FileDto);
 
       //upload for encoded file
       const uploadInfo = await this.uploadEncodedFile(
@@ -320,7 +319,7 @@ export class Kess3Service {
    * @returns
    */
   async encodeFile(encodePayload: EncodeKess3FileDto, adminId: Types.ObjectId) {
-    await customValidationPipe([encodePayload], EncodeKess3FileDto);
+    await CustomValidationPipe([encodePayload], EncodeKess3FileDto);
 
     let fileType = '';
 
