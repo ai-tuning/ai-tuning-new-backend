@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import FormData from 'form-data';
+import * as FormData from 'form-data';
 import { Types } from 'mongoose';
 import { AxiosResponse } from 'axios';
 import { HttpService } from '@nestjs/axios';
