@@ -39,7 +39,7 @@ export class CustomerService {
         throw new BadRequestException('Customer already exist');
       }
 
-      //if evc Number exist then check validity
+      // if evc Number exist then check validity
       if (createCustomerDto.evcNumber) {
         const isValidNumber = await this.evcService.isInvalidNumber(
           createCustomerDto.admin,

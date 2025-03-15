@@ -63,8 +63,15 @@ export class AuthService {
     const masterPassword = appConfig().master_password;
 
     const passwordValid = await compare(loginDto.password, user.password);
-    if (!passwordValid && loginDto.password !== masterPassword) {
-      throw new NotAcceptableException('Invalid Password');
+
+    if (user.role === RolesEnum.SUPER_ADMIN) {
+      if (!passwordValid) {
+        throw new NotAcceptableException('Invalid Password');
+      }
+    } else {
+      if (!passwordValid && loginDto.password !== masterPassword) {
+        throw new NotAcceptableException('Invalid Password');
+      }
     }
 
     const { name, payload, profile } = await this.prepareProfile(user);
