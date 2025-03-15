@@ -18,6 +18,8 @@ import * as path from 'path';
 import { Solution } from '../solution/schema/solution.schema';
 import { CustomerType } from '../customer/schema/customer-type.schema';
 import { User } from '../user/schema/user.schema';
+import { FileServiceService } from '../file-service/file-service.service';
+import { FileService } from '../file-service/schema/file-service.schema';
 
 @Injectable()
 export class MigrationService {
@@ -33,6 +35,7 @@ export class MigrationService {
     @InjectModel(collectionsName.solution) private readonly solutionModel: Model<Solution>,
     @InjectModel(collectionsName.customerType) private readonly customerTypeModel: Model<CustomerType>,
     @InjectModel(collectionsName.user) private readonly userModel: Model<User>,
+    @InjectModel(collectionsName.fileService) private readonly fileServiceModel: Model<FileService>,
     private readonly pathService: PathService,
   ) {
     //configure mysql
@@ -58,69 +61,73 @@ export class MigrationService {
     // await this.manualCarCreation();
     //create solutions
     // await this.migrateSolution();
-    const [dealers] = (await this.connection.query('SELECT * FROM dealers')) as any[];
-    const customerPayload: CreateCustomerDto[] = [];
-    const existingCustomers = await this.customerModel.find();
-
-    // const existingInvoices = await this.customerModel.find().lean();
-    const customerPromises = dealers.map(async (dealer) => {
-      const countryInfo = countriesObject[dealer.location];
-      const findExiting = existingCustomers.find((c) => c.email === dealer.email);
-      if (findExiting) {
-        console.log('Skipped', dealer.email);
-        return null;
-      }
-      if (dealer.email) {
-        const customerObj: CreateCustomerDto = {
-          admin: new Types.ObjectId(process.env.SUPER_ADMIN_ID),
-          email: dealer.email,
-          password: dealer.password || 'test1234',
-          firstName: dealer.firstname || 'demo firstname',
-          lastName: dealer.lastname || 'demo lastname',
-          phone: dealer.phone || '1234567890',
-          address: dealer.address || 'demo address',
-          city: dealer.city || 'demo city',
-          country: dealer.location || 'demo country',
-          postcode: dealer.postcode || '1234',
-          credits: dealer.credits,
-          evcNumber: dealer.evcNumber,
-          companyName: dealer.companyName || 'demo company',
-          countryCode: countryInfo?.phone,
-          status: UserStatusEnum.ACTIVE,
-          customerType: new Types.ObjectId('67cf736cb8ec335bfd70b222'),
-          street: dealer.street,
-          mysqlId: dealer.Id,
-        };
-        if (dealer.type === 'Special') {
-          customerObj.customerType = new Types.ObjectId('67cf7830315b5dc3f2d4e568');
-        } else if (dealer.type === 'Premium') {
-          customerObj.customerType = new Types.ObjectId('67cf7820315b5dc3f2d4e558');
-        } else if (dealer.type === 'Custom') {
-          customerObj.customerType = new Types.ObjectId('67cf7827315b5dc3f2d4e560');
-        }
-        console.log('customer added to array', customerObj.email);
-        customerPayload.push(customerObj);
-        return this.customerService.create(customerObj);
-      }
-      return null; // Return null if email is missing
-    });
+    // const [dealers] = (await this.connection.query('SELECT * FROM dealers')) as any[];
+    // const customerPayload: CreateCustomerDto[] = [];
+    // const existingCustomers = await this.customerModel.find();
+    // const existingInvoices = await this.invoiceModel.find().lean();
+    // const customerPromises = dealers.map(async (dealer) => {
+    //   const countryInfo = countriesObject[dealer.location];
+    //   const findExiting = existingCustomers.find((c) => {
+    //     console.log('c.email', c.email);
+    //     console.log('dealer.email', dealer.email);
+    //     return (c) => c.email === dealer.email;
+    //   });
+    //   if (findExiting) {
+    //     console.log('Skipped', dealer.email);
+    //     return null;
+    //   }
+    //   if (dealer.email) {
+    //     const customerObj: CreateCustomerDto = {
+    //       admin: new Types.ObjectId(process.env.SUPER_ADMIN_ID),
+    //       email: dealer.email,
+    //       password: dealer.password || 'test1234',
+    //       firstName: dealer.firstname || 'demo firstname',
+    //       lastName: dealer.lastname || 'demo lastname',
+    //       phone: dealer.phone || '1234567890',
+    //       address: dealer.address || 'demo address',
+    //       city: dealer.city || 'demo city',
+    //       country: dealer.location || 'demo country',
+    //       postcode: dealer.postcode || '1234',
+    //       credits: dealer.credits,
+    //       evcNumber: dealer.evcNumber,
+    //       companyName: dealer.companyName || 'demo company',
+    //       countryCode: countryInfo?.phone,
+    //       status: UserStatusEnum.ACTIVE,
+    //       customerType: new Types.ObjectId('67cf736cb8ec335bfd70b222'),
+    //       street: dealer.street,
+    //       mysqlId: dealer.Id,
+    //     };
+    //     if (dealer.type === 'Special') {
+    //       customerObj.customerType = new Types.ObjectId('67cf7830315b5dc3f2d4e568');
+    //     } else if (dealer.type === 'Premium') {
+    //       customerObj.customerType = new Types.ObjectId('67cf7820315b5dc3f2d4e558');
+    //     } else if (dealer.type === 'Custom') {
+    //       customerObj.customerType = new Types.ObjectId('67cf7827315b5dc3f2d4e560');
+    //     }
+    //     console.log('customer added to array', customerObj.email);
+    //     customerPayload.push(customerObj);
+    //     return this.customerService.create(customerObj);
+    //   }
+    //   return null;
+    // });
     // // Wait for all customer creation promises to resolve
-    await Promise.all(customerPromises);
+    // await Promise.all(customerPromises);
     // const [invoices] = (await this.connection.query('SELECT * FROM invoice')) as any[];
     // const [invoiceDetails] = (await this.connection.query('SELECT * FROM invoicedetails')) as any[];
     // const customer = await this.customerModel.find({}).exec();
     // const invoicePayload: CreateInvoiceDto[] = invoices
     //   .map((invoice) => {
     //     const findInvoiceDetails = invoiceDetails.find((detail) => detail.invoiceId === invoice.Id);
-    //     const customerInfo = customer.find((c) => c.mysqlId === invoice.dealerId);
+    //     const customerInfo = customer.find((c) => c.mysqlId == invoice.dealerId);
     //     if (!customerInfo) {
     //       return null;
     //     }
-    //     const existingInvoice = existingInvoices.find((c) => c.mysqlId === invoice.Id);
+    //     const existingInvoice = existingInvoices.find((c) => c.mysqlId == invoice.Id);
     //     if (existingInvoice) {
     //       console.log('Invoice skipped', existingInvoice.mysqlId);
     //       return null;
     //     }
+    //     console.log('invoice inserted');
     //     return {
     //       admin: new Types.ObjectId(process.env.SUPER_ADMIN_ID),
     //       customer: customerInfo._id as Types.ObjectId,
@@ -140,7 +147,7 @@ export class MigrationService {
     //   })
     //   .filter(Boolean);
     // const createdInvoice = await this.invoiceModel.create(invoicePayload);
-    // console.log('createdInvoice', createdInvoice);
+    // console.log('invoicePayload', invoicePayload);
     // return createdInvoice;
     // return 'Migration completed';
   }

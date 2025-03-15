@@ -32,6 +32,7 @@ export class AdminController {
    * @param id
    * @returns
    */
+  @AccessRole([RolesEnum.CUSTOMER])
   @Get('details/:adminId')
   getAdminDetails(@Param('adminId') id: Types.ObjectId) {
     return this.adminService.getAdminDetails(id);

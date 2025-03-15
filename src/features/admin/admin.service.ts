@@ -101,10 +101,37 @@ export class AdminService {
   }
 
   async getAdminDetails(adminId: Types.ObjectId): Promise<AdminDocument> {
-    return this.adminModel
+    const data = await this.adminModel
       .findById(adminId)
       .select('companyName address street city country vatNumber vatRate email logo')
-      .lean<AdminDocument>();
+      .lean<any>();
+    const credentials = await this.credentialService.findByAdmin(adminId);
+
+    if (credentials.alienTech) {
+      data.alienTech = !!credentials.alienTech.clientId;
+    } else {
+      data.alienTech = false;
+    }
+
+    if (credentials.evc) {
+      data.evc = !!credentials.evc.apiId;
+    } else {
+      data.evc = false;
+    }
+
+    if (credentials.autoTuner) {
+      data.autoTuner = !!credentials.autoTuner.tunerId;
+    } else {
+      data.autoTuner = false;
+    }
+
+    if (credentials.autoFlasher) {
+      data.autoFlasher = !!credentials.autoFlasher.apiKey;
+    } else {
+      data.autoFlasher = false;
+    }
+
+    return data;
   }
 
   async updateCredit(adminId: Types.ObjectId, amount: number, session: ClientSession) {

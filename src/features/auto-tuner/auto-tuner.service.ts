@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { HttpService } from '@nestjs/axios';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Types } from 'mongoose';
@@ -71,12 +71,10 @@ export class AutoTunerService {
         throw new BadRequestException('Something went wrong with AutoTuner ');
       }
     } catch (error) {
-      if (decodeAutoTunerFileDto.filePath && fs.existsSync(decodeAutoTunerFileDto.filePath)) {
-        fs.unlinkSync(decodeAutoTunerFileDto.filePath);
-      }
       if (decodedFilePath && fs.existsSync(decodedFilePath)) {
         fs.unlinkSync(decodedFilePath);
       }
+      throw error;
     }
   }
 
@@ -95,7 +93,7 @@ export class AutoTunerService {
 
     try {
       // Read the binary data from the file
-      const buffer = fs.readFileSync(autoTunerEncodeDto.filePath);
+      const buffer = await fs.promises.readFile(autoTunerEncodeDto.filePath);
 
       // Convert the data to Base64
       const base64Data = buffer.toString('base64');
@@ -109,6 +107,7 @@ export class AutoTunerService {
         model_id: autoTunerEncodeDto.model_id,
         mcu_id: autoTunerEncodeDto.mcu_id,
       };
+      console.log('requestData', requestData);
 
       const apiService = await this.apiService(autoTunerEncodeDto.adminId);
       // Send the request to encrypt the data
@@ -145,10 +144,12 @@ export class AutoTunerService {
     if (!credential.autoTuner) {
       throw new BadRequestException('Auto Tuner Credential not found');
     }
+    console.log('autotuner credential', credential);
     this.httpService.axiosRef.interceptors.request.use(
       async (config) => {
         config.headers['X-Autotuner-Id'] = credential.autoTuner.tunerId;
         config.headers['X-Autotuner-API-Key'] = credential.autoTuner.apiKey;
+        config.headers['Content-Type'] = 'application/json';
 
         return config;
       },

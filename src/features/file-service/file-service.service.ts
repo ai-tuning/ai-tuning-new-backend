@@ -180,7 +180,7 @@ export class FileServiceService {
   }
 
   async downloadFile(key: string) {
-    return await this.storageService.download(key);
+    return this.storageService.download(key);
   }
 
   async automatisation(automatisationDto: AutomatisationDto, file: Express.Multer.File) {
@@ -403,6 +403,29 @@ export class FileServiceService {
         binFileBuffer = await fs.promises.readFile(path.join(fileServicePath, tempFileService.originalFile));
       } else {
         binFileBuffer = await fs.promises.readFile(path.join(fileServicePath, tempFileService.decodedFile));
+
+        newFileService.slaveType = tempFileService.slaveType;
+        if (tempFileService.slaveType === SLAVE_TYPE.AUTO_TUNER) {
+          newFileService.autoTuner = {
+            ecu_id: tempFileService.autoTuner.ecu_id,
+            mcu_id: tempFileService.autoTuner.mcu_id,
+            mode: tempFileService.autoTuner.mode,
+            model_id: tempFileService.autoTuner.model_id,
+            slave_id: tempFileService.autoTuner.slave_id,
+          };
+        } else if (tempFileService.slaveType === SLAVE_TYPE.AUTO_FLASHER) {
+          newFileService.autoFlasher = {
+            memory_type: tempFileService.autoFlasher.memory_type,
+            serialNumber: tempFileService.autoFlasher.serialNumber,
+          };
+        } else if (tempFileService.slaveType === SLAVE_TYPE.KESS3) {
+          newFileService.kess3 = {
+            fileSlotGUID: tempFileService.kess3.fileSlotGUID,
+            fileType: tempFileService.kess3.fileType,
+            isCVNCorrectionPossible: tempFileService.kess3.isCVNCorrectionPossible,
+            mode: tempFileService.kess3.mode,
+          };
+        }
       }
 
       //get the script path
@@ -469,17 +492,7 @@ ResellerCredits= 10
 
         //handle encode if file is slave
         if (tempFileService.slaveType) {
-          newFileService.slaveType = tempFileService.slaveType;
-          if (tempFileService.slaveType === SLAVE_TYPE.AUTO_TUNER) {
-            newFileService.autoTuner = tempFileService.autoTuner;
-          } else if (tempFileService.slaveType === SLAVE_TYPE.AUTO_FLASHER) {
-            newFileService.autoFlasher = tempFileService.autoFlasher;
-          } else if (tempFileService.slaveType === SLAVE_TYPE.KESS3) {
-            newFileService.kess3 = tempFileService.kess3;
-          }
           encodedPath = await this.encodeModifiedFile(modifiedPath, tempFileService);
-
-          console.log('encodedPath', encodedPath);
           tempFileService.modFile = path.basename(encodedPath);
         }
 
@@ -491,15 +504,10 @@ ResellerCredits= 10
 
         //reduce the admin credit
         await this.adminService.updateCredit(admin, -requiredAdminCredits, session);
-
-        await tempFileService.save();
-      } else {
-        await tempFileService.save();
-        const adminData = await this.adminService.findById(admin);
-
-        //send the request to the queue for winols
-        this.fileProcessProducer.processFile({ fileServiceData: newFileService, tempFileService, admin: adminData });
       }
+
+      tempFileService.service = newFileService._id as Types.ObjectId;
+      await tempFileService.save();
 
       const uploadPayLoad: { name: string; path: string; keyIdentifier: string }[] = [];
 
@@ -512,17 +520,6 @@ ResellerCredits= 10
         path: originalFilePath,
       });
 
-      // const originalUpload = await this.storageService.upload(newFileService._id.toString(), {
-      //   name: tempFileService.originalFile,
-      //   path: originalFilePath,
-      // });
-
-      // newFileService.originalFile = {
-      //   key: originalUpload,
-      //   originalname: tempFileService.originalFileName,
-      //   uniqueName: tempFileService.originalFile,
-      // };
-
       //upload ini file
       const iniFilePath = path.join(fileServicePath, tempFileService.iniFile);
 
@@ -532,29 +529,9 @@ ResellerCredits= 10
         path: iniFilePath,
       });
 
-      // const iniUpload = await this.storageService.upload(newFileService._id.toString(), {
-      //   name: tempFileService.iniFile,
-      //   path: iniFilePath,
-      // });
-
-      // newFileService.iniFile = {
-      //   key: iniUpload,
-      //   originalname: tempFileService.iniFile,
-      //   uniqueName: tempFileService.iniFile,
-      // };
-
       if (tempFileService.decodedFile) {
         //decoded file
         const decodedFilePath = path.join(fileServicePath, tempFileService.decodedFile);
-        // const decodedUpload = await this.storageService.upload(newFileService._id.toString(), {
-        //   name: tempFileService.decodedFile,
-        //   path: decodedFilePath,
-        // });
-        // newFileService.decodedFile = {
-        //   key: decodedUpload,
-        //   originalname: tempFileService.decodedFile,
-        //   uniqueName: tempFileService.decodedFile,
-        // };
 
         uploadPayLoad.push({
           keyIdentifier: 'decodedFile',
@@ -564,43 +541,15 @@ ResellerCredits= 10
       }
 
       if (modifiedPath) {
-        // const modifiedUpload = await this.storageService.upload(newFileService._id.toString(), {
-        //   name: path.basename(modifiedPath),
-        //   path: modifiedPath,
-        // });
-
         uploadPayLoad.push({
           keyIdentifier: 'modFile',
           name: path.basename(modifiedPath),
           path: modifiedPath,
         });
-
-        // if (encodedPath) {
-        //   newFileService.modWithoutEncoded = {
-        //     key: modifiedUpload,
-        //     originalname: path.basename(modifiedPath),
-        //     uniqueName: path.basename(modifiedPath),
-        //   };
-        // } else {
-        //   newFileService.modFile = {
-        //     key: modifiedUpload,
-        //     originalname: path.basename(modifiedPath),
-        //     uniqueName: path.basename(modifiedPath),
-        //   };
-        // }
       }
 
       //encoded file
       if (encodedPath) {
-        // const encodedUpload = await this.storageService.upload(newFileService._id.toString(), {
-        //   name: path.basename(encodedPath),
-        //   path: encodedPath,
-        // });
-        // newFileService.modFile = {
-        //   key: encodedUpload,
-        //   originalname: path.basename(encodedPath),
-        //   uniqueName: path.basename(encodedPath),
-        // };
         uploadPayLoad.push({
           keyIdentifier: 'encodedFile',
           name: path.basename(encodedPath),
@@ -673,6 +622,14 @@ ResellerCredits= 10
       const result = await newFileService.save({ session });
 
       await session.commitTransaction();
+
+      //send the request to the queue for winols
+      if (requestedSolutions.length) {
+        const adminData = await this.adminService.findById(admin);
+
+        //send the request to the queue for winols
+        this.fileProcessProducer.processFile({ fileServiceData: newFileService, tempFileService, admin: adminData });
+      }
 
       /**
        * Sending email for customer and admin
@@ -826,8 +783,6 @@ ResellerCredits= 10
     if (makeType) {
       if (pricing.enabledPricingType === PRICING_TYPE_ENUM.SOLUTION_BASED) {
         const pricingItems = pricing.solutionItems.filter((item) => item.makeType === makeType);
-        console.log('pricingItems', pricingItems);
-        console.log('selectedSolutions', selectedSolutions);
         for (const solution of selectedSolutions) {
           const item = pricingItems.find(
             (item: any) =>
@@ -1320,6 +1275,10 @@ ResellerCredits= 10
 
       const tempFileService = await this.tempFileServiceModel.findOne({ service: fileServiceId }).session(session);
 
+      if (!tempFileService) {
+        throw new BadRequestException('Something went wrong');
+      }
+
       const admin = await this.adminService.findByIdAndSelect(fileService.admin, ['email']);
 
       const customer = await this.customerService.findByIdAndSelect(fileService.customer, [
@@ -1332,16 +1291,20 @@ ResellerCredits= 10
       if (!this.isSuperAdminId(fileService.admin)) {
         if (fileService.credits > admin.credits) {
           throw new BadRequestException('Error 01 - Please contact Portal Owner');
+        } else {
+          await this.adminService.updateCredit(fileService.admin as Types.ObjectId, -fileService.adminCredits, session);
         }
       }
 
       if (customer.credits < fileService.credits) {
         throw new BadRequestException("Customer don't have enough credits");
+      } else {
+        await this.customerService.updateCredit(fileService.customer as Types.ObjectId, -fileService.credits, session);
       }
 
-      if (fileService.slaveType) {
+      if (tempFileService.slaveType) {
         encodedPath = await this.encodeModifiedFile(modFile.path, tempFileService);
-        //upload file to mega drive
+        //upload file to s3
         const encodedUpload = await this.storageService.upload(fileService._id.toString(), {
           name: path.basename(encodedPath),
           path: encodedPath,

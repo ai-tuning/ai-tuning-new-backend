@@ -162,6 +162,9 @@ export class FileService extends Document {
 
   @Prop({ type: Boolean, default: false })
   aiAssist: boolean;
+
+  @Prop({ type: Number })
+  mysqlId: number;
 }
 
 export const FileServiceSchema = SchemaFactory.createForClass(FileService);

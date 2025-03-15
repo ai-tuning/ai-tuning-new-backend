@@ -9,7 +9,7 @@ import { MAKE_TYPE_ENUM, SLAVE_TYPE } from 'src/features/constant';
  */
 @Schema({ versionKey: false, timestamps: true })
 export class TempFileService extends Document {
-  @Prop({ type: mongoose.Schema.Types.ObjectId })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
   admin: Types.ObjectId;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId })

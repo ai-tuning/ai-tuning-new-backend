@@ -14,6 +14,7 @@ import { PathService } from '../common';
 import { SolutionSchema } from '../solution/schema/solution.schema';
 import { CustomerTypeSchema } from '../customer/schema/customer-type.schema';
 import { UserSchema } from '../user/schema/user.schema';
+import { FileServiceSchema } from '../file-service/schema/file-service.schema';
 
 @Module({
   imports: [
@@ -48,6 +49,10 @@ import { UserSchema } from '../user/schema/user.schema';
       {
         name: collectionsName.user,
         schema: UserSchema,
+      },
+      {
+        name: collectionsName.fileService,
+        schema: FileServiceSchema,
       },
     ]),
   ],
