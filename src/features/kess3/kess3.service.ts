@@ -238,9 +238,6 @@ export class Kess3Service {
   async decodeFile(decodeFileServiceDto: DecodeKess3FileDto) {
     let slotGUID = null;
     try {
-      //validate payload
-      await CustomValidationPipe([decodeFileServiceDto], DecodeKess3FileDto);
-
       //upload for encoded file
       const uploadInfo = await this.uploadEncodedFile(
         decodeFileServiceDto.customerId,
