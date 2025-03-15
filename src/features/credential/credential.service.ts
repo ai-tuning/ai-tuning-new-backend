@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { InjectModel } from '@nestjs/mongoose';
 import { collectionsName } from '../constant';
@@ -144,10 +144,13 @@ export class CredentialService {
   }
 
   async updateAlienTechAccessToken(adminId: Types.ObjectId, alienTechAccessToken: string) {
-    const payload = { alienTech: { accessToken: this.encryptData(alienTechAccessToken) } };
     const credential = await this.credentialModel.findOneAndUpdate(
       { admin: adminId },
-      { $set: payload },
+      {
+        $set: {
+          'alienTech.accessToken': alienTechAccessToken,
+        },
+      },
       { new: true },
     );
     return credential;
@@ -164,24 +167,57 @@ export class CredentialService {
 
     if (!credential) return null;
 
+    if (select === 'alienTech') {
+      if (!credential.alienTech.clientId || !credential.alienTech.clientSecret) {
+        return null;
+      }
+    }
+
+    if (select === 'autoTuner') {
+      if (!credential.autoTuner.apiKey || !credential.autoTuner.tunerId) {
+        return null;
+      }
+    }
+
+    if (select === 'autoFlasher') {
+      if (!credential.autoFlasher.apiKey) {
+        return null;
+      }
+    }
+
+    if (select === 'paypal') {
+      if (!credential.paypal.clientId || !credential.paypal.clientSecret) {
+        return null;
+      }
+    }
+
     //decrypt all before return
     if (credential.paypal) {
       credential.paypal.clientId = this.decryptData(credential.paypal.clientId);
       credential.paypal.clientSecret = this.decryptData(credential.paypal.clientSecret);
     }
     if (credential.evc) {
-      credential.evc.apiId = this.decryptData(credential.evc.apiId);
-      credential.evc.password = this.decryptData(credential.evc.password);
-      credential.evc.username = this.decryptData(credential.evc.username);
+      for (const key in credential.evc) {
+        if (credential.evc[key]) {
+          credential.evc[key] = this.decryptData(credential.evc[key]);
+        }
+      }
     }
     if (credential.autoTuner) {
-      credential.autoTuner.apiKey = this.decryptData(credential.autoTuner.apiKey);
-      credential.autoTuner.tunerId = this.decryptData(credential.autoTuner.tunerId);
+      for (const key in credential.autoTuner) {
+        if (credential.autoTuner[key]) {
+          credential.autoTuner[key] = this.decryptData(credential.autoTuner[key]);
+        }
+      }
     }
     if (credential.alienTech) {
-      credential.alienTech.clientId = this.decryptData(credential.alienTech.clientId);
-      credential.alienTech.clientSecret = this.decryptData(credential.alienTech.clientSecret);
+      for (const key in credential.alienTech) {
+        if (credential.alienTech[key]) {
+          credential.alienTech[key] = this.decryptData(credential.alienTech[key]);
+        }
+      }
     }
+
     if (credential.autoFlasher) credential.autoFlasher.apiKey = this.decryptData(credential.autoFlasher.apiKey);
 
     return credential;
