@@ -31,6 +31,13 @@ export class EmailQueueConsumer {
         name: data.name,
         uniqueId: data.uniqueId,
       });
+    } else if (data.emailType === EMAIL_TYPE.refundFileService) {
+      await this.mailService.refundFileService({
+        receiver: data.receiver,
+        name: data.name,
+        uniqueId: data.uniqueId,
+        credits: data.credits,
+      });
     }
   }
 

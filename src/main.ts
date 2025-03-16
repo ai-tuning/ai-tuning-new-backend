@@ -18,7 +18,11 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService);
 
-  const origins = ['https://admin.ai-tuningfiles.com', 'https://portal.ai-tuningfiles.com'];
+  const origins = [
+    'https://admin.ai-tuningfiles.com',
+    'https://portal.ai-tuningfiles.com',
+    'https://portal.tuningfile-server.com',
+  ];
 
   if (process.env.NODE_ENV === 'development') {
     origins.push('http://localhost:3000');

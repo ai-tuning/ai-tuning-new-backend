@@ -4,4 +4,7 @@ export const EMAIL_TYPE = Object.freeze({
   fileReady: 'file-ready',
   requestSolution: 'request-solution',
   newFileNotification: 'new-file-notification',
+  refundFileService: 'refunded',
+  closedFileService: 'closed-file-service',
+  reopenFileService: 'reopen-file-service',
 });

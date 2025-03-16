@@ -1394,4 +1394,48 @@ ResellerCredits= 10
       { new: true },
     );
   }
+
+  async refundFileService(fileServiceId: Types.ObjectId) {
+    const session = await this.connection.startSession();
+    try {
+      session.startTransaction();
+      const fileService = await this.fileServiceModel.findById(fileServiceId);
+      if (!fileService) {
+        throw new NotFoundException('File service not found');
+      }
+      const customer = await this.customerService.findByIdAndSelect(fileService.customer, [
+        'credits',
+        'firstName',
+        'lastName',
+        'email',
+      ]);
+      if (!customer) {
+        throw new NotFoundException('Customer not found');
+      }
+      await this.customerService.updateCredit(fileService.customer as Types.ObjectId, fileService.credits, session);
+
+      const updatedFileService = await this.fileServiceModel.findByIdAndUpdate(
+        fileServiceId,
+        { status: FILE_SERVICE_STATUS.REFUNDED, paymentStatus: PAYMENT_STATUS.REFUNDED },
+        { new: true },
+      );
+
+      await session.commitTransaction();
+      //Send email for file confirmation
+      this.emailQueueProducers.sendMail({
+        receiver: customer.email,
+        name: customer.firstName + ' ' + customer.lastName,
+        emailType: EMAIL_TYPE.fileReady,
+        uniqueId: fileService.uniqueId,
+        credits: fileService.credits,
+      });
+
+      return updatedFileService;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      await session.endSession();
+    }
+  }
 }

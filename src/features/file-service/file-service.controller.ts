@@ -74,4 +74,10 @@ export class FileServiceController {
     const fileService = await this.fileServiceService.closeFileService(fileServiceId);
     return { data: fileService, message: 'File service closed successfully' };
   }
+
+  @Get('refund/:fileServiceId')
+  async refundFilesErvice(@Param('fileServiceId') fileServiceId: Types.ObjectId) {
+    const fileService = await this.fileServiceService.closeFileService(fileServiceId);
+    return { data: fileService, message: 'File service closed successfully' };
+  }
 }

@@ -426,4 +426,42 @@ export class MailService {
     };
     await this.authTransporter().sendMail(mailOptions);
   }
+
+  async refundFileService(data: { receiver: string; credits: number; name: string; uniqueId: string }) {
+    const mailOptions = {
+      from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+      to: data.receiver,
+      subject: 'File Service Refunded',
+      html: this.adminEmailTemplate(
+        'File Service Refunded',
+        `<td class="email-content">
+                  <h2>Hello ${data.name}</h2>
+                  <p>${data.credits} credits was refunded for the file service.</p>
+                  <div class="highlight">
+                    <p>ID : ${data.uniqueId}</p>
+                </div>
+              </td>`,
+      ),
+    };
+    await this.infoTransporter().sendMail(mailOptions);
+  }
+
+  async fileServiceReopen(data: { receiver: string; name: string; uniqueId: string }) {
+    const mailOptions = {
+      from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+      to: data.receiver,
+      subject: 'File Service ReOpen',
+      html: this.adminEmailTemplate(
+        'File Service ReOpen',
+        `<td class="email-content">
+                  <h2>Hello ${data.name}</h2>
+                  <p>File service was re-opened for the file service.</p>
+                  <div class="highlight">
+                    <p>ID : ${data.uniqueId}</p>
+                </div>
+              </td>`,
+      ),
+    };
+    await this.infoTransporter().sendMail(mailOptions);
+  }
 }
