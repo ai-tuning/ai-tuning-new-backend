@@ -81,7 +81,18 @@ export class SolutionService {
       .lean<Solution>();
   }
 
-  remove(id: Types.ObjectId) {
-    return this.solutionModel.findByIdAndDelete({ _id: id });
+  async remove(id: Types.ObjectId) {
+    const session = await this.connection.startSession();
+    try {
+      session.startTransaction();
+      await this.solutionModel.findByIdAndDelete({ _id: id }, { session });
+      await this.pricingService.pullSolutionBasedItemsBySolutionId(id, session);
+      await session.commitTransaction();
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      await session.endSession();
+    }
   }
 }

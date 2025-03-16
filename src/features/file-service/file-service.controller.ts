@@ -2,10 +2,12 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
   Post,
+  Query,
   Res,
   UploadedFile,
   UseInterceptors,
@@ -31,6 +33,11 @@ export class FileServiceController {
   @Get('customers/:customerId')
   async findByCustomer(@Param('customerId') customerId: Types.ObjectId) {
     return this.fileServiceService.findByCustomerId(customerId);
+  }
+
+  @Get(':fileServiceId')
+  async findById(@Param('fileServiceId') fileServiceId: Types.ObjectId, @Query('adminId') adminId: Types.ObjectId) {
+    return this.fileServiceService.findSingleById(fileServiceId, adminId);
   }
 
   @UseInterceptors(FileInterceptor('file'))
@@ -74,10 +81,21 @@ export class FileServiceController {
     const fileService = await this.fileServiceService.closeFileService(fileServiceId);
     return { data: fileService, message: 'File service closed successfully' };
   }
+  @Get('progress/:fileServiceId')
+  async progressFileService(@Param('fileServiceId') fileServiceId: Types.ObjectId) {
+    const fileService = await this.fileServiceService.progressFileService(fileServiceId);
+    return fileService;
+  }
 
   @Get('refund/:fileServiceId')
   async refundFilesErvice(@Param('fileServiceId') fileServiceId: Types.ObjectId) {
-    const fileService = await this.fileServiceService.closeFileService(fileServiceId);
-    return { data: fileService, message: 'File service closed successfully' };
+    const fileService = await this.fileServiceService.refundFileService(fileServiceId);
+    return { data: fileService, message: 'File service refunded successfully' };
+  }
+
+  @Delete(':fileServiceId')
+  async deleteFileService(@Param('fileServiceId') fileServiceId: Types.ObjectId) {
+    const fileService = await this.fileServiceService.deleteFileService(fileServiceId);
+    return { data: fileService, message: 'File service deleted successfully' };
   }
 }

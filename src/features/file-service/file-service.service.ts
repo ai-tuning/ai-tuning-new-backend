@@ -74,6 +74,24 @@ export class FileServiceService {
     return this.fileServiceModel.findById(id).lean<FileService>();
   }
 
+  async findSingleById(id: Types.ObjectId, adminId: Types.ObjectId): Promise<FileService> {
+    return this.fileServiceModel
+      .findOne({ _id: id, admin: adminId })
+      .populate({
+        path: 'customer',
+        select: 'firstName lastName email',
+      })
+      .populate({
+        path: 'car',
+        select: 'name makeType logo',
+      })
+      .populate({
+        path: 'controller',
+        select: 'name',
+      })
+      .lean<FileService>();
+  }
+
   async findByCustomerId(customerId: Types.ObjectId): Promise<FileService[]> {
     return this.fileServiceModel.find({ customer: customerId }).sort({ createdAt: -1 }).lean<FileService[]>();
   }
@@ -97,17 +115,15 @@ export class FileServiceService {
                 { case: { $eq: ['$status', FILE_SERVICE_STATUS.NEW] }, then: 1 },
                 { case: { $eq: ['$status', FILE_SERVICE_STATUS.OPEN] }, then: 2 },
                 { case: { $eq: ['$status', FILE_SERVICE_STATUS.IN_PROGRESS] }, then: 3 },
-                { case: { $eq: ['$status', FILE_SERVICE_STATUS.COMPLETED] }, then: 4 },
-                { case: { $eq: ['$status', FILE_SERVICE_STATUS.CLOSED] }, then: 5 },
               ],
-              default: 6, // Default lowest priority for unknown status
+              default: 4,
             },
           },
         },
       },
 
       // Sorting: First by status priority, then by createdAt in descending order
-      { $sort: { statusPriority: 1, createdAt: -1 } },
+      { $sort: { statusPriority: 1, updatedAt: -1 } },
 
       // Populate required fields
       {
@@ -1395,6 +1411,47 @@ ResellerCredits= 10
     );
   }
 
+  async progressFileService(fileServiceId: Types.ObjectId) {
+    const fileService = await this.fileServiceModel
+      .findById(fileServiceId)
+      .populate({
+        path: 'customer',
+        select: 'firstName lastName customerType',
+      })
+      .populate({
+        path: 'car',
+        select: 'name logo',
+      })
+      .populate({
+        path: 'controller',
+        select: 'name',
+      })
+      .lean();
+
+    if (!fileService) {
+      throw new NotFoundException('File service not found');
+    }
+
+    if (fileService.status === FILE_SERVICE_STATUS.COMPLETED || fileService.status === FILE_SERVICE_STATUS.CLOSED) {
+      return fileService;
+    }
+
+    return await this.fileServiceModel
+      .findByIdAndUpdate(fileServiceId, { $set: { status: FILE_SERVICE_STATUS.IN_PROGRESS } }, { new: true })
+      .populate({
+        path: 'customer',
+        select: 'firstName lastName customerType',
+      })
+      .populate({
+        path: 'car',
+        select: 'name logo',
+      })
+      .populate({
+        path: 'controller',
+        select: 'name',
+      });
+  }
+
   async refundFileService(fileServiceId: Types.ObjectId) {
     const session = await this.connection.startSession();
     try {
@@ -1421,16 +1478,43 @@ ResellerCredits= 10
       );
 
       await session.commitTransaction();
+
       //Send email for file confirmation
       this.emailQueueProducers.sendMail({
         receiver: customer.email,
         name: customer.firstName + ' ' + customer.lastName,
-        emailType: EMAIL_TYPE.fileReady,
+        emailType: EMAIL_TYPE.refundFileService,
         uniqueId: fileService.uniqueId,
         credits: fileService.credits,
       });
 
       return updatedFileService;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  async deleteFileService(fileServiceId: Types.ObjectId) {
+    const session = await this.connection.startSession();
+
+    try {
+      session.startTransaction();
+
+      const fileService = await this.fileServiceModel.findById(fileServiceId);
+      if (!fileService) {
+        throw new NotFoundException('File service not found');
+      }
+      await this.fileServiceModel.findByIdAndDelete(fileServiceId, { session });
+
+      await this.chatService.deleteManyByFileServiceId(fileServiceId, session);
+
+      await this.storageService.deleteFolder(fileServiceId.toString());
+
+      await session.commitTransaction();
+      return fileService;
     } catch (error) {
       await session.abortTransaction();
       throw error;

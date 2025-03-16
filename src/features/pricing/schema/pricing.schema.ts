@@ -3,7 +3,7 @@ import mongoose, { Types } from 'mongoose';
 import { MAKE_TYPE_ENUM, collectionsName, SOLUTION_CATEGORY } from 'src/features/constant';
 import { PRICING_TYPE_ENUM } from 'src/features/constant/enums/pricing-type.enum';
 
-@Schema({ timestamps: false, versionKey: false, _id: false })
+@Schema({ timestamps: false, versionKey: false })
 export class Item {
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, ref: collectionsName.customerType })
   customerType: Types.ObjectId;
@@ -20,7 +20,7 @@ export class Item {
 
 const ItemSchema = SchemaFactory.createForClass(Item);
 
-@Schema({ timestamps: false, versionKey: false, _id: false })
+@Schema({ timestamps: false, versionKey: false })
 export class SolutionBasedItem {
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, ref: collectionsName.customerType })
   customerType: Types.ObjectId;
@@ -37,7 +37,7 @@ export class SolutionBasedItem {
 
 const SolutionBasedItemSchema = SchemaFactory.createForClass(SolutionBasedItem);
 
-@Schema({ timestamps: false, versionKey: false, _id: false })
+@Schema({ timestamps: false, versionKey: false })
 class PriceLimit {
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, ref: collectionsName.customerType })
   customerType: Types.ObjectId;

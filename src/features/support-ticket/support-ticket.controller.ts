@@ -1,7 +1,7 @@
+import { Types } from 'mongoose';
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { SupportTicketService } from './support-ticket.service';
 import { CreateSupportTicketDto } from './dto/create-support-ticket.dto';
-import { UpdateSupportTicketDto } from './dto/update-support-ticket.dto';
 import { AccessRole, IAuthUser } from '../common';
 import { RolesEnum } from '../constant';
 import { AuthUser } from '../common/decorator/get-auth-user.decorator';
@@ -36,13 +36,15 @@ export class SupportTicketController {
     return this.supportTicketService.findByCustomer(authUser.customer);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSupportTicketDto: UpdateSupportTicketDto) {
-    return this.supportTicketService.update(+id, updateSupportTicketDto);
+  @Get('close/:ticketId')
+  async closeSupportTicket(@Param('ticketId') ticketId: Types.ObjectId) {
+    const data = await this.supportTicketService.closeSupportTicket(ticketId);
+    return { data, message: 'Support Ticket Closed Successfully' };
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.supportTicketService.remove(+id);
+  @Delete(':ticketId')
+  async remove(@Param('ticketId') ticketId: Types.ObjectId) {
+    const data = await this.supportTicketService.remove(ticketId);
+    return { data, message: 'Support Ticket Deleted Successfully' };
   }
 }

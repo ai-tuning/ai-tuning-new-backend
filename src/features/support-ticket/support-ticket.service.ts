@@ -1,17 +1,23 @@
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model, Types } from 'mongoose';
+import { existsSync, unlinkSync } from 'fs';
 import { Injectable } from '@nestjs/common';
 import { CreateSupportTicketDto } from './dto/create-support-ticket.dto';
-import { UpdateSupportTicketDto } from './dto/update-support-ticket.dto';
-import { InjectModel } from '@nestjs/mongoose';
-import { collectionsName } from '../constant';
+import { CHAT_BELONG, collectionsName, EMAIL_TYPE, SUPPORT_STATUS } from '../constant';
 import { SupportTicket } from './schema/support-ticket.schema';
-import { Model, Types } from 'mongoose';
 import { StorageService } from '../storage-service/storage-service.service';
-import { existsSync, unlinkSync } from 'fs';
+import { Chat } from '../chat/schema/chat.schema';
+import { EmailQueueProducers } from '../queue-manager/producers/email-queue.producers';
+import { Customer } from '../customer/schema/customer.schema';
 
 @Injectable()
 export class SupportTicketService {
   constructor(
     @InjectModel(collectionsName.supportTicket) private readonly supportTicketModel: Model<SupportTicket>,
+    @InjectModel(collectionsName.chat) private readonly chatModel: Model<Chat>,
+    @InjectModel(collectionsName.customer) private readonly customerModel: Model<Customer>,
+    @InjectConnection() private readonly connection: Connection,
+    private readonly emailQueueProducers: EmailQueueProducers,
     private readonly storageService: StorageService,
   ) {}
   async create(createSupportTicketDto: CreateSupportTicketDto, file: Express.Multer.File) {
@@ -64,14 +70,54 @@ export class SupportTicketService {
     return this.supportTicketModel.find({ customer: customerId }).lean<SupportTicket[]>();
   }
 
-  update(id: number, updateSupportTicketDto: UpdateSupportTicketDto) {
-    return `This action updates a #${id} supportTicket`;
+  async closeSupportTicket(id: Types.ObjectId) {
+    const data = await this.supportTicketModel
+      .findByIdAndUpdate(id, { $set: { status: SUPPORT_STATUS.CLOSED } })
+      .populate({
+        path: 'customer',
+        select: 'firstName lastName customerType',
+      })
+      .lean<SupportTicket>();
+
+    const customer = await this.customerModel
+      .findById(data.customer)
+      .select('firstName lastName email')
+      .lean<Customer>();
+
+    //send email for re-open file
+    this.emailQueueProducers.sendMail({
+      receiver: customer.email,
+      name: customer.firstName + ' ' + customer.lastName,
+      emailType: EMAIL_TYPE.closedSupportTicket,
+      uniqueId: data.ticketId,
+    });
+
+    return data;
   }
 
-  async remove(id: number) {
-    const supportTicket = await this.supportTicketModel.findByIdAndDelete(id).lean<SupportTicket>();
-    if (supportTicket.file) {
-      await this.storageService.delete(supportTicket._id.toString(), supportTicket.file.key);
+  async remove(id: Types.ObjectId) {
+    const session = await this.connection.startSession();
+    try {
+      session.startTransaction();
+
+      const supportTicket = await this.supportTicketModel.findByIdAndDelete(id).lean<SupportTicket>();
+
+      await this.chatModel.deleteMany(
+        { service: supportTicket._id, chatBelong: CHAT_BELONG.SUPPORT_TICKET },
+        { session },
+      );
+
+      if (supportTicket.file) {
+        await this.storageService.delete(supportTicket._id.toString(), supportTicket.file.key);
+      }
+
+      await session.commitTransaction();
+      return supportTicket;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      await session.endSession();
     }
   }
 }

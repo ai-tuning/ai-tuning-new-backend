@@ -19,14 +19,19 @@ export class ProfileController {
 
   @AccessRole([RolesEnum.ADMIN, RolesEnum.SUPER_ADMIN, RolesEnum.EMPLOYEE])
   @Patch('admin')
-  updateAdminsProfile(@Body() updateProfileDto: UpdateAdminDto | UpdateEmployeeDto, @AuthUser() authUser: IAuthUser) {
-    return this.profileService.updateAdminProfile(authUser, updateProfileDto);
+  async updateAdminsProfile(
+    @Body() updateProfileDto: UpdateAdminDto | UpdateEmployeeDto,
+    @AuthUser() authUser: IAuthUser,
+  ) {
+    const data = await this.profileService.updateAdminProfile(authUser, updateProfileDto);
+    return { data, message: 'Profile Updated Successfully' };
   }
 
   @AccessRole([RolesEnum.CUSTOMER])
   @Patch('customer')
-  updateCustomerProfile(@Body() updateProfileDto: UpdateCustomerDto, @AuthUser() authUser: IAuthUser) {
-    return this.profileService.updateCustomerProfile(authUser, updateProfileDto);
+  async updateCustomerProfile(@Body() updateProfileDto: UpdateCustomerDto, @AuthUser() authUser: IAuthUser) {
+    const data = await this.profileService.updateCustomerProfile(authUser, updateProfileDto);
+    return { data, message: 'Profile Updated Successfully' };
   }
 
   @UseInterceptors(

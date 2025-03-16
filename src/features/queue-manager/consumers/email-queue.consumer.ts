@@ -38,6 +38,24 @@ export class EmailQueueConsumer {
         uniqueId: data.uniqueId,
         credits: data.credits,
       });
+    } else if (data.emailType === EMAIL_TYPE.reopenFileService) {
+      await this.mailService.fileServiceReopen({
+        receiver: data.receiver,
+        name: data.name,
+        uniqueId: data.uniqueId,
+      });
+    } else if (data.emailType === EMAIL_TYPE.closedSupportTicket) {
+      await this.mailService.closeSupportTicket({
+        receiver: data.receiver,
+        name: data.name,
+        uniqueId: data.uniqueId,
+      });
+    } else if (data.emailType === EMAIL_TYPE.reopenSupportTicket) {
+      await this.mailService.ticketReopen({
+        receiver: data.receiver,
+        name: data.name,
+        uniqueId: data.uniqueId,
+      });
     }
   }
 

@@ -15,6 +15,8 @@ import { SolutionSchema } from '../solution/schema/solution.schema';
 import { CustomerTypeSchema } from '../customer/schema/customer-type.schema';
 import { UserSchema } from '../user/schema/user.schema';
 import { FileServiceSchema } from '../file-service/schema/file-service.schema';
+import { AdminSchema } from '../admin/schema/admin.schema';
+import { PricingSchema } from '../pricing/schema/pricing.schema';
 
 @Module({
   imports: [
@@ -53,6 +55,18 @@ import { FileServiceSchema } from '../file-service/schema/file-service.schema';
       {
         name: collectionsName.fileService,
         schema: FileServiceSchema,
+      },
+      {
+        name: collectionsName.admin,
+        schema: AdminSchema,
+      },
+      {
+        name: collectionsName.solution,
+        schema: SolutionSchema,
+      },
+      {
+        name: collectionsName.pricing,
+        schema: PricingSchema,
       },
     ]),
   ],

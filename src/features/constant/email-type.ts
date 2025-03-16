@@ -7,4 +7,6 @@ export const EMAIL_TYPE = Object.freeze({
   refundFileService: 'refunded',
   closedFileService: 'closed-file-service',
   reopenFileService: 'reopen-file-service',
+  closedSupportTicket: 'closed-support-ticket',
+  reopenSupportTicket: 'reopen-support-ticket',
 });

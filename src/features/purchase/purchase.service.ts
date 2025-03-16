@@ -120,10 +120,6 @@ export class PurchaseService {
         unitPrice * purchaseCreditDto.quantity,
       );
 
-      // const totalPrice = unitPrice * purchaseCreditDto.quantity;
-      // const vat = 0;
-      // const grandTotal = totalPrice;
-
       console.log({ totalPrice, vatAmount, grandTotal, reverseCharge });
 
       const invoiceDto: CreateInvoiceDto = {

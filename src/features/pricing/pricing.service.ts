@@ -364,13 +364,27 @@ export class PricingService {
 
   async pushSolutionBasedItemsBySolutionId(solutionId: Types.ObjectId, session: ClientSession) {
     const customerTypes = await this.customerTypeModel.find().distinct('_id').session(session).lean<Types.ObjectId[]>();
-    const solutionItems = customerTypes.map((customerType) => {
-      return {
+
+    const solutionItems = [];
+    customerTypes.forEach((customerType) => {
+      solutionItems.push({
         customerType: customerType,
         price: 0,
         makeType: MAKE_TYPE_ENUM.CAR,
         solution: solutionId,
-      };
+      });
+      solutionItems.push({
+        customerType: customerType,
+        price: 0,
+        makeType: MAKE_TYPE_ENUM.BIKE,
+        solution: solutionId,
+      });
+      solutionItems.push({
+        customerType: customerType,
+        price: 0,
+        makeType: MAKE_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
+        solution: solutionId,
+      });
     });
 
     return this.pricingModel
