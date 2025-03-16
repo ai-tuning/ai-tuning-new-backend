@@ -1386,4 +1386,12 @@ ResellerCredits= 10
       }
     }
   }
+
+  async closeFileService(fileServiceId: Types.ObjectId) {
+    return await this.fileServiceModel.findByIdAndUpdate(
+      fileServiceId,
+      { $set: { status: FILE_SERVICE_STATUS.CLOSED } },
+      { new: true },
+    );
+  }
 }

@@ -68,4 +68,10 @@ export class FileServiceController {
     if (!body.fileServiceId) throw new BadRequestException('File service not found');
     return await this.fileServiceService.updateAiAssistant(body.fileServiceId, body.aiAssist);
   }
+
+  @Get('close/:fileServiceId')
+  async closeFileService(@Param('fileServiceId') fileServiceId: Types.ObjectId) {
+    const fileService = await this.fileServiceService.closeFileService(fileServiceId);
+    return { data: fileService, message: 'File service closed successfully' };
+  }
 }

@@ -18,15 +18,15 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService);
 
+  const origins = ['https://admin.ai-tuningfiles.com', 'https://portal.ai-tuningfiles.com'];
+
+  if (process.env.NODE_ENV === 'development') {
+    origins.push('http://localhost:3000');
+    origins.push('http://localhost:4000');
+  }
+
   app.enableCors({
-    origin: [
-      'https://admin-dev.ai-tuningfiles.com',
-      'https://portal-dev.ai-tuningfiles.com',
-      'https://admin.ai-tuningfiles.com',
-      'https://portal.ai-tuningfiles.com',
-      'http://localhost:3000',
-      'http://localhost:4000',
-    ],
+    origin: origins,
     credentials: true,
   });
   app.setGlobalPrefix('api/v1'); //route prefix

@@ -2,16 +2,20 @@ import { Injectable } from '@nestjs/common';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { UpdateChatDto } from './dto/update-chat.dto';
 import { InjectModel } from '@nestjs/mongoose';
-import { CHAT_BELONG, collectionsName } from '../constant';
+import { CHAT_BELONG, collectionsName, FILE_SERVICE_STATUS, SUPPORT_STATUS } from '../constant';
 import { ClientSession, Model, Types } from 'mongoose';
 import { Chat } from './schema/chat.schema';
 import { StorageService } from '../storage-service/storage-service.service';
 import { existsSync, unlinkSync } from 'fs';
+import { FileService } from '../file-service/schema/file-service.schema';
+import { SupportTicket } from '../support-ticket/schema/support-ticket.schema';
 
 @Injectable()
 export class ChatService {
   constructor(
     @InjectModel(collectionsName.chat) private readonly chatModel: Model<Chat>,
+    @InjectModel(collectionsName.fileService) private readonly fileServiceModal: Model<FileService>,
+    @InjectModel(collectionsName.supportTicket) private readonly supportTicketModel: Model<SupportTicket>,
     private readonly storageService: StorageService,
   ) {}
 
@@ -19,6 +23,25 @@ export class ChatService {
     let isUploaded = false;
     try {
       const chat = new this.chatModel(createChatDto);
+
+      if (chat.chatBelong === CHAT_BELONG.FILE_SERVICE) {
+        const fileService = await this.fileServiceModal.findById(chat.service);
+        if (fileService.status === FILE_SERVICE_STATUS.CLOSED || fileService.status === FILE_SERVICE_STATUS.COMPLETED) {
+          await this.fileServiceModal.findByIdAndUpdate(
+            chat.service,
+            { status: FILE_SERVICE_STATUS.OPEN },
+            { session },
+          );
+        }
+      }
+
+      if (chat.chatBelong === CHAT_BELONG.SUPPORT_TICKET) {
+        const supportTicket = await this.supportTicketModel.findById(chat.service);
+        if (supportTicket.status === SUPPORT_STATUS.CLOSED) {
+          await this.supportTicketModel.findByIdAndUpdate(chat.service, { status: SUPPORT_STATUS.OPEN }, { session });
+        }
+      }
+
       if (file) {
         const uploadedFile = await this.storageService.upload(createChatDto.service.toString(), {
           name: file.filename,

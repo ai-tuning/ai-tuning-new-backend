@@ -46,7 +46,7 @@ export class SupportTicketService {
   }
 
   findAll() {
-    return this.supportTicketModel.find().lean<SupportTicket[]>();
+    return this.supportTicketModel.find().sort({ createdAt: -1 }).lean<SupportTicket[]>();
   }
 
   findByAdmin(adminId: Types.ObjectId) {
@@ -56,6 +56,7 @@ export class SupportTicketService {
         path: collectionsName.customer,
         select: 'firstName lastName customerType',
       })
+      .sort({ createdAt: -1 })
       .lean<SupportTicket[]>();
   }
 
