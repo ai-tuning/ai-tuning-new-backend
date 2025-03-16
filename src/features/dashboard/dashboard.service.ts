@@ -18,12 +18,14 @@ import {
   subYears,
 } from 'date-fns';
 import { FileService } from '../file-service/schema/file-service.schema';
+import { SupportTicket } from '../support-ticket/schema/support-ticket.schema';
 
 @Injectable()
 export class DashboardService {
   constructor(
     @InjectModel(collectionsName.invoice) private readonly invoiceModel: Model<Invoice>,
     @InjectModel(collectionsName.fileService) private readonly fileServiceModel: Model<FileService>,
+    @InjectModel(collectionsName.supportTicket) private readonly supportTicketModel: Model<SupportTicket>,
   ) {}
 
   async getDownloadSummery(adminId: Types.ObjectId, customerId?: string) {
@@ -239,5 +241,16 @@ export class DashboardService {
     });
 
     return finalResults;
+  }
+
+  //this function count the file services and tickets of an admin which status OPEN/NEW
+  async countTicketsAndFileService(adminId: Types.ObjectId) {
+    const fileServiceCount = await this.fileServiceModel
+      .countDocuments({ admin: adminId, status: { $in: [FILE_SERVICE_STATUS.NEW, FILE_SERVICE_STATUS.OPEN] } })
+      .exec();
+    const ticketCount = await this.supportTicketModel
+      .countDocuments({ admin: adminId, status: { $in: [FILE_SERVICE_STATUS.NEW, FILE_SERVICE_STATUS.OPEN] } })
+      .exec();
+    return { fileServiceCount, ticketCount };
   }
 }

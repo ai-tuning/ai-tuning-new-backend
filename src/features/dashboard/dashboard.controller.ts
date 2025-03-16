@@ -23,4 +23,10 @@ export class DashboardController {
   async getEachMonthSalesSummery(@Query('adminId') adminId: Types.ObjectId) {
     return await this.dashboardService.getEachMonthSalesSummery(adminId);
   }
+
+  //this api count the file services and tickets of an admin which status OPEN/NEW
+  @Get('count-tickets-and-file-service')
+  async countTicketsAndFileService(@Query('adminId') adminId: Types.ObjectId) {
+    return await this.dashboardService.countTicketsAndFileService(adminId);
+  }
 }

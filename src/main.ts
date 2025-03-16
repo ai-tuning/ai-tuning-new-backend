@@ -24,6 +24,8 @@ async function bootstrap() {
       'https://portal-dev.ai-tuningfiles.com',
       'https://admin.ai-tuningfiles.com',
       'https://portal.ai-tuningfiles.com',
+      'http://localhost:3000',
+      'http://localhost:4000',
     ],
     credentials: true,
   });
