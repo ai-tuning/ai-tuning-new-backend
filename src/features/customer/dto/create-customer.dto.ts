@@ -51,7 +51,7 @@ export class CreateCustomerDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
-  credits?: number = 0;
+  credits?: number;
 
   @IsOptional()
   @IsString()
