@@ -79,7 +79,7 @@ export class ChatService {
 
       if (file) {
         let uploadedFile = '';
-        if (createChatDto.isRequiredEncoding && fileService) {
+        if (createChatDto.isRequiredEncoding === 'true' && fileService) {
           encodedFile = await this.encodeModifiedFile(file.path, fileService);
           filename = basename(encodedFile);
           uploadedFile = await this.storageService.upload(createChatDto.service.toString(), {
