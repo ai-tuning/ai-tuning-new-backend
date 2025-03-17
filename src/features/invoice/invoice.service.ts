@@ -3,7 +3,7 @@ import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { ClientSession, Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { collectionsName } from '../constant';
+import { collectionsName, PAYMENT_STATUS } from '../constant';
 import { Invoice } from './schema/invoice.schema';
 import { CustomValidationPipe } from '../common/validation-helper/custom-validation-pipe';
 
@@ -20,7 +20,7 @@ export class InvoiceService {
 
   async findAll(): Promise<Invoice[]> {
     return this.invoiceModel
-      .find({})
+      .find({ status: PAYMENT_STATUS.PAID })
       .populate({
         path: collectionsName.customer,
         select: 'firstName lastName email phone country city address postcode street companyName',
@@ -31,7 +31,7 @@ export class InvoiceService {
 
   async findByAdmin(adminId: Types.ObjectId): Promise<Invoice[]> {
     return this.invoiceModel
-      .find({ admin: adminId, customer: { $exists: true } })
+      .find({ admin: adminId, customer: { $exists: true }, status: PAYMENT_STATUS.PAID })
       .populate({
         path: 'customer',
         select: 'firstName lastName email phone country city address postcode street companyName',
@@ -42,7 +42,7 @@ export class InvoiceService {
 
   async findAdminPurchaseInvoice(adminId: Types.ObjectId): Promise<Invoice[]> {
     return this.invoiceModel
-      .find({ admin: adminId, customer: { $exists: false } })
+      .find({ admin: adminId, customer: { $exists: false }, status: PAYMENT_STATUS.PAID })
       .populate({
         path: 'admin',
         select: 'firstName lastName email phone country city address postcode street companyName',
@@ -54,7 +54,7 @@ export class InvoiceService {
   //for super admin
   async findAdminsInvoices(): Promise<Invoice[]> {
     return this.invoiceModel
-      .find({ customer: { $exists: false } })
+      .find({ customer: { $exists: false }, status: PAYMENT_STATUS.PAID })
       .populate({
         path: 'admin',
         select: 'firstName lastName email phone country city address postcode street companyName',
@@ -65,7 +65,7 @@ export class InvoiceService {
 
   async findByCustomer(customerId: Types.ObjectId): Promise<Invoice[]> {
     return this.invoiceModel
-      .find({ customer: customerId })
+      .find({ customer: customerId, status: PAYMENT_STATUS.PAID })
       .populate({
         path: collectionsName.customer,
         select: 'firstName lastName email phone country city address postcode street companyName',
