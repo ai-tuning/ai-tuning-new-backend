@@ -37,9 +37,11 @@ export class ChatService {
     let fileService: FileService;
     let encodedFile = '';
     let filename = '';
+    let originalName = '';
 
     if (file) {
       filename = file.filename;
+      originalName = file.originalname;
     }
 
     console.log('createChatDto', createChatDto);
@@ -82,6 +84,7 @@ export class ChatService {
         if (createChatDto.isRequiredEncoding === 'true' && fileService) {
           encodedFile = await this.encodeModifiedFile(file.path, fileService);
           filename = basename(encodedFile);
+          originalName = basename(encodedFile);
           uploadedFile = await this.storageService.upload(createChatDto.service.toString(), {
             name: filename,
             path: encodedFile,
@@ -93,7 +96,7 @@ export class ChatService {
           });
         }
         chat.file = {
-          originalname: filename,
+          originalname: originalName,
           uniqueName: filename,
           key: uploadedFile,
         };
