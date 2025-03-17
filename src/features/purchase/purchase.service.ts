@@ -122,13 +122,15 @@ export class PurchaseService {
 
       console.log({ totalPrice, vatAmount, grandTotal, reverseCharge });
 
+      let description = purchaseCreditDto.isEvcCredit
+        ? 'Software Development EVC Credits'
+        : 'Software Development Credits';
+
       const invoiceDto: CreateInvoiceDto = {
         admin: adminId,
         customer: purchaseCreditDto.customer,
         invoiceNumber: Date.now().toString(),
-        description: purchaseCreditDto.isEvcCredit
-          ? 'Software Development EVC Credits'
-          : 'Software Development Credits',
+        description,
         quantity: purchaseCreditDto.quantity,
         unitPrice: unitPrice,
         totalPrice,
@@ -151,7 +153,7 @@ export class PurchaseService {
       const invoice = await this.invoiceService.create(invoiceDto, session);
 
       //generate payment link
-      const order = await this.createOrder(adminId, invoice._id as Types.ObjectId, totalPrice, origin);
+      const order = await this.createOrder(adminId, invoice._id as Types.ObjectId, totalPrice, origin, description);
 
       await session.commitTransaction();
       return order.links[1].href;
@@ -239,7 +241,13 @@ export class PurchaseService {
    * @param {number} amount
    * @returns object with payment link
    */
-  async createOrder(adminId: Types.ObjectId, invoiceId: Types.ObjectId, amount: number, origin: string) {
+  async createOrder(
+    adminId: Types.ObjectId,
+    invoiceId: Types.ObjectId,
+    amount: number,
+    origin: string,
+    itemName: string,
+  ) {
     const token = await this.getAccessToken(adminId);
     const { data } = await this.httpService.axiosRef(`${this.paypal_url}/v2/checkout/orders`, {
       method: 'POST',
@@ -262,7 +270,7 @@ export class PurchaseService {
             },
             items: [
               {
-                name: 'Software Development Credits',
+                name: itemName,
                 unit_amount: { currency_code: 'EUR', value: amount },
                 quantity: '1',
               },
@@ -334,7 +342,13 @@ export class PurchaseService {
       const invoice = await this.invoiceService.create(invoiceDto, session);
       const superAdminId = new Types.ObjectId(process.env.SUPER_ADMIN_ID);
       //generate payment link
-      const order = await this.createOrder(superAdminId, invoice._id as Types.ObjectId, totalPrice, origin);
+      const order = await this.createOrder(
+        superAdminId,
+        invoice._id as Types.ObjectId,
+        totalPrice,
+        origin,
+        'Software Development Credits',
+      );
 
       await session.commitTransaction();
       return order.links[1].href;
