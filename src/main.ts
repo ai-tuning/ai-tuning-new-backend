@@ -24,6 +24,7 @@ async function bootstrap() {
     'https://portal.tuningfile-server.com',
     'https://portal.remap.no',
     'http://ecufiles-austria.com',
+    'https://www.ecufiles-austria.com',
   ];
 
   if (process.env.NODE_ENV === 'development') {
