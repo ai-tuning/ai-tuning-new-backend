@@ -22,6 +22,8 @@ async function bootstrap() {
     'https://admin.ai-tuningfiles.com',
     'https://portal.ai-tuningfiles.com',
     'https://portal.tuningfile-server.com',
+    'https://portal.remap.no',
+    'http://ecufiles-austria.com',
   ];
 
   if (process.env.NODE_ENV === 'development') {
