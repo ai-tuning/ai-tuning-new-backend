@@ -116,20 +116,26 @@ export class ChatService {
       const newChat = await chat.save({ session });
 
       console.log('newChat', newChat);
-      const idNumber = fileService ? fileService.uniqueId : supportTicket.ticketId;
-      if (newChat.messageSenderGroup === CHAT_MESSAGE_SENDER_GROUP.CUSTOMER) {
-        const customer = await this.customerModel.findById(createChatDto.customer).select('email firstName lastName');
-        const message = `New message from "${customer.firstName} ${customer.lastName}" ticket number ${idNumber}`;
-        this.catapushMessageProducer.sendCatapushMessage(createChatDto.admin, message, 'admin');
-      } else {
-        console.log('enter');
-        const customer = await this.customerModel
-          .findById(createChatDto.customer)
-          .select('email phone firstName lastName countryCode');
-        const message = `New message from for ticket number ${idNumber}`;
-        if (customer.phone) {
-          const phone = customer.countryCode ? customer.countryCode.replace('+', '') + customer.phone : customer.phone;
-          this.catapushMessageProducer.sendCatapushMessage(createChatDto.admin, message, 'admin', phone);
+
+      //catapush notification
+      if (fileService || supportTicket) {
+        const idNumber = fileService ? fileService.uniqueId : supportTicket.ticketId;
+        if (newChat.messageSenderGroup === CHAT_MESSAGE_SENDER_GROUP.CUSTOMER) {
+          const customer = await this.customerModel.findById(createChatDto.customer).select('email firstName lastName');
+          const message = `New message from "${customer.firstName} ${customer.lastName}" ticket number ${idNumber}`;
+          this.catapushMessageProducer.sendCatapushMessage(createChatDto.admin, message, 'admin');
+        } else {
+          console.log('enter');
+          const customer = await this.customerModel
+            .findById(createChatDto.customer)
+            .select('email phone firstName lastName countryCode');
+          const message = `New message from for ticket number ${idNumber}`;
+          if (customer.phone) {
+            const phone = customer.countryCode
+              ? customer.countryCode.replace('+', '') + customer.phone
+              : customer.phone;
+            this.catapushMessageProducer.sendCatapushMessage(createChatDto.admin, message, 'admin', phone);
+          }
         }
       }
 
