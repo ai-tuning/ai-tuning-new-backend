@@ -93,7 +93,11 @@ export class FileServiceService {
   }
 
   async findByCustomerId(customerId: Types.ObjectId): Promise<FileService[]> {
-    return this.fileServiceModel.find({ customer: customerId }).sort({ createdAt: -1 }).lean<FileService[]>();
+    return this.fileServiceModel
+      .find({ customer: customerId })
+      .select('-iniFile -modWithoutEncoded -decodedFile')
+      .sort({ createdAt: -1 })
+      .lean<FileService[]>();
   }
 
   async findByAdminId(adminId: Types.ObjectId): Promise<FileService[]> {
