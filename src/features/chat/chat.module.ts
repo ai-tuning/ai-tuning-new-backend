@@ -10,6 +10,9 @@ import { FileServiceSchema } from '../file-service/schema/file-service.schema';
 import { SupportTicketSchema } from '../support-ticket/schema/support-ticket.schema';
 import { QueueManagerModule } from '../queue-manager/queue-manager.module';
 import { CustomerSchema } from '../customer/schema/customer.schema';
+import { Kess3Module } from '../kess3/kess3.module';
+import { AutoTunerModule } from '../auto-tuner/auto-tuner.module';
+import { AutoFlasherModule } from '../auto-flasher/auto-flasher.module';
 
 @Module({
   imports: [
@@ -26,6 +29,9 @@ import { CustomerSchema } from '../customer/schema/customer.schema';
     ]),
     StorageServiceModule,
     forwardRef(() => QueueManagerModule),
+    Kess3Module,
+    AutoTunerModule,
+    AutoFlasherModule,
   ],
   controllers: [ChatController],
   providers: [ChatService],

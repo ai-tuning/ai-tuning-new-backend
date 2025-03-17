@@ -137,8 +137,12 @@ export class Kess3Service {
       url: `/api/kess3/file-slots/${fileSlotGUID}/files/${fileGUID}?download=true`,
     });
 
+    const basePath = path.join(this.pathService.getFileServicePath(adminId, tempFileId));
+
+    if (!fs.existsSync(basePath)) fs.mkdirSync(basePath);
+
     // Path where the file will be saved
-    const filePath = path.join(this.pathService.getFileServicePath(adminId, tempFileId), data.name);
+    const filePath = path.join(basePath, data.name);
     // Decode Base64 string to a buffer
     const fileBuffer = Buffer.from(data.data, 'base64');
 

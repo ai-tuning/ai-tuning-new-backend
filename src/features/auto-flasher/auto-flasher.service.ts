@@ -215,10 +215,15 @@ export class AutoFlasherService {
   async encode(autoFlasherEncodeDto: AutoFlasherEncodeDto) {
     const parseFile = path.parse(autoFlasherEncodeDto.filePath);
     const name = parseFile.name.replace(/decoded/gi, 'modified');
-    const encryptedFilePath = path.join(
+
+    const basePath = path.join(
       this.pathService.getFileServicePath(autoFlasherEncodeDto.adminId, autoFlasherEncodeDto.tempFileId),
-      name + '.atf',
     );
+
+    if (!fs.existsSync(basePath)) fs.mkdirSync(basePath);
+
+    const encryptedFilePath = path.join(basePath, name + '.atf');
+
     const formData = new FormData();
     formData.append('input_file', fs.createReadStream(autoFlasherEncodeDto.filePath));
     formData.append('sn', autoFlasherEncodeDto.serialNumber);

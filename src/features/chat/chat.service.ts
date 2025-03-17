@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { CreateChatDto } from './dto/create-chat.dto';
-import { UpdateChatDto } from './dto/update-chat.dto';
+import { basename } from 'path';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { CHAT_BELONG, collectionsName, EMAIL_TYPE, FILE_SERVICE_STATUS, SUPPORT_STATUS } from '../constant';
+import { CHAT_BELONG, collectionsName, EMAIL_TYPE, FILE_SERVICE_STATUS, SLAVE_TYPE, SUPPORT_STATUS } from '../constant';
 import { ClientSession, Connection, Model, Types } from 'mongoose';
 import { Chat } from './schema/chat.schema';
 import { StorageService } from '../storage-service/storage-service.service';
@@ -11,6 +11,9 @@ import { FileService } from '../file-service/schema/file-service.schema';
 import { SupportTicket } from '../support-ticket/schema/support-ticket.schema';
 import { EmailQueueProducers } from '../queue-manager/producers/email-queue.producers';
 import { Customer } from '../customer/schema/customer.schema';
+import { AutoTunerService } from '../auto-tuner/auto-tuner.service';
+import { AutoFlasherService } from '../auto-flasher/auto-flasher.service';
+import { Kess3Service } from '../kess3/kess3.service';
 
 @Injectable()
 export class ChatService {
@@ -22,13 +25,19 @@ export class ChatService {
     private readonly storageService: StorageService,
     @InjectConnection() private readonly connection: Connection,
     private readonly emailQueueProducers: EmailQueueProducers,
+    private readonly autoTunerService: AutoTunerService,
+    private readonly autoFlasherService: AutoFlasherService,
+    private readonly kess3Service: Kess3Service,
   ) {}
 
   async create(createChatDto: CreateChatDto, file?: Express.Multer.File, sessionParams?: ClientSession) {
     let isUploaded = false;
     let fileServiceUniqueId = '';
     let ticketUniqueId = '';
-
+    let fileService: FileService;
+    let encodedFile = '';
+    let filename = file.filename;
+    console.log('createChatDto', createChatDto);
     const session = sessionParams || (await this.connection.startSession());
 
     try {
@@ -38,10 +47,7 @@ export class ChatService {
       const chat = new this.chatModel(createChatDto);
 
       if (chat.chatBelong === CHAT_BELONG.FILE_SERVICE) {
-        const fileService = await this.fileServiceModal
-          .findById(chat.service)
-          .select('status uniqueId')
-          .session(session);
+        fileService = await this.fileServiceModal.findById(chat.service).session(session);
         if (
           fileService &&
           (fileService.status === FILE_SERVICE_STATUS.CLOSED || fileService.status === FILE_SERVICE_STATUS.COMPLETED)
@@ -67,13 +73,23 @@ export class ChatService {
       }
 
       if (file) {
-        const uploadedFile = await this.storageService.upload(createChatDto.service.toString(), {
-          name: file.filename,
-          path: file.path,
-        });
+        let uploadedFile = '';
+        if (createChatDto.isRequiredEncoding && fileService) {
+          encodedFile = await this.encodeModifiedFile(file.path, fileService);
+          filename = basename(encodedFile);
+          uploadedFile = await this.storageService.upload(createChatDto.service.toString(), {
+            name: filename,
+            path: encodedFile,
+          });
+        } else {
+          uploadedFile = await this.storageService.upload(createChatDto.service.toString(), {
+            name: filename,
+            path: file.path,
+          });
+        }
         chat.file = {
-          originalname: file.originalname,
-          uniqueName: file.filename,
+          originalname: filename,
+          uniqueName: filename,
           key: uploadedFile,
         };
         chat.mimeType = file.mimetype;
@@ -115,12 +131,15 @@ export class ChatService {
       }
 
       if (isUploaded) {
-        await this.storageService.delete(createChatDto.service.toString(), file.filename);
+        await this.storageService.delete(createChatDto.service.toString(), filename);
       }
       throw error;
     } finally {
       if (file && existsSync(file.path)) {
         unlinkSync(file.path);
+      }
+      if (encodedFile && existsSync(encodedFile)) {
+        unlinkSync(encodedFile);
       }
       if (!sessionParams) {
         await session.endSession();
@@ -162,5 +181,40 @@ export class ChatService {
       .deleteMany({ service: id, chatBelong: CHAT_BELONG.FILE_SERVICE }, { session })
       .lean<Chat[]>();
     return data;
+  }
+
+  private encodeModifiedFile(modifiedFilePath: string, fileService: FileService) {
+    if (fileService.slaveType === SLAVE_TYPE.KESS3) {
+      return this.kess3Service.encodeFile(
+        {
+          uniqueId: fileService.kess3.uniqueId,
+          tempFileId: fileService._id as Types.ObjectId,
+          filePath: modifiedFilePath,
+          fileSlotGUID: fileService.kess3.fileSlotGUID,
+          fileType: fileService.kess3.fileType,
+          isCVNCorrectionPossible: fileService.kess3.isCVNCorrectionPossible,
+          mode: fileService.kess3.mode,
+        },
+        fileService.admin,
+      );
+    } else if (fileService.slaveType === SLAVE_TYPE.AUTO_TUNER) {
+      return this.autoTunerService.encode({
+        tempFileId: fileService._id as Types.ObjectId,
+        adminId: fileService.admin,
+        ecu_id: fileService.autoTuner.ecu_id,
+        filePath: modifiedFilePath,
+        mcu_id: fileService.autoTuner.mcu_id,
+        model_id: fileService.autoTuner.model_id,
+        slave_id: fileService.autoTuner.slave_id,
+      });
+    } else if (fileService.slaveType === SLAVE_TYPE.AUTO_FLASHER) {
+      return this.autoFlasherService.encode({
+        tempFileId: fileService._id as Types.ObjectId,
+        adminId: fileService.admin,
+        filePath: modifiedFilePath,
+        memory_type: fileService.autoFlasher.memory_type,
+        serialNumber: fileService.autoFlasher.serialNumber,
+      });
+    }
   }
 }

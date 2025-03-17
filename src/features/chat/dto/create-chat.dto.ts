@@ -34,6 +34,9 @@ export class CreateChatDto {
   @IsEnum(CHAT_MESSAGE_SENDER_GROUP)
   messageSenderGroup: CHAT_MESSAGE_SENDER_GROUP;
 
+  @Type(() => Boolean)
+  isRequiredEncoding?: boolean;
+
   message?: string;
 
   file?: string;

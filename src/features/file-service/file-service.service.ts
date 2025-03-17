@@ -123,7 +123,7 @@ export class FileServiceService {
       },
 
       // Sorting: First by status priority, then by createdAt in descending order
-      { $sort: { statusPriority: 1, updatedAt: -1 } },
+      { $sort: { statusPriority: 1, createdAt: -1 } },
 
       // Populate required fields
       {

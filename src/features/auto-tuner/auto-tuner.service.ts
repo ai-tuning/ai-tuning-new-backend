@@ -86,10 +86,14 @@ export class AutoTunerService {
   async encode(autoTunerEncodeDto: AutoTunerEncodePayload) {
     const parseFile = path.parse(autoTunerEncodeDto.filePath);
     const name = parseFile.name.replace(/decoded/gi, 'modified');
-    const encryptedFilePath = path.join(
+
+    const basePath = path.join(
       this.pathService.getFileServicePath(autoTunerEncodeDto.adminId, autoTunerEncodeDto.tempFileId),
-      name + '.slave',
     );
+
+    if (!fs.existsSync(basePath)) fs.mkdirSync(basePath);
+
+    const encryptedFilePath = path.join(basePath, name + '.slave');
 
     try {
       // Read the binary data from the file

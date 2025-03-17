@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Pool, createPool } from 'mysql2/promise';
-import { collectionsName, MAKE_TYPE_ENUM, SOLUTION_CATEGORY } from '../constant';
+import { collectionsName } from '../constant';
 import { Model, Types } from 'mongoose';
 import { CustomerService } from '../customer/customer.service';
 import { InjectModel } from '@nestjs/mongoose';
@@ -17,6 +17,7 @@ import { User } from '../user/schema/user.schema';
 import { Admin } from '../admin/schema/admin.schema';
 import { FileService } from '../file-service/schema/file-service.schema';
 import { Pricing } from '../pricing/schema/pricing.schema';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class MigrationService {
@@ -60,9 +61,9 @@ export class MigrationService {
     // await this.manualCarCreation();
     //create solutions
     // await this.migrateSolution();
-    // const [dealers] = (await this.connection.query('SELECT * FROM dealers')) as any[];
+    const [dealers] = (await this.connection.query('SELECT * FROM dealers')) as any[];
     // const customerPayload: CreateCustomerDto[] = [];
-    // const existingCustomers = await this.customerModel.find();
+    const existingCustomers = await this.customerModel.find();
     // const existingInvoices = await this.invoiceModel.find().lean();
     // for (const dealer of dealers) {
     //   const countryInfo = countriesObject[dealer.location];
@@ -247,6 +248,36 @@ export class MigrationService {
     //   pricing.priceLimits = findExitingPricing.priceLimits;
     //   pricing.save();
     // }
+
+    // const userUpdatePayload = [];
+
+    // for (const dealer of dealers) {
+    //   const customer = existingCustomers.find((customer) => customer.mysqlId == dealer.Id);
+
+    //   if (customer) {
+    //     if (dealer.password) {
+    //       console.log('dealer.password', dealer.password);
+    //       userUpdatePayload.push({
+    //         updateOne: {
+    //           filter: { _id: customer.user },
+    //           update: { $set: { password: dealer.password, isVerified: true } },
+    //         },
+    //       });
+    //     } else {
+    //       const saltRounds = 10;
+    //       const hashedPassword = await bcrypt.hash('test1234', saltRounds);
+    //       console.log('hashedPassword', hashedPassword);
+    //       userUpdatePayload.push({
+    //         updateOne: {
+    //           filter: { _id: customer.user },
+    //           update: { $set: { password: hashedPassword, isVerified: true } },
+    //         },
+    //       });
+    //     }
+    //   }
+    // }
+    // await this.userModel.bulkWrite(userUpdatePayload);
+    // return 'completed';
   }
 
   // async manualCarCreation() {
