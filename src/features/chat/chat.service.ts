@@ -36,7 +36,12 @@ export class ChatService {
     let ticketUniqueId = '';
     let fileService: FileService;
     let encodedFile = '';
-    let filename = file.filename;
+    let filename = '';
+
+    if (file) {
+      filename = file.filename;
+    }
+
     console.log('createChatDto', createChatDto);
     const session = sessionParams || (await this.connection.startSession());
 
