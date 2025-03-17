@@ -9,6 +9,8 @@ import { StorageService } from '../storage-service/storage-service.service';
 import { Chat } from '../chat/schema/chat.schema';
 import { EmailQueueProducers } from '../queue-manager/producers/email-queue.producers';
 import { Customer } from '../customer/schema/customer.schema';
+import { CatapushMessageProducer } from '../queue-manager/producers/catapush-message.producer';
+import { Admin } from '../admin/schema/admin.schema';
 
 @Injectable()
 export class SupportTicketService {
@@ -16,8 +18,10 @@ export class SupportTicketService {
     @InjectModel(collectionsName.supportTicket) private readonly supportTicketModel: Model<SupportTicket>,
     @InjectModel(collectionsName.chat) private readonly chatModel: Model<Chat>,
     @InjectModel(collectionsName.customer) private readonly customerModel: Model<Customer>,
+    @InjectModel(collectionsName.admin) private readonly adminModel: Model<Admin>,
     @InjectConnection() private readonly connection: Connection,
     private readonly emailQueueProducers: EmailQueueProducers,
+    private readonly catapushMessageProducer: CatapushMessageProducer,
     private readonly storageService: StorageService,
   ) {}
   async create(createSupportTicketDto: CreateSupportTicketDto, file: Express.Multer.File) {
@@ -38,6 +42,34 @@ export class SupportTicketService {
       }
       supportTicket.ticketId = Date.now().toString();
       const newTickets = await supportTicket.save();
+
+      const customer = await this.customerModel
+        .findById(createSupportTicketDto.customer)
+        .select('firstName lastName email phone countryCode')
+        .lean<Customer>();
+
+      const admin = await this.adminModel.findById(createSupportTicketDto.admin).select('email').lean<Admin>();
+
+      //send email for open to admin file
+      this.emailQueueProducers.sendMail({
+        receiver: admin.email,
+        emailType: EMAIL_TYPE.openSupportTicketAdmin,
+        name: customer.firstName + ' ' + customer.lastName,
+        uniqueId: supportTicket.ticketId,
+      });
+
+      //send email for open ticket
+      this.emailQueueProducers.sendMail({
+        receiver: customer.email,
+        emailType: EMAIL_TYPE.openSupportTicket,
+        name: customer.firstName + ' ' + customer.lastName,
+        uniqueId: supportTicket.ticketId,
+      });
+
+      const message = `Customer ${customer.firstName} ${customer.lastName} has opened a new ticket  ID: ${newTickets.ticketId}`;
+
+      this.catapushMessageProducer.sendCatapushMessage(newTickets.admin, message, 'admin');
+
       return newTickets;
     } catch (error) {
       if (isUploaded) {

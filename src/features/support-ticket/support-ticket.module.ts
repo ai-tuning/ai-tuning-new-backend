@@ -9,6 +9,7 @@ import { StorageServiceModule } from '../storage-service/storage-service.module'
 import { ChatSchema } from '../chat/schema/chat.schema';
 import { QueueManagerModule } from '../queue-manager/queue-manager.module';
 import { CustomerSchema } from '../customer/schema/customer.schema';
+import { AdminSchema } from '../admin/schema/admin.schema';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { CustomerSchema } from '../customer/schema/customer.schema';
       { name: collectionsName.supportTicket, schema: SupportTicketSchema },
       { name: collectionsName.chat, schema: ChatSchema },
       { name: collectionsName.customer, schema: CustomerSchema },
+      { name: collectionsName.admin, schema: AdminSchema },
     ]),
     StorageServiceModule,
     QueueManagerModule,

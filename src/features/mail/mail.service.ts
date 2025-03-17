@@ -464,6 +464,45 @@ export class MailService {
     };
     await this.infoTransporter().sendMail(mailOptions);
   }
+
+  async ticketOpen(data: { receiver: string; name: string; uniqueId: string }) {
+    const mailOptions = {
+      from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+      to: data.receiver,
+      subject: 'Ticket Open',
+      html: this.adminEmailTemplate(
+        'Support Ticket Open',
+        `<td class="email-content">
+                  <h2>Hello ${data.name}</h2>
+                  <p>A Support ticket was opened </p>
+                  <div class="highlight">
+                    <p>ID : ${data.uniqueId}</p>
+                </div>
+              </td>`,
+      ),
+    };
+    await this.infoTransporter().sendMail(mailOptions);
+  }
+
+  async newTicketOpenForAdmin(data: { receiver: string; name: string; uniqueId: string }) {
+    const mailOptions = {
+      from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+      to: data.receiver,
+      subject: 'New Support Ticket Open',
+      html: this.adminEmailTemplate(
+        'New Support Ticket Open',
+        `<td class="email-content">
+                  <h2>Hello There</h2>
+                  <p>A support ticket was opened from ${data.name}</p>
+                  <div class="highlight">
+                    <p>ID : ${data.uniqueId}</p>
+                </div>
+              </td>`,
+      ),
+    };
+    await this.authTransporter().sendMail(mailOptions);
+  }
+
   async closeSupportTicket(data: { receiver: string; name: string; uniqueId: string }) {
     const mailOptions = {
       from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,

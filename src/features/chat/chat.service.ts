@@ -2,7 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { basename } from 'path';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
-import { CHAT_BELONG, collectionsName, EMAIL_TYPE, FILE_SERVICE_STATUS, SLAVE_TYPE, SUPPORT_STATUS } from '../constant';
+import {
+  CHAT_BELONG,
+  CHAT_MESSAGE_SENDER_GROUP,
+  collectionsName,
+  EMAIL_TYPE,
+  FILE_SERVICE_STATUS,
+  SLAVE_TYPE,
+  SUPPORT_STATUS,
+} from '../constant';
 import { ClientSession, Connection, Model, Types } from 'mongoose';
 import { Chat } from './schema/chat.schema';
 import { StorageService } from '../storage-service/storage-service.service';
@@ -14,6 +22,8 @@ import { Customer } from '../customer/schema/customer.schema';
 import { AutoTunerService } from '../auto-tuner/auto-tuner.service';
 import { AutoFlasherService } from '../auto-flasher/auto-flasher.service';
 import { Kess3Service } from '../kess3/kess3.service';
+import { CatapushMessageProducer } from '../queue-manager/producers/catapush-message.producer';
+import { Employee } from '../employee/schema/employee.schema';
 
 @Injectable()
 export class ChatService {
@@ -22,12 +32,14 @@ export class ChatService {
     @InjectModel(collectionsName.fileService) private readonly fileServiceModal: Model<FileService>,
     @InjectModel(collectionsName.supportTicket) private readonly supportTicketModel: Model<SupportTicket>,
     @InjectModel(collectionsName.customer) private readonly customerModel: Model<Customer>,
+    @InjectModel(collectionsName.employee) private readonly employeeModel: Model<Employee>,
     private readonly storageService: StorageService,
     @InjectConnection() private readonly connection: Connection,
     private readonly emailQueueProducers: EmailQueueProducers,
     private readonly autoTunerService: AutoTunerService,
     private readonly autoFlasherService: AutoFlasherService,
     private readonly kess3Service: Kess3Service,
+    private readonly catapushMessageProducer: CatapushMessageProducer,
   ) {}
 
   async create(createChatDto: CreateChatDto, file?: Express.Multer.File, sessionParams?: ClientSession) {
@@ -35,6 +47,7 @@ export class ChatService {
     let fileServiceUniqueId = '';
     let ticketUniqueId = '';
     let fileService: FileService;
+    let supportTicket: SupportTicket;
     let encodedFile = '';
     let filename = '';
     let originalName = '';
@@ -69,10 +82,7 @@ export class ChatService {
       }
 
       if (chat.chatBelong === CHAT_BELONG.SUPPORT_TICKET) {
-        const supportTicket = await this.supportTicketModel
-          .findById(chat.service)
-          .select('status ticketId')
-          .session(session);
+        supportTicket = await this.supportTicketModel.findById(chat.service).select('status ticketId').session(session);
         if (supportTicket.status === SUPPORT_STATUS.CLOSED) {
           await this.supportTicketModel.findByIdAndUpdate(chat.service, { status: SUPPORT_STATUS.OPEN }, { session });
           ticketUniqueId = supportTicket.ticketId;
@@ -105,13 +115,30 @@ export class ChatService {
       }
       const newChat = await chat.save({ session });
 
-      if (!sessionParams) {
-        await session.commitTransaction();
+      console.log('newChat', newChat);
+      const idNumber = fileService ? fileService.uniqueId : supportTicket.ticketId;
+      if (newChat.messageSenderGroup === CHAT_MESSAGE_SENDER_GROUP.CUSTOMER) {
+        const customer = await this.customerModel.findById(createChatDto.customer).select('email firstName lastName');
+        const message = `New message from "${customer.firstName} ${customer.lastName}" ticket number ${idNumber}`;
+        this.catapushMessageProducer.sendCatapushMessage(createChatDto.admin, message, 'admin');
+      } else {
+        console.log('enter');
+        const customer = await this.customerModel
+          .findById(createChatDto.customer)
+          .select('email phone firstName lastName countryCode');
+        const message = `New message from for ticket number ${idNumber}`;
+        if (customer.phone) {
+          const phone = customer.countryCode ? customer.countryCode.replace('+', '') + customer.phone : customer.phone;
+          this.catapushMessageProducer.sendCatapushMessage(createChatDto.admin, message, 'admin', phone);
+        }
+      }
+
+      if (sessionParams) {
         return newChat;
       }
 
       if (fileServiceUniqueId) {
-        const customer = await this.customerModel.findById(createChatDto.customer);
+        const customer = await this.customerModel.findById(createChatDto.customer).select('email firstName lastName');
         //send email for re-open file
         this.emailQueueProducers.sendMail({
           receiver: customer.email,
@@ -122,7 +149,7 @@ export class ChatService {
       }
 
       if (ticketUniqueId) {
-        const customer = await this.customerModel.findById(createChatDto.customer);
+        const customer = await this.customerModel.findById(createChatDto.customer).select('email firstName lastName');
         //send email for re-open file
         this.emailQueueProducers.sendMail({
           receiver: customer.email,
@@ -132,6 +159,7 @@ export class ChatService {
         });
       }
 
+      await session.commitTransaction();
       return newChat;
     } catch (error) {
       if (!sessionParams) {

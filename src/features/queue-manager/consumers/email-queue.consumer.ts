@@ -44,6 +44,12 @@ export class EmailQueueConsumer {
         name: data.name,
         uniqueId: data.uniqueId,
       });
+    } else if (data.emailType === EMAIL_TYPE.openSupportTicket) {
+      await this.mailService.ticketOpen({
+        receiver: data.receiver,
+        name: data.name,
+        uniqueId: data.uniqueId,
+      });
     } else if (data.emailType === EMAIL_TYPE.closedSupportTicket) {
       await this.mailService.closeSupportTicket({
         receiver: data.receiver,
@@ -52,6 +58,12 @@ export class EmailQueueConsumer {
       });
     } else if (data.emailType === EMAIL_TYPE.reopenSupportTicket) {
       await this.mailService.ticketReopen({
+        receiver: data.receiver,
+        name: data.name,
+        uniqueId: data.uniqueId,
+      });
+    } else if (data.emailType === EMAIL_TYPE.openSupportTicketAdmin) {
+      await this.mailService.newTicketOpenForAdmin({
         receiver: data.receiver,
         name: data.name,
         uniqueId: data.uniqueId,

@@ -43,6 +43,7 @@ import { SuperAdminModule } from './features/super-admin/super-admin.module';
 import { AdminPricingModule } from './features/admin-pricing/admin-pricing.module';
 import { DashboardModule } from './features/dashboard/dashboard.module';
 import { MigrationModule } from './features/migration/migration.module';
+import { CatapushModule } from './features/catapush/catapush.module';
 
 @Module({
   imports: [
@@ -171,6 +172,7 @@ import { MigrationModule } from './features/migration/migration.module';
     AdminPricingModule,
     DashboardModule,
     MigrationModule,
+    CatapushModule,
   ],
   controllers: [],
   providers: [],

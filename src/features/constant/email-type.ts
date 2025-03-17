@@ -3,6 +3,8 @@ export const EMAIL_TYPE = Object.freeze({
   welcomeEmail: 'welcome-email',
   fileReady: 'file-ready',
   requestSolution: 'request-solution',
+  openSupportTicket: 'open-support-ticket',
+  openSupportTicketAdmin: 'open-support-ticket-admin',
   newFileNotification: 'new-file-notification',
   refundFileService: 'refunded',
   closedFileService: 'closed-file-service',

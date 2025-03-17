@@ -13,6 +13,7 @@ import { CustomerSchema } from '../customer/schema/customer.schema';
 import { Kess3Module } from '../kess3/kess3.module';
 import { AutoTunerModule } from '../auto-tuner/auto-tuner.module';
 import { AutoFlasherModule } from '../auto-flasher/auto-flasher.module';
+import { EmployeeSchema } from '../employee/schema/employee.schema';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { AutoFlasherModule } from '../auto-flasher/auto-flasher.module';
       { name: collectionsName.fileService, schema: FileServiceSchema },
       { name: collectionsName.supportTicket, schema: SupportTicketSchema },
       { name: collectionsName.customer, schema: CustomerSchema },
+      { name: collectionsName.employee, schema: EmployeeSchema },
     ]),
     StorageServiceModule,
     forwardRef(() => QueueManagerModule),

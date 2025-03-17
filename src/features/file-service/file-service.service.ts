@@ -43,6 +43,7 @@ import { FileProcessQueueProducers } from '../queue-manager/producers/file.queue
 import { AdminPricingService } from '../admin-pricing/admin-pricing.service';
 import { AdminPrices } from '../admin-pricing/schema/admin-pricing.schema';
 import { PRICING_TYPE_ENUM } from '../constant/enums/pricing-type.enum';
+import { CatapushMessageProducer } from '../queue-manager/producers/catapush-message.producer';
 
 const timeOutAsync = promisify(setTimeout);
 
@@ -68,6 +69,7 @@ export class FileServiceService {
     private readonly scriptService: ScriptService,
     private readonly emailQueueProducers: EmailQueueProducers,
     private readonly fileProcessProducer: FileProcessQueueProducers,
+    private readonly catapushMessageProducer: CatapushMessageProducer,
   ) {}
 
   async findById(id: Types.ObjectId): Promise<FileService> {
@@ -681,6 +683,10 @@ ResellerCredits= 10
           emailType: EMAIL_TYPE.newFileNotification,
           uniqueId: newFileService.uniqueId,
         });
+
+        const message = `Customer ${customer.firstName} ${customer.lastName} has requested a solution for the file ${newFileService.uniqueId}.`;
+
+        this.catapushMessageProducer.sendCatapushMessage(prepareSolutionDto.admin, message, 'admin');
       }
 
       return result;
@@ -1095,7 +1101,14 @@ ResellerCredits= 10
 
         if (admin.credits < fileServiceData.adminCredits) throw new BadRequestException('Not enough admin credits');
 
-        const customer = await this.customerService.findById(fileServiceData.customer as Types.ObjectId);
+        const customer = await this.customerService.findByIdAndSelect(fileServiceData.customer, [
+          'firstName',
+          'lastName',
+          'email',
+          'phone',
+          'countryCode',
+          'credits',
+        ]);
         if (customer.credits < fileServiceData.credits) throw new BadRequestException('Not enough credits');
 
         const buildData = await this.buildSolution(
@@ -1112,6 +1125,10 @@ ResellerCredits= 10
           emailType: EMAIL_TYPE.fileReady,
           uniqueId: fileServiceData.uniqueId,
         });
+
+        const message = `Your mod file for the file service ID ${fileServiceData.uniqueId} is ready to download.`;
+        const phone = `${customer.countryCode.replace('+', '')}${customer.phone}`;
+        this.catapushMessageProducer.sendCatapushMessage(fileServiceData.admin, message, 'customer', phone);
 
         delete buildData.fileService._id;
         delete buildData.tempFileService._id;
@@ -1310,6 +1327,8 @@ ResellerCredits= 10
         'lastName',
         'email',
         'credits',
+        'countryCode',
+        'phone',
       ]);
 
       if (!this.isSuperAdminId(fileService.admin)) {
@@ -1364,6 +1383,10 @@ ResellerCredits= 10
       await fileService.save({ session });
 
       await session.commitTransaction();
+
+      const message = `Your mod file for the file service ID ${fileService.uniqueId} is ready to download.`;
+      const phone = `${customer.countryCode.replace('+', '')}${customer.phone}`;
+      this.catapushMessageProducer.sendCatapushMessage(fileService.admin, message, 'customer', phone);
 
       //send email after all the job done
       this.emailQueueProducers.sendMail({
