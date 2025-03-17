@@ -289,7 +289,6 @@ export class FileServiceService {
       car.name,
       controller.name,
     );
-
     const admin = await this.adminService.findByIdAndSelect(automatisationDto.admin, ['aiAssist']);
     if (admin.aiAssist || this.isSuperAdminId(automatisationDto.admin)) {
       //ai assist exist then forward it to ai assist
@@ -653,7 +652,7 @@ ResellerCredits= 10
         const adminData = await this.adminService.findById(admin);
 
         //send the request to the queue for winols
-        this.fileProcessProducer.processFile({ fileServiceData: newFileService, tempFileService, admin: adminData });
+        // this.fileProcessProducer.processFile({ fileServiceData: newFileService, tempFileService, admin: adminData });
       }
 
       /**
@@ -1277,7 +1276,7 @@ ResellerCredits= 10
     return await this.fileServiceModel.findByIdAndUpdate(fileServiceId, { $set: { aiAssist } }, { new: true });
   }
 
-  async isSuperAdminId(adminId: Types.ObjectId) {
+  isSuperAdminId(adminId: Types.ObjectId) {
     return adminId.toString() === process.env.SUPER_ADMIN_ID.toString();
   }
 

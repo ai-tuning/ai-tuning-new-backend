@@ -26,12 +26,13 @@ export class FileBuildQueueConsumer {
       data: any;
     };
     console.log('build consumer data==>', data);
-    this.fileQueueProducers.buildFileProcess({
-      fileServiceData: data.fileServiceData,
-      tempFileService: data.tempFileService,
-      admin: data.admin,
-      data: data.data,
-    });
+    // this.fileQueueProducers.buildFileProcess({
+    //   fileServiceData: data.fileServiceData,
+    //   tempFileService: data.tempFileService,
+    //   admin: data.admin,
+    //   data: data.data,
+    // });
+    return true;
   }
 
   @OnQueueCompleted()
