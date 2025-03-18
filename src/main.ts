@@ -27,6 +27,7 @@ async function bootstrap() {
     'https://ecufiles-austria.com',
     'https://www.ecufiles-austria.com',
     'https://admin.ecufiles-austria.com',
+    'https://dyno-files.org',
   ];
 
   if (process.env.NODE_ENV === 'development') {
