@@ -23,6 +23,7 @@ async function bootstrap() {
     'https://portal.ai-tuningfiles.com',
     'https://portal.tuningfile-server.com',
     'https://portal.remap.no',
+    'https://admin.remap.no',
     'https://ecufiles-austria.com',
     'https://www.ecufiles-austria.com',
   ];
