@@ -1,12 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
-import { CustomValidationPipe } from '../common/validation-helper/custom-validation-pipe';
 import { Connection, Model, Types } from 'mongoose';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { collectionsName, RolesEnum } from '../constant';
 import { Employee, EmployeeDocument } from './schema/employee.schema';
-import { AvatarDto } from '../customer/dto/avatar.dto';
 import { UserService } from '../user/user.service';
 import { IAuthUser } from '../common';
 
@@ -23,6 +21,8 @@ export class EmployeeService {
     try {
       session.startTransaction();
       const { password, ...rest } = createEmployeeDto;
+
+      createEmployeeDto.email = createEmployeeDto.email.toLowerCase();
 
       const employee = new this.employeeModel(rest);
 

@@ -31,6 +31,8 @@ export class AdminService {
       session.startTransaction();
       const { password, ...rest } = createAdminDto;
 
+      createAdminDto.email = createAdminDto.email.toLowerCase();
+
       //check the username already used or nt
       const adminExist = await this.adminModel.exists({ username: createAdminDto.username }).lean<AdminDocument>();
       if (adminExist) {

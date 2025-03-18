@@ -48,7 +48,7 @@ export class AuthService {
    */
 
   async logIn(loginDto: LoginDto): Promise<AuthResponse> {
-    const user = await this.userService.getUserByEmail(loginDto.email);
+    const user = await this.userService.getUserByEmail(loginDto.email.toLowerCase());
     if (!user) throw new NotAcceptableException('User not found');
 
     //check if the user status new or active
@@ -114,13 +114,14 @@ export class AuthService {
     } else {
       registrationDto.admin = new Types.ObjectId(process.env.SUPER_ADMIN_ID);
     }
+    registrationDto.email = registrationDto.email.toLowerCase();
     const data = await this.customerService.create(registrationDto);
     return data;
   }
 
   async verifyCode(email: string, code: string) {
     const session = await this.connection.startSession();
-
+    email = email.toLocaleLowerCase();
     try {
       session.startTransaction();
       const isVerified = await this.verificationMailService.verifyEmail(
@@ -159,7 +160,7 @@ export class AuthService {
 
   async verifyCodeAndResetPassword(email: string, code: string, password: string) {
     const session = await this.connection.startSession();
-
+    email = email.toLocaleLowerCase();
     try {
       session.startTransaction();
       const isVerified = await this.verificationMailService.verifyEmail(
@@ -201,6 +202,7 @@ export class AuthService {
   async resendCode(email: string, verificationType: VerificationEmailEnum) {
     if (!email) throw new NotAcceptableException('Email is required');
     const user = await this.userService.getUserByEmail(email);
+    email = email.toLocaleLowerCase();
     if (!user) throw new NotAcceptableException('User not found');
     const generateVerificationCode = await this.verificationMailService.createVerificationEmail(
       email,
