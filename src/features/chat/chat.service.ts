@@ -125,7 +125,6 @@ export class ChatService {
           const message = `New message from "${customer.firstName} ${customer.lastName}" ticket number ${idNumber}`;
           this.catapushMessageProducer.sendCatapushMessage(createChatDto.admin, message, 'admin');
         } else {
-          console.log('enter');
           const customer = await this.customerModel
             .findById(createChatDto.customer)
             .select('email phone firstName lastName countryCode');
@@ -134,7 +133,7 @@ export class ChatService {
             const phone = customer.countryCode
               ? customer.countryCode.replace('+', '') + customer.phone
               : customer.phone;
-            this.catapushMessageProducer.sendCatapushMessage(createChatDto.admin, message, 'admin', phone);
+            this.catapushMessageProducer.sendCatapushMessage(createChatDto.admin, message, 'customer', phone);
           }
         }
       }
