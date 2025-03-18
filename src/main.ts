@@ -26,6 +26,7 @@ async function bootstrap() {
     'https://admin.remap.no',
     'https://ecufiles-austria.com',
     'https://www.ecufiles-austria.com',
+    'https://admin.ecufiles-austria.com',
   ];
 
   if (process.env.NODE_ENV === 'development') {
