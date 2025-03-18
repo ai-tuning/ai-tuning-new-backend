@@ -36,8 +36,12 @@ export class FileServiceController {
   }
 
   @Get(':fileServiceId')
-  async findById(@Param('fileServiceId') fileServiceId: Types.ObjectId, @Query('adminId') adminId: Types.ObjectId) {
-    return this.fileServiceService.findSingleById(fileServiceId, adminId);
+  async findById(
+    @Param('fileServiceId') fileServiceId: Types.ObjectId,
+    @Query('adminId') adminId: Types.ObjectId,
+    @AuthUser() authUser: IAuthUser,
+  ) {
+    return this.fileServiceService.findSingleById(fileServiceId, adminId, authUser);
   }
 
   @UseInterceptors(FileInterceptor('file'))

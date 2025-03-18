@@ -76,9 +76,15 @@ export class FileServiceService {
     return this.fileServiceModel.findById(id).lean<FileService>();
   }
 
-  async findSingleById(id: Types.ObjectId, adminId: Types.ObjectId): Promise<FileService> {
+  async findSingleById(id: Types.ObjectId, adminId: Types.ObjectId, authUser: IAuthUser): Promise<FileService> {
+    const query = { _id: id };
+
+    if (!this.isSuperAdminId(authUser.admin)) {
+      query['admin'] = adminId;
+    }
+
     return this.fileServiceModel
-      .findOne({ _id: id, admin: adminId })
+      .findOne(query)
       .populate({
         path: 'customer',
         select: 'firstName lastName email',
