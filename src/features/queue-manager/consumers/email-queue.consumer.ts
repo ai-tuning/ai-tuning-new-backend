@@ -17,6 +17,8 @@ export class EmailQueueConsumer {
       await this.mailService.sendLoginCode({ receiver: data.receiver, code: data.code, name: data.name });
     } else if (data.emailType === EMAIL_TYPE.welcomeEmail) {
       await this.mailService.sendWelcomeMail({ receiver: data.receiver, name: data.name });
+    } else if (data.emailType === EMAIL_TYPE.resetPasswordEmail) {
+      await this.mailService.resetPassword({ receiver: data.receiver, code: data.code, name: data.name });
     } else if (data.emailType === EMAIL_TYPE.fileReady) {
       await this.mailService.fileReady({ receiver: data.receiver, name: data.name, uniqueId: data.uniqueId });
     } else if (data.emailType === EMAIL_TYPE.requestSolution) {

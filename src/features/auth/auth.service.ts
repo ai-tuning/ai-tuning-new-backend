@@ -208,7 +208,7 @@ export class AuthService {
     );
     this.emailQueueProducers.sendMail({
       receiver: email,
-      emailType: EMAIL_TYPE.verifyEmail,
+      emailType: EMAIL_TYPE.resetPasswordEmail,
       code: generateVerificationCode.code,
       name: '',
     });

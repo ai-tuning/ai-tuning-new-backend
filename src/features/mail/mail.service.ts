@@ -349,6 +349,27 @@ export class MailService {
     };
     await this.authTransporter().sendMail(mailOptions);
   }
+  async resetPassword(data: { receiver: string; code: string; name: string }) {
+    const mailOptions = {
+      from: `AI Tuning Files <${this.config.smtp_auth_email}>`,
+      to: data.receiver,
+      subject: 'Reset your password',
+      html: this.emailTemplate(
+        'Password Reset Request',
+        'support@ai-tuningfiles.com',
+        `<td class="email-content">
+                <h2>Hello, ${data.name}!</h2>
+                <div class="highlight">
+                    <strong>Details:</strong>
+                    <p>Please use the code provided in below to reset your password.</p>
+                   <h3>  Your code is ${data.code}</h3>
+                </div>
+                <p>If you didn't request a password reset, please ignore this email or contact our support team.</p>
+            </td>`,
+      ),
+    };
+    await this.authTransporter().sendMail(mailOptions);
+  }
 
   async sendWelcomeMail(data: { receiver: string; name: string }) {
     const mailOptions = {
