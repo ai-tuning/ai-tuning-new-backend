@@ -935,6 +935,9 @@ ResellerCredits= 10
         if (!fs.existsSync(inputPath)) {
             await fs.promises.mkdir(inputPath, { recursive: true });
         }
+        if (!fs.existsSync(outputPath)) {
+            await fs.promises.mkdir(outputPath, { recursive: true });
+        }
 
         //copy the binfile to the winols input folder
         await fs.promises.copyFile(binFilePath, path.join(inputPath, fileService.originalFile.uniqueName));
