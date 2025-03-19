@@ -4,11 +4,11 @@ import { Public } from '../common';
 
 @Controller('migration')
 export class MigrationController {
-  constructor(private readonly migrationService: MigrationService) {}
+    constructor(private readonly migrationService: MigrationService) {}
 
-  @Public()
-  @Get()
-  async migrate() {
-    return await this.migrationService.migrate();
-  }
+    @Public()
+    @Get()
+    async migrate() {
+        return await this.migrationService.migrate();
+    }
 }

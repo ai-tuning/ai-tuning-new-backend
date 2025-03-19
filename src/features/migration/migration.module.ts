@@ -19,58 +19,58 @@ import { AdminSchema } from '../admin/schema/admin.schema';
 import { PricingSchema } from '../pricing/schema/pricing.schema';
 
 @Module({
-  imports: [
-    AdminModule,
-    CustomerModule,
-    InvoiceModule,
-    MongooseModule.forFeature([
-      {
-        name: collectionsName.customer,
-        schema: CustomerSchema,
-      },
-      {
-        name: collectionsName.invoice,
-        schema: InvoiceSchema,
-      },
-      {
-        name: collectionsName.car,
-        schema: CarSchema,
-      },
-      {
-        name: collectionsName.controller,
-        schema: CarControllerSchema,
-      },
-      {
-        name: collectionsName.solution,
-        schema: SolutionSchema,
-      },
-      {
-        name: collectionsName.customerType,
-        schema: CustomerTypeSchema,
-      },
-      {
-        name: collectionsName.user,
-        schema: UserSchema,
-      },
-      {
-        name: collectionsName.fileService,
-        schema: FileServiceSchema,
-      },
-      {
-        name: collectionsName.admin,
-        schema: AdminSchema,
-      },
-      {
-        name: collectionsName.solution,
-        schema: SolutionSchema,
-      },
-      {
-        name: collectionsName.pricing,
-        schema: PricingSchema,
-      },
-    ]),
-  ],
-  controllers: [MigrationController],
-  providers: [MigrationService, PathService],
+    imports: [
+        AdminModule,
+        CustomerModule,
+        InvoiceModule,
+        MongooseModule.forFeature([
+            {
+                name: collectionsName.customer,
+                schema: CustomerSchema,
+            },
+            {
+                name: collectionsName.invoice,
+                schema: InvoiceSchema,
+            },
+            {
+                name: collectionsName.car,
+                schema: CarSchema,
+            },
+            {
+                name: collectionsName.controller,
+                schema: CarControllerSchema,
+            },
+            {
+                name: collectionsName.solution,
+                schema: SolutionSchema,
+            },
+            {
+                name: collectionsName.customerType,
+                schema: CustomerTypeSchema,
+            },
+            {
+                name: collectionsName.user,
+                schema: UserSchema,
+            },
+            {
+                name: collectionsName.fileService,
+                schema: FileServiceSchema,
+            },
+            {
+                name: collectionsName.admin,
+                schema: AdminSchema,
+            },
+            {
+                name: collectionsName.solution,
+                schema: SolutionSchema,
+            },
+            {
+                name: collectionsName.pricing,
+                schema: PricingSchema,
+            },
+        ]),
+    ],
+    controllers: [MigrationController],
+    providers: [MigrationService, PathService],
 })
 export class MigrationModule {}

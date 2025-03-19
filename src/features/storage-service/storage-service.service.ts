@@ -127,4 +127,44 @@ export class StorageService {
     );
     return Body as Readable;
   }
+
+  /**
+   * Replace a file in S3.
+   * @param dirName Folder name (acts as a prefix in S3)
+   * @param file File object
+   * @returns Public URL of the replaced file
+   */
+  async replace(dirName: string, file: { name: string; path: string }) {
+    const key = `${dirName}/${file.name}`;
+
+    // Delete the existing file (if it exists)
+    try {
+      await this.client.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+        }),
+      );
+    } catch (error) {
+      // If the file doesn't exist, the delete operation will throw an error.
+      // We can safely ignore this error, as we're going to upload the new file anyway.
+      if (error.name !== 'NoSuchKey') {
+        throw error; // Re-throw other errors
+      }
+    }
+
+    // Upload the new file
+    const fileContent = fs.createReadStream(file.path);
+    const upload = new Upload({
+      client: this.client,
+      params: {
+        Bucket: this.bucketName,
+        Key: key,
+        Body: fileContent,
+      },
+    });
+    await upload.done();
+
+    return key;
+  }
 }

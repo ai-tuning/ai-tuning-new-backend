@@ -28,7 +28,7 @@ export class ScriptService {
     originalFile: Express.Multer.File | FileSchema,
     modFiles: Express.Multer.File[],
   ) {
-    let originalFilePath: string;
+    let binFilePath: string;
     let modFilesPath: string[] = [];
 
     try {
@@ -44,28 +44,44 @@ export class ScriptService {
           throw new NotFoundException('File service not found');
         }
         // fileService.originalFile = originalFile as FileSchema;
+        const fileServicePath = this.pathService.getFileServicePath(
+          fileService.admin,
+          fileService._id as Types.ObjectId,
+        );
+
+        let key = '';
+
+        if (!fs.existsSync(fileServicePath)) {
+          await fs.promises.mkdir(fileServicePath);
+        }
 
         //download the original file
         if (fileService.slaveType) {
-          originalFilePath = this.pathService.getTempFilePath(fileService.decodedFile.uniqueName);
+          binFilePath = path.join(fileServicePath, fileService.decodedFile.uniqueName);
+
+          key = fileService.decodedFile.key;
         } else {
-          originalFilePath = this.pathService.getTempFilePath(fileService.originalFile.uniqueName);
+          // binFilePath = this.pathService.getTempFilePath(fileService.originalFile.uniqueName);
+          binFilePath = path.join(fileServicePath, fileService.originalFile.uniqueName);
+          key = fileService.originalFile.key;
         }
 
-        const fileData = await this.storageService.download(fileService.originalFile.key);
-        await fs.promises.writeFile(originalFilePath, fileData);
+        if (!fs.existsSync(binFilePath)) {
+          const fileData = await this.storageService.download(key);
+          await fs.promises.writeFile(binFilePath, fileData);
+        }
       } else {
         if (!originalFile) throw new BadRequestException('Original file is required');
         const oriFile = originalFile as Express.Multer.File;
-        originalFilePath = oriFile.path;
+        binFilePath = oriFile.path;
       }
 
-      if (!fs.existsSync(originalFilePath)) {
+      if (!fs.existsSync(binFilePath)) {
         throw new BadRequestException('Original file not found');
       }
 
       //check if the file size is different
-      if (this.compareFileSize(originalFilePath, modFiles)) {
+      if (this.compareFileSize(binFilePath, modFiles)) {
         throw new BadRequestException('Mod files must be same size as original file');
       }
 
@@ -84,7 +100,7 @@ export class ScriptService {
         fs.mkdirSync(completeScriptPath, { recursive: true });
       }
 
-      const originalFileContent = await fs.promises.readFile(originalFilePath);
+      const originalFileContent = await fs.promises.readFile(binFilePath);
 
       const scriptPayload = []; //for storing script for db
 
@@ -122,13 +138,12 @@ export class ScriptService {
       throw error;
     } finally {
       for (const modFilePath of modFilesPath) {
-        console.log(modFilePath);
         if (fs.existsSync(modFilePath)) {
           fs.rmSync(modFilePath, { recursive: true, force: true });
         }
       }
-      if (originalFilePath && fs.existsSync(originalFilePath)) {
-        fs.rmSync(originalFilePath, { recursive: true, force: true });
+      if (binFilePath && fs.existsSync(binFilePath)) {
+        fs.rmSync(binFilePath, { recursive: true, force: true });
       }
     }
   }

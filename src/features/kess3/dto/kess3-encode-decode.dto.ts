@@ -37,7 +37,7 @@ export class EncodeKess3FileDto {
 
   @IsNotEmpty()
   @IsMongoId()
-  tempFileId: Types.ObjectId;
+  fileServiceId: Types.ObjectId;
 
   @IsNotEmpty()
   @IsString()

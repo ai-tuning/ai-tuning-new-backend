@@ -60,33 +60,34 @@ export class PathService {
   /**
    * get file service path
    * @param adminId
-   * @param uniqueName
+   * @param id
    * @returns
    */
-  getFileServicePath(adminId: Types.ObjectId | string, tempFileId: Types.ObjectId | string) {
-    return join(process.cwd(), 'public', 'file-services', adminId.toString(), tempFileId.toString());
+  getFileServicePath(adminId: Types.ObjectId | string, id: Types.ObjectId | string) {
+    return join(process.cwd(), 'public', 'file-services', adminId.toString(), id.toString());
   }
 
   getCarLogoPath() {
     return join(process.cwd(), 'public', 'car-logos');
   }
 
-  //winOLS paths
+  //winOLS paths==============
+
   //for other amdin
   getWinolsInputPath(username: string) {
     return join(process.cwd(), 'public', 'winols', username, 'in');
   }
 
+  getWinolsOutPath(username: string, filename: string) {
+    return join(process.cwd(), 'public', 'winols', username, 'out', filename);
+  }
+
   //for super admin/ai tuning
   getAIWinolsInputPath() {
-    return join(process.cwd(), 'public', 'winols', 'in');
+    return join(process.cwd(), 'public', 'winols', 'ai_main', 'in');
   }
 
   getAIWinolsOutPath(filename: string) {
-    return join(process.cwd(), 'public', 'winols', 'out', filename);
-  }
-
-  getWinolsOutPath(username: string, filename: string) {
-    return join(process.cwd(), 'public', 'winols', username, 'out', filename);
+    return join(process.cwd(), 'public', 'winols', 'ai_main', 'out', filename);
   }
 }

@@ -20,7 +20,7 @@ export class FileProcessQueueConsumer {
   @Process({ concurrency: 10, name: queueNames.fileProcessQueue })
   async process(job: Job<unknown>): Promise<any> {
     const data = job.data as { fileServiceData: FileService; tempFileService: TempFileService; admin: Admin };
-    const result = await this.fileService.fileProcess(data.fileServiceData, data.tempFileService, data.admin);
+    const result = await this.fileService.fileProcess(data.fileServiceData, data.admin);
     return result;
   }
 
@@ -29,7 +29,6 @@ export class FileProcessQueueConsumer {
     const data = job.data as { fileServiceData: FileService; tempFileService: TempFileService; admin: Admin };
     this.fileQueueProducers.buildFileProcess({
       fileServiceData: data.fileServiceData,
-      tempFileService: data.tempFileService,
       admin: data.admin,
       data: result,
     });

@@ -20,7 +20,7 @@ const queues = [
   { name: queueNames.activityQueue, defaultJobOptions: { removeOnComplete: true, removeOnFail: true, attempts: 2 } },
   { name: queueNames.fileProcessQueue, defaultJobOptions: { removeOnComplete: true, removeOnFail: true } },
   {
-    name: queueNames.solutionBuildQueue,
+    name: queueNames.fileBuildQueue,
     defaultJobOptions: { removeOnComplete: true, removeOnFail: true },
   },
   {

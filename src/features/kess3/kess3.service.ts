@@ -126,7 +126,7 @@ export class Kess3Service {
    */
   private async downloadEncodeFile(
     adminId: Types.ObjectId,
-    tempFileId: Types.ObjectId,
+    fileServiceId: Types.ObjectId,
     fileSlotGUID: string,
     fileGUID: string,
     token: string,
@@ -137,7 +137,7 @@ export class Kess3Service {
       url: `/api/kess3/file-slots/${fileSlotGUID}/files/${fileGUID}?download=true`,
     });
 
-    const basePath = path.join(this.pathService.getFileServicePath(adminId, tempFileId));
+    const basePath = path.join(this.pathService.getFileServicePath(adminId, fileServiceId));
 
     if (!fs.existsSync(basePath)) fs.mkdirSync(basePath);
 
@@ -407,7 +407,7 @@ export class Kess3Service {
 
       const encodedData = await this.downloadEncodeFile(
         adminId,
-        encodePayload.tempFileId,
+        encodePayload.fileServiceId,
         asyncInformation.slotGUID,
         asyncInformation.result.kess3FileGUID,
         token,

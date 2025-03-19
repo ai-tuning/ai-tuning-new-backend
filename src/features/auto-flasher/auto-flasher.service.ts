@@ -20,7 +20,7 @@ interface AutoFlasherEncodeDto {
   memory_type: string;
   filePath: string;
   adminId: Types.ObjectId;
-  tempFileId: Types.ObjectId;
+  fileServiceId: Types.ObjectId;
 }
 
 @Injectable()
@@ -217,7 +217,7 @@ export class AutoFlasherService {
     const name = parseFile.name.replace(/decoded/gi, 'modified');
 
     const basePath = path.join(
-      this.pathService.getFileServicePath(autoFlasherEncodeDto.adminId, autoFlasherEncodeDto.tempFileId),
+      this.pathService.getFileServicePath(autoFlasherEncodeDto.adminId, autoFlasherEncodeDto.fileServiceId),
     );
 
     if (!fs.existsSync(basePath)) fs.mkdirSync(basePath);

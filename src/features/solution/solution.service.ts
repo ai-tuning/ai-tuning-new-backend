@@ -60,6 +60,10 @@ export class SolutionService {
     return this.solutionModel.find().lean<Solution[]>();
   }
 
+  findByIds(id: Types.ObjectId[]) {
+    return this.solutionModel.find({ _id: { $in: id } }).lean<Solution[]>();
+  }
+
   findByIdsAndDistinctName(solutions: Types.ObjectId[]) {
     return this.solutionModel
       .find({ _id: { $in: solutions } })

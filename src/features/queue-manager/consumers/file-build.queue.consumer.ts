@@ -1,38 +1,30 @@
-import { Processor, Process, OnQueueCompleted, OnQueueFailed } from '@nestjs/bull';
 import { Job } from 'bull';
+import { Types } from 'mongoose';
+import { Processor, Process, OnQueueCompleted, OnQueueFailed } from '@nestjs/bull';
 
 import { queueNames, WinOLS_STATUS } from '../../constant';
 import { Injectable } from '@nestjs/common';
 import { FileServiceService } from 'src/features/file-service/file-service.service';
 import { FileService } from 'src/features/file-service/schema/file-service.schema';
 import { Admin } from 'src/features/admin/schema/admin.schema';
-import { FileProcessQueueProducers } from '../producers/file.queue.producer';
-import { Types } from 'mongoose';
-import { TempFileService } from 'src/features/file-service/schema/temp-file.schema';
 
 @Injectable()
-@Processor(queueNames.solutionBuildQueue)
+@Processor(queueNames.fileBuildQueue)
 export class FileBuildQueueConsumer {
-  constructor(
-    private readonly fileService: FileServiceService,
-    private readonly fileQueueProducers: FileProcessQueueProducers,
-  ) {}
-  @Process({ concurrency: 10, name: queueNames.solutionBuildQueue })
+  constructor(private readonly fileService: FileServiceService) {}
+  @Process({ concurrency: 10, name: queueNames.fileBuildQueue })
   async process(job: Job<unknown>): Promise<any> {
     const data = job.data as {
       fileServiceData: FileService;
-      tempFileService: TempFileService;
       admin: Admin;
-      data: any;
+      data: {
+        binFilePath: string;
+        outFiles: string[];
+        outputPath: string;
+      };
     };
     console.log('build consumer data==>', data);
-    // this.fileQueueProducers.buildFileProcess({
-    //   fileServiceData: data.fileServiceData,
-    //   tempFileService: data.tempFileService,
-    //   admin: data.admin,
-    //   data: data.data,
-    // });
-    return true;
+    return await this.fileService.buildFileProcess(data.fileServiceData, data.admin, data.data);
   }
 
   @OnQueueCompleted()

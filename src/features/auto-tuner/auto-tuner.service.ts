@@ -15,7 +15,7 @@ interface AutoTunerEncodePayload {
   mcu_id: string;
   filePath: string;
   adminId: Types.ObjectId;
-  tempFileId: Types.ObjectId;
+  fileServiceId: Types.ObjectId;
 }
 
 @Injectable()
@@ -88,7 +88,7 @@ export class AutoTunerService {
     const name = parseFile.name.replace(/decoded/gi, 'modified');
 
     const basePath = path.join(
-      this.pathService.getFileServicePath(autoTunerEncodeDto.adminId, autoTunerEncodeDto.tempFileId),
+      this.pathService.getFileServicePath(autoTunerEncodeDto.adminId, autoTunerEncodeDto.fileServiceId),
     );
 
     if (!fs.existsSync(basePath)) fs.mkdirSync(basePath);

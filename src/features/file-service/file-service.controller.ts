@@ -74,6 +74,12 @@ export class FileServiceController {
     return { data, message: 'Your request is submitted successfully' };
   }
 
+  @Get('manual-build/:fileServiceId')
+  async manualBuild(@Param('fileServiceId') fileServiceId: Types.ObjectId) {
+    const data = await this.fileServiceService.manualBuild(fileServiceId);
+    return { data, message: 'Manual build successful' };
+  }
+
   @Patch('ai-assistant')
   async updateAiAssistant(@Body() body: { fileServiceId: Types.ObjectId; aiAssist: boolean }) {
     if (!body.fileServiceId) throw new BadRequestException('File service not found');

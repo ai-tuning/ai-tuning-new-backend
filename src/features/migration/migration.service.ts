@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Pool, createPool } from 'mysql2/promise';
-import { collectionsName } from '../constant';
+import { collectionsName, UserStatusEnum } from '../constant';
 import { Model, Types } from 'mongoose';
 import { CustomerService } from '../customer/customer.service';
 import { InjectModel } from '@nestjs/mongoose';
@@ -18,6 +18,10 @@ import { Admin } from '../admin/schema/admin.schema';
 import { FileService } from '../file-service/schema/file-service.schema';
 import { Pricing } from '../pricing/schema/pricing.schema';
 import * as bcrypt from 'bcrypt';
+import * as csv from 'csv-parser';
+import * as fs from 'fs';
+import * as path from 'path';
+import { CreateCustomerDto } from '../customer/dto/create-customer.dto';
 
 @Injectable()
 export class MigrationService {
@@ -57,13 +61,14 @@ export class MigrationService {
   }
 
   async migrate() {
+    // return this.insertCsvUserData();
     //create cars
     // await this.manualCarCreation();
     //create solutions
     // await this.migrateSolution();
-    const [dealers] = (await this.connection.query('SELECT * FROM dealers')) as any[];
+    // const [dealers] = (await this.connection.query('SELECT * FROM dealers')) as any[];
     // const customerPayload: CreateCustomerDto[] = [];
-    const existingCustomers = await this.customerModel.find();
+    // const existingCustomers = await this.customerModel.find();
     // const existingInvoices = await this.invoiceModel.find().lean();
     // for (const dealer of dealers) {
     //   const countryInfo = countriesObject[dealer.location];
@@ -248,12 +253,9 @@ export class MigrationService {
     //   pricing.priceLimits = findExitingPricing.priceLimits;
     //   pricing.save();
     // }
-
     // const userUpdatePayload = [];
-
     // for (const dealer of dealers) {
     //   const customer = existingCustomers.find((customer) => customer.mysqlId == dealer.Id);
-
     //   if (customer) {
     //     if (dealer.password) {
     //       console.log('dealer.password', dealer.password);
@@ -327,4 +329,61 @@ export class MigrationService {
   //   }
   //   await this.solutionModel.insertMany(solutionPayload);
   // }
+
+  async insertCsvUserData() {
+    const csvPath = path.join(process.cwd(), 'kunder.csv');
+    //create read stream of the csv file
+    const results = [];
+    const customers = await this.customerModel.find();
+    fs.createReadStream(csvPath)
+      .pipe(csv())
+      .on('data', (data) => {
+        const obj = {};
+        for (const key in data) {
+          let cleanedKey = key.replace(/\t/g, ''); //remove tabs
+          if (cleanedKey.charCodeAt(0) === 0xfeff) {
+            // Check for BOM
+            cleanedKey = cleanedKey.slice(1); // Remove BOM
+          }
+          obj[cleanedKey.toLowerCase()] = data[key];
+        }
+        results.push(obj);
+      })
+      .on('end', async () => {
+        for (const customer of results) {
+          const [firstName, ...lastNameArr] = customer.name.split(' ');
+          const lastName = lastNameArr.join(' ');
+
+          const findExisting = customers.find((item) => item.email === customer.email);
+          if (findExisting) {
+            if (findExisting.admin.toString() !== '67d2f76b05303a1adbdad2dd') {
+              console.log(customer.email, findExisting.admin);
+            }
+            continue;
+          }
+
+          const customerObj: CreateCustomerDto = {
+            admin: new Types.ObjectId('67d2f76b05303a1adbdad2dd'),
+            email: customer.email,
+            password: customer.password || '123456',
+            firstName,
+            lastName,
+            phone: '1234567890',
+            address: 'demo address',
+            city: 'demo city',
+            country: 'demo country',
+            postcode: '1234',
+            credits: 0,
+            companyName: customer.company || 'demo company',
+            countryCode: 'NO',
+            status: UserStatusEnum.ACTIVE,
+            customerType: new Types.ObjectId('67d2f76b05303a1adbdad2e6'),
+            street: 'demo streen',
+          };
+          // console.log(customerObj);
+          await this.customerService.create(customerObj);
+          console.log('customer created===>', customerObj.email);
+        }
+      });
+  }
 }

@@ -229,7 +229,7 @@ export class ChatService {
       return this.kess3Service.encodeFile(
         {
           uniqueId: fileService.kess3.uniqueId,
-          tempFileId: fileService._id as Types.ObjectId,
+          fileServiceId: fileService._id as Types.ObjectId,
           filePath: modifiedFilePath,
           fileSlotGUID: fileService.kess3.fileSlotGUID,
           fileType: fileService.kess3.fileType,
@@ -240,7 +240,7 @@ export class ChatService {
       );
     } else if (fileService.slaveType === SLAVE_TYPE.AUTO_TUNER) {
       return this.autoTunerService.encode({
-        tempFileId: fileService._id as Types.ObjectId,
+        fileServiceId: fileService._id as Types.ObjectId,
         adminId: fileService.admin,
         ecu_id: fileService.autoTuner.ecu_id,
         filePath: modifiedFilePath,
@@ -250,7 +250,7 @@ export class ChatService {
       });
     } else if (fileService.slaveType === SLAVE_TYPE.AUTO_FLASHER) {
       return this.autoFlasherService.encode({
-        tempFileId: fileService._id as Types.ObjectId,
+        fileServiceId: fileService._id as Types.ObjectId,
         adminId: fileService.admin,
         filePath: modifiedFilePath,
         memory_type: fileService.autoFlasher.memory_type,

@@ -4,7 +4,6 @@ import { Queue } from 'bull';
 import { Admin, AdminDocument } from 'src/features/admin/schema/admin.schema';
 import { queueNames } from 'src/features/constant';
 import { FileService } from 'src/features/file-service/schema/file-service.schema';
-import { TempFileService } from 'src/features/file-service/schema/temp-file.schema';
 
 /**
  * Producer are used to inject task to the queue
@@ -14,10 +13,10 @@ import { TempFileService } from 'src/features/file-service/schema/temp-file.sche
 export class FileProcessQueueProducers {
   constructor(
     @InjectQueue(queueNames.fileProcessQueue) private fileProcessQueue: Queue,
-    @InjectQueue(queueNames.solutionBuildQueue) private solutionBuildQueue: Queue,
+    @InjectQueue(queueNames.fileBuildQueue) private fileBuildQueue: Queue,
   ) {}
 
-  processFile(data: { fileServiceData: FileService; tempFileService: TempFileService; admin: AdminDocument }) {
+  processFile(data: { fileServiceData: FileService; admin: AdminDocument }) {
     this.fileProcessQueue.add(queueNames.fileProcessQueue, data, {
       removeOnComplete: true,
     });
@@ -25,7 +24,6 @@ export class FileProcessQueueProducers {
 
   buildFileProcess(data: {
     fileServiceData: FileService;
-    tempFileService: TempFileService;
     admin: Admin;
     data: {
       binFilePath: string;
@@ -33,7 +31,7 @@ export class FileProcessQueueProducers {
       outputPath: string;
     };
   }) {
-    this.solutionBuildQueue.add(queueNames.solutionBuildQueue, data, {
+    this.fileBuildQueue.add(queueNames.fileBuildQueue, data, {
       removeOnComplete: true,
     });
   }
