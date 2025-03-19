@@ -1195,11 +1195,28 @@ ResellerCredits= 10
             }
         }
 
-        const allSolutionName = [];
+        const tempSolutions = [];
+        const newAutomaticSolutionId = new Set();
         for (const solution of matchedSolutions) {
-            allSolutionName.push(solution.solution.name);
+            tempSolutions.push(solution.solution.name);
+            newAutomaticSolutionId.add(solution.solution._id);
         }
-        console.log('all solutoin name from build function', allSolutionName);
+
+        const allSolutionName = [...new Set(tempSolutions)];
+
+        const requestedSolutions = new Set(fileService.solutions.requested);
+
+        //remove from requested solutions of found in automatic
+        for (const requestedSolution of requestedSolutions) {
+            if (newAutomaticSolutionId.has(requestedSolution)) {
+                requestedSolutions.delete(requestedSolution);
+            }
+        }
+
+        if (requestedSolutions.size) {
+            const requestedSolutionName = await this.solutionService.findByIdsAndDistinctName([...requestedSolutions]);
+            throw new BadRequestException('Missing Solution ' + requestedSolutionName.join(', '));
+        }
 
         const modifiedFileName = `MOD_${allSolutionName.join('_')}_${fileService.originalFile.originalname.replace(/Original/i, 'modified')}`;
 
