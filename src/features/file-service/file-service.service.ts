@@ -756,46 +756,39 @@ ResellerCredits= 10
 
     async matchScriptAndSolution(fileBufferContent: Buffer, scriptPath: string, solutions: Solution[]) {
         const scriptFiles = await fs.promises.readdir(scriptPath);
+        let remainingSolutions = [...solutions]; // Create a copy to avoid modifying the original array
 
-        const limit = pLimit(10);
-        //get the match script files
-        const matchingScripts = await Promise.all(
-            scriptFiles.map((scriptFile) =>
-                limit(async () => {
-                    const scriptFilePath = path.join(scriptPath, scriptFile);
-                    const scriptContent = await fs.promises.readFile(scriptFilePath, 'utf-8');
-                    if (scriptFile.endsWith('.json') && this.isValidJSON(scriptContent)) {
-                        const isMatching = this.matchContent(fileBufferContent, scriptContent);
-                        return isMatching ? scriptFile : null;
-                    }
-                    return null;
-                }),
-            ),
-        );
+        for (const scriptFile of scriptFiles) {
+            if (!scriptFile.endsWith('.json')) {
+                continue;
+            }
 
-        console.log('matchingScripts', matchingScripts);
-        //get the matching solution based on the matching script files name
-        const matchedSolution = matchingScripts.reduce(
-            (acc, scriptFile) => {
-                if (scriptFile) {
-                    console.log(scriptFile);
-                    const solution = this.getMatchSolution(scriptFile, solutions);
-                    console.log('solution', solution);
+            const scriptFilePath = path.join(scriptPath, scriptFile);
+            try {
+                const scriptContent = await fs.promises.readFile(scriptFilePath, 'utf-8');
+                if (this.isValidJSON(scriptContent) && this.matchContent(fileBufferContent, scriptContent)) {
+                    const solution = this.getMatchSolution(scriptFile, remainingSolutions);
                     if (solution) {
-                        acc.push({
-                            solution: { _id: solution._id as Types.ObjectId, name: solution.name },
-                            fileName: scriptFile,
-                        });
+                        solution._id = solution._id.toString();
+
+                        // Remove the matched solution from remainingSolutions
+                        remainingSolutions = remainingSolutions.filter((s) => s._id.toString() !== solution._id);
+
+                        return [
+                            {
+                                fileName: scriptFile,
+                                solution: { _id: solution._id, name: solution.name },
+                            },
+                        ];
                     }
                 }
-                return acc;
-            },
-            [] as { fileName: string; solution: { _id: Types.ObjectId; name: string } }[],
-        );
+            } catch (error) {
+                console.error(`Error processing ${scriptFile}:`, error);
+            }
+        }
 
-        return matchedSolution;
+        return []; // Return an empty array if no match is found
     }
-
     private matchContent(binFileBuffer: Buffer, scriptContent: string) {
         const { differences } = JSON.parse(scriptContent);
         return differences.every(
@@ -807,7 +800,7 @@ ResellerCredits= 10
     private getMatchSolution(fileName: string, solutions: Solution[]): Solution | undefined {
         const lowerCaseFileName = fileName.toLowerCase();
         console.log(solutions);
-        return solutions.find(({ name }) => {
+        const findSolution = solutions.find(({ name }) => {
             const lowerCaseName = name.toLowerCase().replace(/\s+/g, ''); // Remove spaces from the solution name
 
             const isStage1Match = lowerCaseName === 'stage1' && /stage ?1/.test(lowerCaseFileName);
@@ -816,6 +809,7 @@ ResellerCredits= 10
 
             return isStage1Match || isStage2Match || isGeneralMatch;
         });
+        return findSolution;
     }
 
     private isValidJSON(jsonString: string) {
@@ -1014,6 +1008,7 @@ ResellerCredits= 10
         },
     ) {
         const session = await this.connection.startSession();
+        const fileServiceId = fileService._id as Types.ObjectId;
         try {
             session.startTransaction();
             console.log('Build process start');
@@ -1026,7 +1021,7 @@ ResellerCredits= 10
             console.log('solutions requested==>', requested);
             console.log('solutions automatic==>', automatic);
 
-            await this.updateWinolsStatus(fileService._id as Types.ObjectId, WinOLS_STATUS.BUILD_PROGRESS);
+            await this.updateWinolsStatus(fileServiceId, WinOLS_STATUS.BUILD_PROGRESS);
 
             //get solution without automatic solution, because these are already automatic
             const solutionWithoutAutomatic = await this.findSolutionWithoutAutomaticSolution(automatic);
@@ -1129,8 +1124,8 @@ ResellerCredits= 10
                 buildData.fileService.winolsStatus = WinOLS_STATUS.WinOLS_OK;
 
                 //update file service and temp file
-                await this.fileServiceModel.updateOne(
-                    { _id: fileService._id },
+                await this.fileServiceModel.findByIdAndUpdate(
+                    fileServiceId,
                     { $set: buildData.fileService },
                     { session },
                 );
@@ -1154,133 +1149,91 @@ ResellerCredits= 10
         return solutions.filter((solution) => !automatic.includes(solution._id as Types.ObjectId));
     }
 
-    async buildSolution(fileService: FileService, binFilePath: string, scripPath: string, session: ClientSession) {
-        const solutions: Types.ObjectId[] = [];
-        if (fileService.solutions.requested.length) {
-            solutions.push(...fileService.solutions.requested);
-        }
-        if (fileService.solutions.automatic.length) {
-            solutions.push(...fileService.solutions.automatic);
-        }
-
-        console.log('combined solutions from build functoin', solutions);
+    async buildSolution(fileService: FileService, binFilePath: string, scriptPath: string, session: ClientSession) {
         console.log('Build start');
 
-        //read bin file
+        // Combine requested and automatic solutions
+        const solutions = [...fileService.solutions.requested, ...fileService.solutions.automatic];
+
+        let requestedSolutionIds = [...fileService.solutions.requested];
+        console.log('Combined solutions:', solutions);
+
+        // Read binary file
         const fileBufferContent = await fs.promises.readFile(binFilePath);
 
-        console.log(solutions);
-
+        // Fetch solution data
         const solutionsData = await this.solutionService.findByIds(solutions);
 
-        //get matched solution
-        const matchedSolutions = await this.matchScriptAndSolution(fileBufferContent, scripPath, solutionsData);
-        console.log('matchedSolution', matchedSolutions);
+        // Match solutions
+        const matchedSolutions = await this.matchScriptAndSolution(fileBufferContent, scriptPath, solutionsData);
+        console.log('Matched Solutions:', matchedSolutions);
 
-        for (const matchedSolution of matchedSolutions) {
-            //get the script path
+        // Extract solution names and IDs
+        const newAutomaticSolutionId = new Set(matchedSolutions.map((sol) => sol.solution._id));
 
-            //get the file
-            const fileItem = path.join(scripPath, matchedSolution.fileName);
-            console.log('file item======>', fileItem);
+        const allSolutionNames = [...new Set(matchedSolutions.map((sol) => sol.solution.name))];
 
-            //read the file and store the content
-            const contents = JSON.parse(await fs.promises.readFile(fileItem, 'utf8'));
+        console.log(newAutomaticSolutionId, allSolutionNames);
+        // Remove matched solutions from requested list
+        requestedSolutionIds = requestedSolutionIds.filter((id) => !newAutomaticSolutionId.has(id.toString()));
 
-            //loop over the contents and write the content
-            for (const content of contents.differences) {
-                if (content.position < fileBufferContent.length) {
-                    fileBufferContent[content.position] = parseInt(content.file2ByteHex, 16);
+        // Ensure all requested solutions are matched
+        if (requestedSolutionIds.length) {
+            const missingSolutions = await this.solutionService.findByIdsAndDistinctName(requestedSolutionIds);
+            throw new BadRequestException('Missing Solution: ' + missingSolutions.join(', '));
+        }
+
+        // Modify file content
+        for (const { fileName } of matchedSolutions) {
+            const filePath = path.join(scriptPath, fileName);
+            const contents = JSON.parse(await fs.promises.readFile(filePath, 'utf8'));
+
+            for (const { position, file2ByteHex } of contents.differences) {
+                if (position < fileBufferContent.length) {
+                    fileBufferContent[position] = parseInt(file2ByteHex, 16);
                 }
             }
         }
 
-        const tempSolutions = [];
-        const newAutomaticSolutionId = new Set();
-        for (const solution of matchedSolutions) {
-            tempSolutions.push(solution.solution.name);
-            newAutomaticSolutionId.add(solution.solution._id);
-        }
-
-        const allSolutionName = [...new Set(tempSolutions)];
-
-        const requestedSolutions = new Set(fileService.solutions.requested);
-
-        //remove from requested solutions of found in automatic
-        for (const requestedSolution of requestedSolutions) {
-            if (newAutomaticSolutionId.has(requestedSolution)) {
-                requestedSolutions.delete(requestedSolution);
-            }
-        }
-
-        if (requestedSolutions.size) {
-            const requestedSolutionName = await this.solutionService.findByIdsAndDistinctName([...requestedSolutions]);
-            throw new BadRequestException('Missing Solution ' + requestedSolutionName.join(', '));
-        }
-
-        const modifiedFileName = `MOD_${allSolutionName.join('_')}_${fileService.originalFile.originalname.replace(/Original/i, 'modified')}`;
-
-        console.log('modifiedFileName', modifiedFileName);
-
+        // Define modified file names and paths
+        const modifiedFileName = `MOD_${allSolutionNames.join('_')}_${fileService.originalFile.originalname.replace(/Original/i, 'modified')}`;
         const fileServicePath = this.pathService.getFileServicePath(
             fileService.admin,
             fileService._id as Types.ObjectId,
         );
-
-        console.log('fileServicePath', fileServicePath);
-
         const modifiedPath = path.join(fileServicePath, modifiedFileName);
+        console.log('Modified File Path:', modifiedPath);
 
-        console.log('modifiedPath from build function', modifiedPath);
-
-        //write mod file
+        // Write modified file
         await fs.promises.writeFile(modifiedPath, fileBufferContent);
 
-        //handle encode if file is slave
+        // Encode file if necessary
         const encodedPath = await this.encodeModifiedFile(modifiedPath, fileService);
+        console.log('Encoded Path:', encodedPath);
 
-        console.log('encodedPath from build function', encodedPath);
-
+        // Handle payment status and credits
         if (fileService.paymentStatus === PAYMENT_STATUS.UNPAID) {
-            //reduce customer credit
             await this.customerService.updateCredit(
                 fileService.customer as Types.ObjectId,
                 -fileService.credits,
                 session,
             );
-            fileService.paymentStatus = PAYMENT_STATUS.PAID;
-            fileService.status = FILE_SERVICE_STATUS.COMPLETED;
-
-            //reduce admin credit
             await this.adminService.updateCredit(
                 fileService.admin as Types.ObjectId,
                 -fileService.adminCredits,
                 session,
             );
+            fileService.paymentStatus = PAYMENT_STATUS.PAID;
+            fileService.status = FILE_SERVICE_STATUS.COMPLETED;
         }
 
-        console.log('build upload start');
-        if (modifiedPath) {
-            const modifiedUpload = await this.storageService.upload(fileService._id.toString(), {
-                name: path.basename(modifiedPath),
-                path: modifiedPath,
-            });
+        // Upload modified file
+        console.log('Starting upload...');
+        const modifiedUpload = await this.storageService.upload(fileService._id.toString(), {
+            name: path.basename(modifiedPath),
+            path: modifiedPath,
+        });
 
-            if (encodedPath) {
-                fileService.modWithoutEncoded = {
-                    key: modifiedUpload,
-                    originalname: path.basename(modifiedPath),
-                    uniqueName: path.basename(modifiedPath),
-                };
-            } else {
-                fileService.modFile = {
-                    key: modifiedUpload,
-                    originalname: path.basename(modifiedPath),
-                    uniqueName: path.basename(modifiedPath),
-                };
-            }
-        }
-        //encoded file
         if (encodedPath) {
             const encodedUpload = await this.storageService.upload(fileService._id.toString(), {
                 name: path.basename(encodedPath),
@@ -1291,9 +1244,15 @@ ResellerCredits= 10
                 originalname: path.basename(encodedPath),
                 uniqueName: path.basename(encodedPath),
             };
+        } else {
+            fileService.modFile = {
+                key: modifiedUpload,
+                originalname: path.basename(modifiedPath),
+                uniqueName: path.basename(modifiedPath),
+            };
         }
-        console.log('build upload end');
 
+        console.log('Upload completed.');
         return { fileService };
     }
 
@@ -1474,7 +1433,7 @@ ResellerCredits= 10
                 'phone',
             ]);
 
-            //if status is unpaid then check and reduce payment status
+            //if status is unpaid and not enough credits then throw error
             if (fileService.paymentStatus === PAYMENT_STATUS.UNPAID) {
                 if (!this.isSuperAdminId(fileService.admin) && fileService.credits > admin.credits) {
                     throw new BadRequestException('Error 01 - Please contact Portal Owner');
@@ -1528,11 +1487,10 @@ ResellerCredits= 10
             }
 
             const buildData = await this.buildSolution(fileService, binFilePath, scripPath, session);
-
             delete buildData.fileService._id;
             //update file service and temp file
             const updatedFileService = await this.fileServiceModel
-                .updateOne({ _id: fileService._id }, { $set: buildData.fileService }, { session })
+                .findByIdAndUpdate(fileServiceId, { $set: buildData.fileService }, { session, new: true })
                 .populate({
                     path: 'customer',
                     select: 'firstName lastName customerType',
@@ -1547,6 +1505,8 @@ ResellerCredits= 10
                 });
 
             await session.commitTransaction();
+
+            console.log(updatedFileService);
 
             if (fileService.paymentStatus === PAYMENT_STATUS.UNPAID) {
                 const message = `Your mod file for the file service ID ${fileService.uniqueId} is ready to download.`;
@@ -1567,6 +1527,7 @@ ResellerCredits= 10
             try {
                 //if old and new file service both is paid that means admin click build for correction
                 if (fileService.paymentStatus === PAYMENT_STATUS.PAID) {
+                    console.log('entered');
                     if (oldModFile) {
                         await this.storageService.delete(fileServiceId.toString(), oldModFile);
                     }
