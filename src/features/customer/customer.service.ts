@@ -133,7 +133,11 @@ export class CustomerService {
                 );
             }
 
-            if (this.isEuCountry(customer.country) && customer.vatNumber !== updateCustomerDto.vatNumber) {
+            if (
+                this.isEuCountry(customer.country) &&
+                customer.vatNumber &&
+                customer.vatNumber !== updateCustomerDto.vatNumber
+            ) {
                 //validate vat number
                 const validInfo = await this.validateVatNumber(
                     customer.country as CountryCodes,
