@@ -756,39 +756,46 @@ ResellerCredits= 10
 
     async matchScriptAndSolution(fileBufferContent: Buffer, scriptPath: string, solutions: Solution[]) {
         const scriptFiles = await fs.promises.readdir(scriptPath);
-        let remainingSolutions = [...solutions]; // Create a copy to avoid modifying the original array
 
-        for (const scriptFile of scriptFiles) {
-            if (!scriptFile.endsWith('.json')) {
-                continue;
-            }
+        const limit = pLimit(10);
+        //get the match script files
+        const matchingScripts = await Promise.all(
+            scriptFiles.map((scriptFile) =>
+                limit(async () => {
+                    const scriptFilePath = path.join(scriptPath, scriptFile);
+                    const scriptContent = await fs.promises.readFile(scriptFilePath, 'utf-8');
+                    if (scriptFile.endsWith('.json') && this.isValidJSON(scriptContent)) {
+                        const isMatching = this.matchContent(fileBufferContent, scriptContent);
+                        return isMatching ? scriptFile : null;
+                    }
+                    return null;
+                }),
+            ),
+        );
 
-            const scriptFilePath = path.join(scriptPath, scriptFile);
-            try {
-                const scriptContent = await fs.promises.readFile(scriptFilePath, 'utf-8');
-                if (this.isValidJSON(scriptContent) && this.matchContent(fileBufferContent, scriptContent)) {
-                    const solution = this.getMatchSolution(scriptFile, remainingSolutions);
+        console.log('matchingScripts', matchingScripts);
+        //get the matching solution based on the matching script files name
+        const matchedSolution = matchingScripts.reduce(
+            (acc, scriptFile) => {
+                if (scriptFile) {
+                    console.log(scriptFile);
+                    const solution = this.getMatchSolution(scriptFile, solutions);
+                    console.log('solution', solution);
                     if (solution) {
-                        solution._id = solution._id.toString();
-
-                        // Remove the matched solution from remainingSolutions
-                        remainingSolutions = remainingSolutions.filter((s) => s._id.toString() !== solution._id);
-
-                        return [
-                            {
-                                fileName: scriptFile,
-                                solution: { _id: solution._id, name: solution.name },
-                            },
-                        ];
+                        acc.push({
+                            solution: { _id: solution._id.toString(), name: solution.name },
+                            fileName: scriptFile,
+                        });
                     }
                 }
-            } catch (error) {
-                console.error(`Error processing ${scriptFile}:`, error);
-            }
-        }
+                return acc;
+            },
+            [] as { fileName: string; solution: { _id: string; name: string } }[],
+        );
 
-        return []; // Return an empty array if no match is found
+        return matchedSolution;
     }
+
     private matchContent(binFileBuffer: Buffer, scriptContent: string) {
         const { differences } = JSON.parse(scriptContent);
         return differences.every(
@@ -800,7 +807,7 @@ ResellerCredits= 10
     private getMatchSolution(fileName: string, solutions: Solution[]): Solution | undefined {
         const lowerCaseFileName = fileName.toLowerCase();
         console.log(solutions);
-        const findSolution = solutions.find(({ name }) => {
+        return solutions.find(({ name }) => {
             const lowerCaseName = name.toLowerCase().replace(/\s+/g, ''); // Remove spaces from the solution name
 
             const isStage1Match = lowerCaseName === 'stage1' && /stage ?1/.test(lowerCaseFileName);
@@ -809,7 +816,6 @@ ResellerCredits= 10
 
             return isStage1Match || isStage2Match || isGeneralMatch;
         });
-        return findSolution;
     }
 
     private isValidJSON(jsonString: string) {
@@ -1505,8 +1511,6 @@ ResellerCredits= 10
                 });
 
             await session.commitTransaction();
-
-            console.log(updatedFileService);
 
             if (fileService.paymentStatus === PAYMENT_STATUS.UNPAID) {
                 const message = `Your mod file for the file service ID ${fileService.uniqueId} is ready to download.`;
