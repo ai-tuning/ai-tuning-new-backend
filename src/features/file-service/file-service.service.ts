@@ -674,8 +674,10 @@ ResellerCredits= 10
             if (requestedSolutions.length) {
                 const adminData = await this.adminService.findById(admin);
 
-                //send the request to the queue for winols
-                this.fileProcessProducer.processFile({ fileServiceData: newFileService, admin: adminData });
+                if (adminData.enabledWinols) {
+                    //send the request to the queue for winols
+                    this.fileProcessProducer.processFile({ fileServiceData: newFileService, admin: adminData });
+                }
             }
 
             /**
