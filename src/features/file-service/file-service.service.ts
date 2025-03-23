@@ -759,7 +759,7 @@ ResellerCredits= 10
     async matchScriptAndSolution(fileBufferContent: Buffer, scriptPath: string, solutions: Solution[]) {
         const scriptFiles = await fs.promises.readdir(scriptPath);
 
-        const limit = pLimit(10);
+        const limit = pLimit(20);
         //get the match script files
         const matchingScripts = await Promise.all(
             scriptFiles.map((scriptFile) =>
@@ -1436,10 +1436,7 @@ ResellerCredits= 10
         const session = await this.connection.startSession();
         try {
             session.startTransaction();
-            const fileService = await this.fileServiceModel
-                .findById(fileServiceId)
-                .session(session)
-                .lean<FileService>();
+            const fileService = await this.fileServiceModel.findById(fileServiceId).lean<FileService>();
             if (!fileService) {
                 throw new NotFoundException('File Service Not Found');
             }
@@ -1534,8 +1531,6 @@ ResellerCredits= 10
                     select: 'name',
                 });
 
-            await session.commitTransaction();
-
             if (fileService.paymentStatus === PAYMENT_STATUS.UNPAID) {
                 const message = `Your mod file for the file service ID ${fileService.uniqueId} is ready to download.`;
                 const phone = `${customer.countryCode.replace('+', '')}${customer.phone}`;
@@ -1552,20 +1547,18 @@ ResellerCredits= 10
 
             //for avoid already committing error of transaction we wrap this deleting process using try catch, so that if it give any error then it doesn't pass to the parent function
 
-            try {
-                //if old and new file service both is paid that means admin click build for correction
-                if (fileService.paymentStatus === PAYMENT_STATUS.PAID) {
-                    console.log('entered');
-                    if (oldModFile) {
-                        await this.storageService.delete(fileServiceId.toString(), oldModFile);
-                    }
-                    if (oldModWithOutEncodedKey) {
-                        await this.storageService.delete(fileServiceId.toString(), oldModWithOutEncodedKey);
-                    }
+            //if old and new file service both is paid that means admin click build for correction
+            if (fileService.paymentStatus === PAYMENT_STATUS.PAID) {
+                console.log('entered');
+                if (oldModFile) {
+                    await this.storageService.delete(fileServiceId.toString(), oldModFile);
                 }
-            } catch (error) {
-                console.log(error);
+                if (oldModWithOutEncodedKey) {
+                    await this.storageService.delete(fileServiceId.toString(), oldModWithOutEncodedKey);
+                }
             }
+
+            await session.commitTransaction();
 
             return updatedFileService;
         } catch (error) {
