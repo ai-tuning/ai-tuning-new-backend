@@ -97,6 +97,10 @@ export class FileServiceService {
                 path: 'controller',
                 select: 'name',
             })
+            .populate({
+                path: 'modUpload.uploadedBy',
+                select: 'firstName lastName',
+            })
             .lean<FileService>();
     }
 
