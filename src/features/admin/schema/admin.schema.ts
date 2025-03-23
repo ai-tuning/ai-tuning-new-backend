@@ -66,7 +66,7 @@ class Admin extends Document<Types.ObjectId> {
     @Prop({ type: Boolean, default: false })
     aiAssist: boolean;
 
-    //auto forward to ai-assist
+    //winols enabled or disabled
     @Prop({ type: Boolean, default: false })
     enabledWinols: boolean;
 }

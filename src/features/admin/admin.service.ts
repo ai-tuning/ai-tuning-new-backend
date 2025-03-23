@@ -15,237 +15,253 @@ import validateVat, { CountryCodes } from 'validate-vat-ts';
 
 @Injectable()
 export class AdminService {
-  constructor(
-    @InjectModel(collectionsName.admin) private readonly adminModel: Model<Admin>,
-    @InjectModel(collectionsName.customerType) private readonly customerTypeModel: Model<CustomerType>,
-    @InjectConnection() private readonly connection: Connection,
-    private readonly userService: UserService,
-    private readonly credentialService: CredentialService,
-    private readonly scheduleService: ScheduleService,
-    private readonly pricingService: PricingService,
-  ) {}
+    constructor(
+        @InjectModel(collectionsName.admin) private readonly adminModel: Model<Admin>,
+        @InjectModel(collectionsName.customerType) private readonly customerTypeModel: Model<CustomerType>,
+        @InjectConnection() private readonly connection: Connection,
+        private readonly userService: UserService,
+        private readonly credentialService: CredentialService,
+        private readonly scheduleService: ScheduleService,
+        private readonly pricingService: PricingService,
+    ) {}
 
-  async create(createAdminDto: CreateAdminDto) {
-    const session = await this.connection.startSession();
-    try {
-      session.startTransaction();
-      const { password, ...rest } = createAdminDto;
+    async create(createAdminDto: CreateAdminDto) {
+        const session = await this.connection.startSession();
+        try {
+            session.startTransaction();
+            const { password, ...rest } = createAdminDto;
 
-      createAdminDto.email = createAdminDto.email.toLowerCase();
+            createAdminDto.email = createAdminDto.email.toLowerCase();
 
-      //check the username already used or nt
-      const adminExist = await this.adminModel.exists({ username: createAdminDto.username }).lean<AdminDocument>();
-      if (adminExist) {
-        throw new BadRequestException('Username already exist');
-      }
+            //check the username already used or nt
+            const adminExist = await this.adminModel
+                .exists({ username: createAdminDto.username })
+                .lean<AdminDocument>();
+            if (adminExist) {
+                throw new BadRequestException('Username already exist');
+            }
 
-      const admin = new this.adminModel(rest);
+            const admin = new this.adminModel(rest);
 
-      const user = await this.userService.create(
-        {
-          email: createAdminDto.email,
-          password: createAdminDto.password,
-          role: RolesEnum.ADMIN,
-          admin: admin._id as Types.ObjectId,
-          firstName: createAdminDto.firstName,
-          lastName: createAdminDto.lastName,
-        },
-        session,
-      );
+            const user = await this.userService.create(
+                {
+                    email: createAdminDto.email,
+                    password: createAdminDto.password,
+                    role: RolesEnum.ADMIN,
+                    admin: admin._id as Types.ObjectId,
+                    firstName: createAdminDto.firstName,
+                    lastName: createAdminDto.lastName,
+                },
+                session,
+            );
 
-      admin.user = user._id as Types.ObjectId;
-      const newAdmin = await admin.save({ session });
+            admin.user = user._id as Types.ObjectId;
+            const newAdmin = await admin.save({ session });
 
-      //create schedule
-      await this.scheduleService.createSchedule(newAdmin._id as Types.ObjectId, session);
+            //create schedule
+            await this.scheduleService.createSchedule(newAdmin._id as Types.ObjectId, session);
 
-      await this.credentialService.create(newAdmin._id as Types.ObjectId, session);
+            await this.credentialService.create(newAdmin._id as Types.ObjectId, session);
 
-      //create default customer type
-      const customerType = new this.customerTypeModel({ admin: newAdmin._id as Types.ObjectId, name: 'DEFAULT' });
-      await customerType.save({ session });
+            //create default customer type
+            const customerType = new this.customerTypeModel({ admin: newAdmin._id as Types.ObjectId, name: 'DEFAULT' });
+            await customerType.save({ session });
 
-      //create default pricing including evc and credit pricing
-      await this.pricingService.create(newAdmin._id, customerType._id as Types.ObjectId, session);
+            //create default pricing including evc and credit pricing
+            await this.pricingService.create(newAdmin._id, customerType._id as Types.ObjectId, session);
 
-      await session.commitTransaction();
-      return newAdmin;
-    } catch (error) {
-      await session.abortTransaction();
-      throw error;
-    } finally {
-      await session.endSession();
-    }
-  }
-
-  async findAll(): Promise<AdminDocument[]> {
-    return this.adminModel.find().lean<AdminDocument[]>();
-  }
-
-  async findOne(id: Types.ObjectId, select?: string): Promise<AdminDocument> {
-    return this.adminModel.findById(id).select(select).lean<AdminDocument>();
-  }
-
-  async findByIdAndSelect(id: Types.ObjectId, select: Array<keyof AdminDocument>): Promise<AdminDocument> {
-    return this.adminModel.findById(id).select(select.join(' ')).lean<AdminDocument>();
-  }
-
-  async findById(id: Types.ObjectId): Promise<AdminDocument> {
-    return this.adminModel.findById(id).lean<AdminDocument>();
-  }
-
-  async findByUserId(userId: Types.ObjectId, select?: string): Promise<AdminDocument> {
-    return this.adminModel.findOne({ user: userId }).select(select).lean<AdminDocument>();
-  }
-
-  async getAdminCredit(adminId: Types.ObjectId): Promise<AdminDocument> {
-    return this.adminModel.findById(adminId).select('credits').lean<AdminDocument>();
-  }
-
-  async getAdminDetails(adminId: Types.ObjectId): Promise<AdminDocument> {
-    const data = await this.adminModel
-      .findById(adminId)
-      .select('companyName address street city country vatNumber vatRate email logo')
-      .lean<any>();
-    const credentials = await this.credentialService.findByAdmin(adminId);
-
-    if (credentials.alienTech) {
-      data.alienTech = !!credentials.alienTech.clientId;
-    } else {
-      data.alienTech = false;
+            await session.commitTransaction();
+            return newAdmin;
+        } catch (error) {
+            await session.abortTransaction();
+            throw error;
+        } finally {
+            await session.endSession();
+        }
     }
 
-    if (credentials.evc) {
-      data.evc = !!credentials.evc.apiId;
-    } else {
-      data.evc = false;
+    async findAll(): Promise<AdminDocument[]> {
+        return this.adminModel.find().lean<AdminDocument[]>();
     }
 
-    if (credentials.autoTuner) {
-      data.autoTuner = !!credentials.autoTuner.tunerId;
-    } else {
-      data.autoTuner = false;
+    async findOne(id: Types.ObjectId, select?: string): Promise<AdminDocument> {
+        return this.adminModel.findById(id).select(select).lean<AdminDocument>();
     }
 
-    if (credentials.autoFlasher) {
-      data.autoFlasher = !!credentials.autoFlasher.apiKey;
-    } else {
-      data.autoFlasher = false;
+    async findByIdAndSelect(id: Types.ObjectId, select: Array<keyof AdminDocument>): Promise<AdminDocument> {
+        return this.adminModel.findById(id).select(select.join(' ')).lean<AdminDocument>();
     }
 
-    return data;
-  }
-
-  async updateCredit(adminId: Types.ObjectId, amount: number, session: ClientSession) {
-    return await this.adminModel
-      .findOneAndUpdate({ _id: adminId }, { $inc: { credits: amount } }, { new: true, session })
-      .lean<AdminDocument>();
-  }
-
-  async update(id: Types.ObjectId, updateAdminDto: UpdateAdminDto): Promise<AdminDocument> {
-    const session = await this.connection.startSession();
-    try {
-      session.startTransaction();
-      const admin = await this.adminModel.findById(id).lean();
-      if (!admin) throw new NotFoundException('Admin not found');
-
-      if (admin.email !== updateAdminDto.email) {
-        await this.userService.updateUserEmail(admin.user, updateAdminDto.email, session);
-      }
-
-      if (admin.firstName !== updateAdminDto.firstName || admin.lastName !== updateAdminDto.lastName) {
-        await this.userService.updateName(
-          admin.user,
-          { firstName: updateAdminDto.firstName, lastName: updateAdminDto.lastName },
-          session,
-        );
-      }
-      if (this.isEuCountry(admin.country) && admin.vatNumber !== updateAdminDto.vatNumber) {
-        //validate vat number
-        console.log(admin.country, updateAdminDto.vatNumber);
-        const validInfo = await this.validateVatNumber(admin.country as CountryCodes, updateAdminDto.vatNumber);
-        if (!validInfo.valid) throw new BadRequestException('Vat number is not valid');
-      }
-
-      if (admin.username !== updateAdminDto.username) {
-        //check user name already used or not
-        const adminExist = await this.adminModel.exists({ username: updateAdminDto.username, _id: { $ne: id } });
-        if (adminExist) throw new BadRequestException('Username already exist');
-      }
-      const updatedAdmin = await this.adminModel
-        .findOneAndUpdate({ _id: id }, { $set: updateAdminDto }, { new: true, session })
-        .lean<AdminDocument>();
-      await session.commitTransaction();
-      return updatedAdmin;
-    } catch (error) {
-      await session.abortTransaction();
-      throw error;
-    } finally {
-      await session.endSession();
+    async findById(id: Types.ObjectId): Promise<AdminDocument> {
+        return this.adminModel.findById(id).lean<AdminDocument>();
     }
-  }
 
-  async changeAvatar(adminId: Types.ObjectId, avatar: string) {
-    // await CustomValidationPipe([avatar], AvatarDto);
-    //don't return the new document
-    return this.adminModel.findOneAndUpdate({ _id: adminId }, { $set: { avatar } }).lean<AdminDocument>();
-  }
-
-  async changeLogo(adminId: Types.ObjectId, logo: string) {
-    // await CustomValidationPipe([avatar], AvatarDto);
-    //don't return the new document
-    return this.adminModel.findOneAndUpdate({ _id: adminId }, { $set: { logo } }).lean<AdminDocument>();
-  }
-
-  async updateAiAssist(adminId: Types.ObjectId, aiAssist: boolean) {
-    return await this.adminModel
-      .findByIdAndUpdate(adminId, { $set: { aiAssist } }, { new: true })
-      .select('aiAssist')
-      .lean<AdminDocument>();
-  }
-
-  async getAiAssistStatus(adminId: Types.ObjectId) {
-    return this.adminModel.findById(adminId).select('aiAssist').lean<AdminDocument>();
-  }
-
-  async validateVatNumber(country: CountryCodes, vatNumber: string) {
-    try {
-      return await validateVat(country, vatNumber);
-    } catch (error) {
-      throw error;
+    async findByUserId(userId: Types.ObjectId, select?: string): Promise<AdminDocument> {
+        return this.adminModel.findOne({ user: userId }).select(select).lean<AdminDocument>();
     }
-  }
 
-  isEuCountry(country: string) {
-    const euCountries = [
-      'AT',
-      'BE',
-      'BG',
-      'HR',
-      'CY',
-      'CZ',
-      'DK',
-      'EE',
-      'FI',
-      'FR',
-      'DE',
-      'GR',
-      'HU',
-      'IE',
-      'IT',
-      'LV',
-      'LT',
-      'LU',
-      'MT',
-      'NL',
-      'PL',
-      'PT',
-      'RO',
-      'SK',
-      'SI',
-      'ES',
-      'SE',
-    ];
-    return euCountries.includes(country);
-  }
+    async getAdminCredit(adminId: Types.ObjectId): Promise<AdminDocument> {
+        return this.adminModel.findById(adminId).select('credits').lean<AdminDocument>();
+    }
+
+    async getAdminDetails(adminId: Types.ObjectId): Promise<AdminDocument> {
+        const data = await this.adminModel
+            .findById(adminId)
+            .select('companyName address street city country vatNumber vatRate email logo')
+            .lean<any>();
+        const credentials = await this.credentialService.findByAdmin(adminId);
+
+        if (credentials.alienTech) {
+            data.alienTech = !!credentials.alienTech.clientId;
+        } else {
+            data.alienTech = false;
+        }
+
+        if (credentials.evc) {
+            data.evc = !!credentials.evc.apiId;
+        } else {
+            data.evc = false;
+        }
+
+        if (credentials.autoTuner) {
+            data.autoTuner = !!credentials.autoTuner.tunerId;
+        } else {
+            data.autoTuner = false;
+        }
+
+        if (credentials.autoFlasher) {
+            data.autoFlasher = !!credentials.autoFlasher.apiKey;
+        } else {
+            data.autoFlasher = false;
+        }
+
+        return data;
+    }
+
+    async updateCredit(adminId: Types.ObjectId, amount: number, session: ClientSession) {
+        return await this.adminModel
+            .findOneAndUpdate({ _id: adminId }, { $inc: { credits: amount } }, { new: true, session })
+            .lean<AdminDocument>();
+    }
+
+    async update(id: Types.ObjectId, updateAdminDto: UpdateAdminDto): Promise<AdminDocument> {
+        const session = await this.connection.startSession();
+        try {
+            session.startTransaction();
+            const admin = await this.adminModel.findById(id).lean();
+            if (!admin) throw new NotFoundException('Admin not found');
+
+            if (admin.email !== updateAdminDto.email) {
+                await this.userService.updateUserEmail(admin.user, updateAdminDto.email, session);
+            }
+
+            if (admin.firstName !== updateAdminDto.firstName || admin.lastName !== updateAdminDto.lastName) {
+                await this.userService.updateName(
+                    admin.user,
+                    { firstName: updateAdminDto.firstName, lastName: updateAdminDto.lastName },
+                    session,
+                );
+            }
+            if (this.isEuCountry(admin.country) && admin.vatNumber !== updateAdminDto.vatNumber) {
+                //validate vat number
+                console.log(admin.country, updateAdminDto.vatNumber);
+                const validInfo = await this.validateVatNumber(admin.country as CountryCodes, updateAdminDto.vatNumber);
+                if (!validInfo.valid) throw new BadRequestException('Vat number is not valid');
+            }
+
+            if (admin.username !== updateAdminDto.username) {
+                //check user name already used or not
+                const adminExist = await this.adminModel.exists({
+                    username: updateAdminDto.username,
+                    _id: { $ne: id },
+                });
+                if (adminExist) throw new BadRequestException('Username already exist');
+            }
+            const updatedAdmin = await this.adminModel
+                .findOneAndUpdate({ _id: id }, { $set: updateAdminDto }, { new: true, session })
+                .lean<AdminDocument>();
+            await session.commitTransaction();
+            return updatedAdmin;
+        } catch (error) {
+            await session.abortTransaction();
+            throw error;
+        } finally {
+            await session.endSession();
+        }
+    }
+
+    async changeAvatar(adminId: Types.ObjectId, avatar: string) {
+        // await CustomValidationPipe([avatar], AvatarDto);
+        //don't return the new document
+        return this.adminModel.findOneAndUpdate({ _id: adminId }, { $set: { avatar } }).lean<AdminDocument>();
+    }
+
+    async changeLogo(adminId: Types.ObjectId, logo: string) {
+        // await CustomValidationPipe([avatar], AvatarDto);
+        //don't return the new document
+        return this.adminModel.findOneAndUpdate({ _id: adminId }, { $set: { logo } }).lean<AdminDocument>();
+    }
+
+    async updateAiAssist(adminId: Types.ObjectId, aiAssist: boolean) {
+        return await this.adminModel
+            .findByIdAndUpdate(adminId, { $set: { aiAssist } }, { new: true })
+            .select('aiAssist')
+            .lean<AdminDocument>();
+    }
+
+    async getAiAssistStatus(adminId: Types.ObjectId) {
+        return this.adminModel.findById(adminId).select('aiAssist').lean<AdminDocument>();
+    }
+
+    async updateWinolsSetting(adminId: Types.ObjectId, enabledWinols: boolean) {
+        return await this.adminModel
+            .findByIdAndUpdate(adminId, { $set: { enabledWinols } }, { new: true })
+            .select('enabledWinols')
+            .lean<AdminDocument>();
+    }
+
+    async getWinolsSetting(adminId: Types.ObjectId) {
+        return this.adminModel.findById(adminId).select('enabledWinols').lean<AdminDocument>();
+    }
+
+    async validateVatNumber(country: CountryCodes, vatNumber: string) {
+        try {
+            return await validateVat(country, vatNumber);
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    isEuCountry(country: string) {
+        const euCountries = [
+            'AT',
+            'BE',
+            'BG',
+            'HR',
+            'CY',
+            'CZ',
+            'DK',
+            'EE',
+            'FI',
+            'FR',
+            'DE',
+            'GR',
+            'HU',
+            'IE',
+            'IT',
+            'LV',
+            'LT',
+            'LU',
+            'MT',
+            'NL',
+            'PL',
+            'PT',
+            'RO',
+            'SK',
+            'SI',
+            'ES',
+            'SE',
+        ];
+        return euCountries.includes(country);
+    }
 }
