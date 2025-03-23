@@ -806,7 +806,6 @@ ResellerCredits= 10
 
     private getMatchSolution(fileName: string, solutions: Solution[]): Solution | undefined {
         const lowerCaseFileName = fileName.toLowerCase();
-        console.log(solutions);
         return solutions.find(({ name }) => {
             const lowerCaseName = name.toLowerCase().replace(/\s+/g, ''); // Remove spaces from the solution name
 
@@ -893,7 +892,7 @@ ResellerCredits= 10
             { $set: { winolsStatus: WinOLS_STATUS.WinOLS_PROGRESS } },
         );
 
-        //get the bin file path from temp file or download from the mega drive
+        //get the bin file path from temp file or download from the s3
         let binFilePath = '';
 
         const fileServicePath = this.pathService.getFileServicePath(
@@ -943,9 +942,9 @@ ResellerCredits= 10
         await fs.promises.copyFile(binFilePath, path.join(inputPath, fileService.originalFile.uniqueName));
         console.log('copped to the winols in folder done');
 
-        console.log('waiting for 90 seconds');
-        await timeOutAsync(90000);
-        console.log('waited for 90 seconds');
+        console.log('waiting for 70 seconds');
+        await timeOutAsync(70000);
+        console.log('waited for 70 seconds');
 
         //define exists
         let outFileExits = fs.existsSync(outputPath);
@@ -957,8 +956,8 @@ ResellerCredits= 10
                 break;
             }
             //wait for 5 seconds
-            console.log('waiting for 10 seconds');
-            await timeOutAsync(10000);
+            console.log('waiting for 5 seconds');
+            await timeOutAsync(5000);
             attempts += 1;
             outFileExits = fs.existsSync(outputPath);
             console.log('outFileExits==>', outFileExits, 'attempts==>', attempts);
@@ -1021,44 +1020,51 @@ ResellerCredits= 10
             console.log(data);
 
             //get the requested and automatic solution
-            const requested = fileService.solutions.requested;
-            const automatic = fileService.solutions.automatic;
+            const requested = fileService.solutions.requested as unknown as string[];
+            const automatics = fileService.solutions.automatic;
 
             console.log('solutions requested==>', requested);
-            console.log('solutions automatic==>', automatic);
+            console.log('solutions automatic==>', automatics);
 
             await this.updateWinolsStatus(fileServiceId, WinOLS_STATUS.BUILD_PROGRESS);
 
             //get solution without automatic solution, because these are already automatic
-            const solutionWithoutAutomatic = await this.findSolutionWithoutAutomaticSolution(automatic);
+            const solutionWithoutAutomatic = await this.findSolutionWithoutAutomaticSolution(
+                automatics.map((s) => s.toString()),
+            );
             console.log('solutionWithoutAutomatic=====>', solutionWithoutAutomatic);
             //declare modFiles
             const modFiles = [];
 
+            const matchedSolution = [];
+
             //loop over the outFiles and match with requested solution
-            for (const solution of solutionWithoutAutomatic) {
+            for (const file of data.outFiles) {
                 //get matched file
-                const matchedFile = data.outFiles.find((file) => this.getMatchSolution(file, [solution]));
-                if (matchedFile) {
-                    console.log('matchedFile', matchedFile);
+                const matchSolution = this.getMatchSolution(file, solutionWithoutAutomatic);
+                if (matchSolution) {
+                    console.log('matchSolution', matchSolution);
                     //if matched then push into mod file
                     modFiles.push({
-                        name: matchedFile,
-                        path: path.join(data.outputPath, matchedFile),
+                        name: file,
+                        path: path.join(data.outputPath, file),
                     });
-                    console.log(
-                        'requested.indexOf(solution._id as Types.ObjectId)',
-                        requested.indexOf(solution._id as Types.ObjectId),
-                    );
-                    //remove from requested solution
-                    requested.splice(requested.indexOf(solution._id as Types.ObjectId), 1);
 
-                    automatic.push(solution._id as Types.ObjectId);
+                    matchedSolution.push(matchSolution);
+
+                    const findRequestedIndex = requested.findIndex(
+                        (r) => r.toString() === matchSolution._id.toString(),
+                    );
+
+                    if (findRequestedIndex !== -1) {
+                        requested.splice(findRequestedIndex, 1);
+                        automatics.push(matchSolution._id as Types.ObjectId);
+                    }
                 }
             }
 
             console.log('new  requested==>', requested);
-            console.log('new  automatic==>', automatic);
+            console.log('new  automatic==>', automatics);
 
             console.log('mod file after matching===>', modFiles);
 
@@ -1110,6 +1116,7 @@ ResellerCredits= 10
                     'countryCode',
                     'credits',
                 ]);
+
                 if (customer.credits < fileService.credits) throw new BadRequestException('Not enough credits');
 
                 const buildData = await this.buildSolution(fileService, data.binFilePath, completeScriptPath, session);
@@ -1129,17 +1136,27 @@ ResellerCredits= 10
 
                 buildData.fileService.winolsStatus = WinOLS_STATUS.WinOLS_OK;
 
+                //update the requested and automatic solution
+                buildData.fileService.solutions.requested = requested as unknown as Types.ObjectId[];
+                buildData.fileService.solutions.automatic = automatics;
+
                 //update file service and temp file
                 await this.fileServiceModel.findByIdAndUpdate(
                     fileServiceId,
                     { $set: buildData.fileService },
                     { session },
                 );
-
-                //update file service and temp file
             } else {
-                await this.updateWinolsStatus(fileService._id as Types.ObjectId, WinOLS_STATUS.WinOLS_FAILED);
+                fileService.winolsStatus = WinOLS_STATUS.WinOLS_FAILED;
+
+                //update the requested and automatic solution
+
+                fileService.solutions.requested = requested as unknown as Types.ObjectId[];
+                fileService.solutions.automatic = automatics;
+
+                await this.fileServiceModel.findByIdAndUpdate(fileServiceId, { $set: fileService }, { session });
             }
+
             await session.commitTransaction();
         } catch (error) {
             await session.abortTransaction();
@@ -1149,10 +1166,10 @@ ResellerCredits= 10
         }
     }
 
-    async findSolutionWithoutAutomaticSolution(automatic: Types.ObjectId[]) {
+    async findSolutionWithoutAutomaticSolution(automatics: string[]) {
         const solutions = await this.solutionService.findAll();
 
-        return solutions.filter((solution) => !automatic.includes(solution._id as Types.ObjectId));
+        return solutions.filter((solution) => !automatics.includes(solution._id.toString()));
     }
 
     async buildSolution(fileService: FileService, binFilePath: string, scriptPath: string, session: ClientSession) {
