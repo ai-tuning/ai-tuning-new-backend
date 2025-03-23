@@ -1149,14 +1149,19 @@ ResellerCredits= 10
                     { session },
                 );
             } else {
-                fileService.winolsStatus = WinOLS_STATUS.WinOLS_FAILED;
-
-                //update the requested and automatic solution
-
-                fileService.solutions.requested = requested as unknown as Types.ObjectId[];
-                fileService.solutions.automatic = automatics;
-
-                await this.fileServiceModel.findByIdAndUpdate(fileServiceId, { $set: fileService }, { session });
+                await this.fileServiceModel.findByIdAndUpdate(
+                    fileServiceId,
+                    {
+                        $set: {
+                            winolsStatus: WinOLS_STATUS.WinOLS_FAILED,
+                            solutions: {
+                                requested,
+                                automatics,
+                            },
+                        },
+                    },
+                    { session },
+                );
             }
 
             await session.commitTransaction();
