@@ -1023,16 +1023,16 @@ ResellerCredits= 10
 
             //get the requested and automatic solution
             const requested = fileService.solutions.requested as unknown as string[];
-            const automatics = fileService.solutions.automatic;
+            const automatic = fileService.solutions.automatic;
 
             console.log('solutions requested==>', requested);
-            console.log('solutions automatic==>', automatics);
+            console.log('solutions automatic==>', automatic);
 
             await this.updateWinolsStatus(fileServiceId, WinOLS_STATUS.BUILD_PROGRESS);
 
             //get solution without automatic solution, because these are already automatic
             const solutionWithoutAutomatic = await this.findSolutionWithoutAutomaticSolution(
-                automatics.map((s) => s.toString()),
+                automatic.map((s) => s.toString()),
             );
             console.log('solutionWithoutAutomatic=====>', solutionWithoutAutomatic);
             //declare modFiles
@@ -1060,13 +1060,13 @@ ResellerCredits= 10
 
                     if (findRequestedIndex !== -1) {
                         requested.splice(findRequestedIndex, 1);
-                        automatics.push(matchSolution._id as Types.ObjectId);
+                        automatic.push(matchSolution._id as Types.ObjectId);
                     }
                 }
             }
 
             console.log('new  requested==>', requested);
-            console.log('new  automatic==>', automatics);
+            console.log('new  automatic==>', automatic);
 
             console.log('mod file after matching===>', modFiles);
 
@@ -1140,7 +1140,7 @@ ResellerCredits= 10
 
                 //update the requested and automatic solution
                 buildData.fileService.solutions.requested = requested as unknown as Types.ObjectId[];
-                buildData.fileService.solutions.automatic = automatics;
+                buildData.fileService.solutions.automatic = automatic;
 
                 //update file service and temp file
                 await this.fileServiceModel.findByIdAndUpdate(
@@ -1156,7 +1156,7 @@ ResellerCredits= 10
                             winolsStatus: WinOLS_STATUS.WinOLS_FAILED,
                             solutions: {
                                 requested,
-                                automatics,
+                                automatic,
                             },
                         },
                     },
