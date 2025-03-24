@@ -12,7 +12,7 @@ export class DtcController {
     @Post()
     async create(@Body() createDtcDto: CreateDtcDto, @UploadedFile() file: Express.Multer.File) {
         const dtc = await this.dtcService.create(createDtcDto, file);
-        return { data: dtc, message: 'DTC created successfully' };
+        return { data: dtc, message: 'File is uploaded, please wait while processing' };
     }
 
     @Get('admin')

@@ -4,13 +4,17 @@ import { DtcController } from './dtc.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { DtcSchema } from './schema/dtc.schema';
 import { collectionsName, queueNames } from '../constant';
-import { PathService } from '../common';
+import { MulterModule, PathService } from '../common';
 import { StorageServiceModule } from '../storage-service/storage-service.module';
-import { QueueManagerModule } from '../queue-manager/queue-manager.module';
 import { BullModule } from '@nestjs/bull';
 
 @Module({
     imports: [
+        MulterModule.register({
+            acceptedMimeTypes: [],
+            destination: './public/uploads/files',
+            errorMessages: 'Please upload a valid file',
+        }),
         MongooseModule.forFeature([
             {
                 name: collectionsName.dtc,

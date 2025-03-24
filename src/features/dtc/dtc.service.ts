@@ -27,7 +27,8 @@ export class DtcService {
         if (!file) {
             throw new BadRequestException('File is required');
         }
-
+        console.log(file);
+        console.log(createDtcDto);
         const newDtc = new this.dtcModel({
             admin: createDtcDto.admin,
             customer: createDtcDto.customer,
@@ -45,7 +46,7 @@ export class DtcService {
         }
 
         //move file to temp folder
-        await fs.promises.rename(file.path, path.join(rootPath, file.filename));
+        await fs.promises.rename(file.path, join(rootPath, file.filename));
 
         this.dtcQueue.add(queueNames.dtcQueue, dtc._id, {
             removeOnComplete: true,
@@ -80,8 +81,8 @@ export class DtcService {
         const mainFilePath = join(tempRootPath, dtc.originalFile);
 
         await Promise.all([
-            fs.promises.rename(mainFilePath, path.join(this.pathService.getDtcInputPath(), dtc.originalFile)),
-            fs.promises.rename(faultCodeFile, path.join(this.pathService.getDtcInputPath(), filename)),
+            fs.promises.rename(mainFilePath, join(this.pathService.getDtcInputPath(), dtc.originalFile)),
+            fs.promises.rename(faultCodeFile, join(this.pathService.getDtcInputPath(), filename)),
         ]);
 
         const outFileName = dtc.originalFile + ' - DTC ' + dtc.faultCodes.split(',').join(' ');

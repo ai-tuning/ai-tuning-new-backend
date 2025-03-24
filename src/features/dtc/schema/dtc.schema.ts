@@ -18,13 +18,13 @@ class Dtc extends Document {
     @Prop({ type: String, required: true })
     originalFile: string;
 
-    @Prop({ type: FileSchema, required: true })
+    @Prop({ type: FileSchema })
     outputFile: FileModel;
 
     @Prop({ type: String, required: true })
     faultCodes: string;
 
-    @Prop({ type: String, enum: DTC_STATUS, required: true })
+    @Prop({ type: String, enum: DTC_STATUS, required: true, default: DTC_STATUS.WAITING })
     status: DTC_STATUS;
 }
 
