@@ -13,6 +13,9 @@ class Dtc extends Document {
     customer: Types.ObjectId;
 
     @Prop({ type: String, required: true })
+    id: string;
+
+    @Prop({ type: String, required: true })
     originalFile: string;
 
     @Prop({ type: FileSchema, required: true })

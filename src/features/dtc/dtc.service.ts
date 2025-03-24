@@ -33,11 +33,16 @@ export class DtcService {
             customer: createDtcDto.customer,
             faultCodes: createDtcDto.faultCodes,
             originalFile: file.filename,
+            id: Date.now(),
         });
 
         const dtc = await newDtc.save();
 
         const rootPath = this.pathService.getTempFilePath(dtc._id.toString());
+
+        if (!fs.existsSync(rootPath)) {
+            fs.mkdirSync(rootPath);
+        }
 
         //move file to temp folder
         await fs.promises.rename(file.path, path.join(rootPath, file.filename));
