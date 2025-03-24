@@ -125,6 +125,9 @@ export class DtcService {
                 },
             });
         } else {
+            await this.dtcModel.findByIdAndUpdate(dtcId, {
+                status: DTC_STATUS.FAILED,
+            });
             throw new Error('DTC file not found');
         }
 

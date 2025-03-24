@@ -54,7 +54,7 @@ export class PathService {
      * @returns
      */
     getTempFilePath(uniqueName: string) {
-        return join(process.cwd(), 'public', 'temp', uniqueName);
+        return join(process.cwd(), 'public', 'temporary-files', uniqueName);
     }
 
     /**
