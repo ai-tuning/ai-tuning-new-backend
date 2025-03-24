@@ -32,7 +32,7 @@ export class DtcService {
         const newDtc = new this.dtcModel({
             admin: createDtcDto.admin,
             customer: createDtcDto.customer,
-            faultCodes: createDtcDto.faultCodes,
+            faultCodes: createDtcDto.faultCodes.toUpperCase(),
             originalFile: file.filename,
             id: Date.now(),
         });
@@ -63,6 +63,28 @@ export class DtcService {
 
     findByCustomer(customerId: Types.ObjectId) {
         return this.dtcModel.find({ customer: customerId }).sort({ createdAt: -1 }).lean<Dtc[]>();
+    }
+
+    async deleteDtc(dtcId: Types.ObjectId) {
+        const rootPath = this.pathService.getTempFilePath(dtcId.toString());
+        if (fs.existsSync(rootPath)) {
+            fs.rmSync(rootPath, { recursive: true, force: true });
+        }
+
+        const dtc = await this.dtcModel.findByIdAndDelete(dtcId);
+
+        if (dtc) {
+            const rootOutPath = this.pathService.getDtcOutPath();
+            const outPath = join(rootOutPath, dtc.originalFile);
+            if (fs.existsSync(outPath)) {
+                fs.rmSync(outPath);
+            }
+
+            if (dtc.outputFile) {
+                await this.storageService.deleteFolder(dtc._id.toString());
+            }
+        }
+        return dtc;
     }
 
     async dtcProcess(dtcId: Types.ObjectId) {
@@ -124,6 +146,12 @@ export class DtcService {
                     uniqueName: outFile,
                 },
             });
+
+            if (uploadedData) {
+                if (fs.existsSync(outFile)) {
+                    fs.rmSync(outFile);
+                }
+            }
         } else {
             await this.dtcModel.findByIdAndUpdate(dtcId, {
                 status: DTC_STATUS.FAILED,
