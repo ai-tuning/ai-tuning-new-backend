@@ -5,7 +5,7 @@ import { collectionsName, DTC_STATUS, queueNames } from '../constant';
 import { Dtc } from './schema/dtc.schema';
 import { Model, Types } from 'mongoose';
 import { PathService } from '../common';
-import path, { join, parse } from 'path';
+import { join, parse } from 'path';
 import * as fs from 'fs';
 import * as util from 'util';
 import { StorageService } from '../storage-service/storage-service.service';
@@ -89,7 +89,7 @@ export class DtcService {
 
         const outFileName = dtc.originalFile + ' - DTC ' + dtc.faultCodes.split(',').join(' ');
         console.log('outFileName', outFileName);
-        const outFile = path.join(this.pathService.getDtcOutPath(), outFileName);
+        const outFile = join(this.pathService.getDtcOutPath(), outFileName);
         console.log('outFile', outFile);
 
         await timeOutAsync(30000);
