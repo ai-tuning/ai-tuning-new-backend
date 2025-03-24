@@ -12,6 +12,7 @@ import { CarControllerService } from '../car-controller/car-controller.service';
 import { CarService } from '../car/car.service';
 import { ReplaceScriptDto } from './dto/replace-script.dto';
 import { FileService } from '../file-service/schema/file-service.schema';
+import { FileModel } from '../common/schema/file.schema';
 
 @Injectable()
 export class ScriptService {
@@ -25,7 +26,7 @@ export class ScriptService {
     ) {}
     async create(
         createScriptDto: CreateScriptDto,
-        originalFile: Express.Multer.File | FileSchema,
+        originalFile: Express.Multer.File | FileModel,
         modFiles: Express.Multer.File[],
     ) {
         let binFilePath: string;

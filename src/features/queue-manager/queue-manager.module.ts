@@ -14,47 +14,52 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AdminSchema } from '../admin/schema/admin.schema';
 import { EmployeeRoleSchema } from '../employee-role/schema/employee-role.schema';
 import { CatapushModule } from '../catapush/catapush.module';
+import { DtcQueueConsumer } from './consumers/dtc.queue.cosumner';
+import { DtcModule } from '../dtc/dtc.module';
 
 const queues = [
-  { name: queueNames.emailQueue, defaultJobOptions: { removeOnComplete: true, removeOnFail: true, attempts: 2 } },
-  { name: queueNames.activityQueue, defaultJobOptions: { removeOnComplete: true, removeOnFail: true, attempts: 2 } },
-  { name: queueNames.fileProcessQueue, defaultJobOptions: { removeOnComplete: true, removeOnFail: true } },
-  {
-    name: queueNames.fileBuildQueue,
-    defaultJobOptions: { removeOnComplete: true, removeOnFail: true },
-  },
-  {
-    name: queueNames.catapushMessageQueue,
-    defaultJobOptions: { removeOnComplete: true, removeOnFail: true, attempts: 2 },
-  },
+    { name: queueNames.emailQueue, defaultJobOptions: { removeOnComplete: true, removeOnFail: true, attempts: 2 } },
+    { name: queueNames.dtcQueue, defaultJobOptions: { removeOnComplete: true, removeOnFail: true, attempts: 1 } },
+    { name: queueNames.activityQueue, defaultJobOptions: { removeOnComplete: true, removeOnFail: true, attempts: 2 } },
+    { name: queueNames.fileProcessQueue, defaultJobOptions: { removeOnComplete: true, removeOnFail: true } },
+    {
+        name: queueNames.fileBuildQueue,
+        defaultJobOptions: { removeOnComplete: true, removeOnFail: true },
+    },
+    {
+        name: queueNames.catapushMessageQueue,
+        defaultJobOptions: { removeOnComplete: true, removeOnFail: true, attempts: 2 },
+    },
 ];
 
 @Module({
-  imports: [
-    BullModule.registerQueue(...queues),
-    MailModule,
-    forwardRef(() => FileServiceModule),
-    MongooseModule.forFeature([
-      {
-        name: collectionsName.admin,
-        schema: AdminSchema,
-      },
-      {
-        name: collectionsName.employee,
-        schema: EmployeeRoleSchema,
-      },
-    ]),
-    CatapushModule,
-  ],
-  providers: [
-    EmailQueueProducers,
-    EmailQueueConsumer,
-    FileProcessQueueProducers,
-    FileProcessQueueConsumer,
-    FileBuildQueueConsumer,
-    CatapushMessageProducer,
-    CatapushMessageConsumer,
-  ],
-  exports: [EmailQueueProducers, FileProcessQueueProducers, CatapushMessageProducer],
+    imports: [
+        BullModule.registerQueue(...queues),
+        MailModule,
+        forwardRef(() => FileServiceModule),
+        MongooseModule.forFeature([
+            {
+                name: collectionsName.admin,
+                schema: AdminSchema,
+            },
+            {
+                name: collectionsName.employee,
+                schema: EmployeeRoleSchema,
+            },
+        ]),
+        CatapushModule,
+        DtcModule,
+    ],
+    providers: [
+        EmailQueueProducers,
+        EmailQueueConsumer,
+        FileProcessQueueProducers,
+        FileProcessQueueConsumer,
+        FileBuildQueueConsumer,
+        CatapushMessageProducer,
+        CatapushMessageConsumer,
+        DtcQueueConsumer,
+    ],
+    exports: [EmailQueueProducers, FileProcessQueueProducers, CatapushMessageProducer],
 })
 export class QueueManagerModule {}

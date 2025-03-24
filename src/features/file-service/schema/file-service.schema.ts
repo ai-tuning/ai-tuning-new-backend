@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
 import { AutoFlasher, AutoTuner, FileSchema, Kess3 } from 'src/features/common';
+import { FileModel } from 'src/features/common/schema/file.schema';
 import { collectionsName, FILE_SERVICE_STATUS, PAYMENT_STATUS, SLAVE_TYPE, WinOLS_STATUS } from 'src/features/constant';
 
 //solution which are requested by the customer
@@ -68,28 +69,28 @@ export class FileService extends Document {
         type: FileSchema,
         required: true,
     })
-    originalFile: FileSchema;
+    originalFile: FileModel;
 
     @Prop({
         type: FileSchema,
     })
-    decodedFile: FileSchema;
+    decodedFile: FileModel;
 
     @Prop({
         type: FileSchema,
         required: true,
     })
-    iniFile: FileSchema;
+    iniFile: FileModel;
 
     @Prop({
         type: FileSchema,
     })
-    modWithoutEncoded: FileSchema;
+    modWithoutEncoded: FileModel;
 
     @Prop({
         type: FileSchema,
     })
-    modFile: FileSchema;
+    modFile: FileModel;
 
     @Prop({
         type: String,
