@@ -92,9 +92,9 @@ export class PathService {
     }
 
     getDtcInputPath() {
-        return process.cwd(), 'public', 'dtc', 'in';
+        return join(process.cwd(), 'public', 'dtc', 'in');
     }
     getDtcOutPath() {
-        return process.cwd(), 'public', 'dtc', 'out';
+        return join(process.cwd(), 'public', 'dtc', 'out');
     }
 }

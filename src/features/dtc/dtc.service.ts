@@ -39,6 +39,8 @@ export class DtcService {
 
         const dtc = await newDtc.save();
 
+        console.log('saved');
+
         const rootPath = this.pathService.getTempFilePath(dtc._id.toString());
 
         if (!fs.existsSync(rootPath)) {
@@ -47,7 +49,7 @@ export class DtcService {
 
         //move file to temp folder
         await fs.promises.rename(file.path, join(rootPath, file.filename));
-
+        console.log('file moved');
         this.dtcQueue.add(queueNames.dtcQueue, dtc._id, {
             removeOnComplete: true,
         });
