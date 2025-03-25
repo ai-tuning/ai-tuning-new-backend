@@ -10,24 +10,26 @@ import { ChatSchema } from '../chat/schema/chat.schema';
 import { QueueManagerModule } from '../queue-manager/queue-manager.module';
 import { CustomerSchema } from '../customer/schema/customer.schema';
 import { AdminSchema } from '../admin/schema/admin.schema';
+import { ChatModule } from '../chat/chat.module';
 
 @Module({
-  imports: [
-    MulterModule.register({
-      acceptedMimeTypes: [],
-      destination: './public/uploads/files',
-      errorMessages: 'Please upload a valid file',
-    }),
-    MongooseModule.forFeature([
-      { name: collectionsName.supportTicket, schema: SupportTicketSchema },
-      { name: collectionsName.chat, schema: ChatSchema },
-      { name: collectionsName.customer, schema: CustomerSchema },
-      { name: collectionsName.admin, schema: AdminSchema },
-    ]),
-    StorageServiceModule,
-    QueueManagerModule,
-  ],
-  controllers: [SupportTicketController],
-  providers: [SupportTicketService],
+    imports: [
+        MulterModule.register({
+            acceptedMimeTypes: [],
+            destination: './public/uploads/files',
+            errorMessages: 'Please upload a valid file',
+        }),
+        MongooseModule.forFeature([
+            { name: collectionsName.supportTicket, schema: SupportTicketSchema },
+            { name: collectionsName.chat, schema: ChatSchema },
+            { name: collectionsName.customer, schema: CustomerSchema },
+            { name: collectionsName.admin, schema: AdminSchema },
+        ]),
+        StorageServiceModule,
+        QueueManagerModule,
+        ChatModule,
+    ],
+    controllers: [SupportTicketController],
+    providers: [SupportTicketService],
 })
 export class SupportTicketModule {}
