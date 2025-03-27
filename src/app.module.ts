@@ -44,6 +44,7 @@ import { AdminPricingModule } from './features/admin-pricing/admin-pricing.modul
 import { DashboardModule } from './features/dashboard/dashboard.module';
 import { MigrationModule } from './features/migration/migration.module';
 import { CatapushModule } from './features/catapush/catapush.module';
+import { FlexSlaveModule } from './features/flex-slave/flex-slave.module';
 
 @Module({
   imports: [
@@ -173,6 +174,7 @@ import { CatapushModule } from './features/catapush/catapush.module';
     DashboardModule,
     MigrationModule,
     CatapushModule,
+    FlexSlaveModule,
   ],
   controllers: [],
   providers: [],

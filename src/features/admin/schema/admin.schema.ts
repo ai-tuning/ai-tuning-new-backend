@@ -76,6 +76,7 @@ const AdminSchema = SchemaFactory.createForClass(Admin);
 export class AdminDocument {
     _id: Types.ObjectId;
     username: string;
+    user: Types.ObjectId;
     category: ADMIN_CATEGORY;
     companyName: string;
     firstName: string;

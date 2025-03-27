@@ -11,51 +11,51 @@ import { RolesEnum } from '../constant';
 
 @Controller('solutions')
 export class SolutionController {
-  constructor(
-    private readonly solutionService: SolutionService,
-    private readonly solutionInformationService: SolutionInformationService,
-  ) {}
+    constructor(
+        private readonly solutionService: SolutionService,
+        private readonly solutionInformationService: SolutionInformationService,
+    ) {}
 
-  @AccessRole([RolesEnum.SUPER_ADMIN])
-  @Post()
-  async create(@Body() createSolutionDto: CreateSolutionDto) {
-    const data = await this.solutionService.create(createSolutionDto);
-    return { message: 'Solution created successfully', data };
-  }
+    @AccessRole([RolesEnum.SUPER_ADMIN])
+    @Post()
+    async create(@Body() createSolutionDto: CreateSolutionDto) {
+        const data = await this.solutionService.create(createSolutionDto);
+        return { message: 'Solution created successfully', data };
+    }
 
-  @Get()
-  findByAdmin() {
-    return this.solutionService.findAll();
-  }
+    @Get()
+    findByAdmin() {
+        return this.solutionService.findAll();
+    }
 
-  @Patch(':id')
-  async update(@Param('id') id: Types.ObjectId, @Body() updateSolutionDto: UpdateSolutionDto) {
-    const data = await this.solutionService.update(id, updateSolutionDto);
-    return { data, message: 'Solution updated successfully' };
-  }
+    @Patch(':id')
+    async update(@Param('id') id: Types.ObjectId, @Body() updateSolutionDto: UpdateSolutionDto) {
+        const data = await this.solutionService.update(id, updateSolutionDto);
+        return { data, message: 'Solution updated successfully' };
+    }
 
-  @Delete(':id')
-  async remove(@Param('id') id: Types.ObjectId) {
-    const data = await this.solutionService.remove(id);
-    return { data, message: 'Solution deleted successfully' };
-  }
+    @Delete(':id')
+    async remove(@Param('id') id: Types.ObjectId) {
+        const data = await this.solutionService.remove(id);
+        return { data, message: 'Solution deleted successfully' };
+    }
 
-  /**
-   * Solution information section
-   */
+    /**
+     * Solution information section
+     */
 
-  @Get('solution-information/:controllerId')
-  async getSolutionInformation(@Param('controllerId') controllerId: Types.ObjectId, @AuthUser() authUser: IAuthUser) {
-    const data = await this.solutionInformationService.getSolutionInformation(authUser.admin, controllerId);
-    return data;
-  }
+    @Get('solution-information/:controllerId')
+    async getSolutionInformation(@Param('controllerId') controllerId: Types.ObjectId) {
+        const data = await this.solutionInformationService.getSolutionInformation(controllerId);
+        return data;
+    }
 
-  @Patch('solution-information/:controllerId')
-  async createSolutionInformation(
-    @Param('controllerId') controllerId: Types.ObjectId,
-    @Body() solutionInformationDto: SolutionInformationDto,
-  ) {
-    const data = await this.solutionInformationService.upsertData(controllerId, solutionInformationDto);
-    return { data, message: 'Solution information created successfully' };
-  }
+    @Patch('solution-information/:controllerId')
+    async createSolutionInformation(
+        @Param('controllerId') controllerId: Types.ObjectId,
+        @Body() solutionInformationDto: SolutionInformationDto,
+    ) {
+        const data = await this.solutionInformationService.upsertData(controllerId, solutionInformationDto);
+        return { data, message: 'Solution information created successfully' };
+    }
 }

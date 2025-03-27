@@ -44,6 +44,8 @@ import { AdminPricingService } from '../admin-pricing/admin-pricing.service';
 import { AdminPrices } from '../admin-pricing/schema/admin-pricing.schema';
 import { PRICING_TYPE_ENUM } from '../constant/enums/pricing-type.enum';
 import { CatapushMessageProducer } from '../queue-manager/producers/catapush-message.producer';
+import { SolutionInformation } from '../solution/schema/solution-information.schema';
+import { SolutionInformationService } from '../solution/solution-information.service';
 
 const timeOutAsync = promisify(setTimeout);
 
@@ -58,6 +60,7 @@ export class FileServiceService {
         private readonly controllerService: CarControllerService,
         private readonly pathService: PathService,
         private readonly solutionService: SolutionService,
+        private readonly solutionInformationService: SolutionInformationService,
         private readonly autoTunerService: AutoTunerService,
         private readonly autoFlasherService: AutoFlasherService,
         private readonly kess3Service: Kess3Service,
@@ -396,6 +399,7 @@ export class FileServiceService {
                 'credits',
                 'aiAssist',
                 'email',
+                'user',
             ]);
 
             let requiredAdminCredits = this.isSuperAdminId(prepareSolutionDto.admin) ? 0 : allAdminPricing.perFilePrice;
@@ -652,22 +656,65 @@ ResellerCredits= 10
                 }
             }
 
+            const chatPayload = [];
+
             if (prepareSolutionDto.comments) {
                 //send the comment in the chat
-                await this.chatService.create(
-                    {
-                        admin: admin as Types.ObjectId,
-                        chatBelong: CHAT_BELONG.FILE_SERVICE,
-                        customer: customer._id as Types.ObjectId,
-                        message: prepareSolutionDto.comments,
-                        receiver: admin as Types.ObjectId,
-                        service: newFileService._id as Types.ObjectId,
-                        sender: customer.user as Types.ObjectId,
-                        messageSenderGroup: CHAT_MESSAGE_SENDER_GROUP.CUSTOMER,
-                    },
-                    null,
-                    session,
+                chatPayload.push(
+                    this.chatService.create(
+                        {
+                            admin: admin as Types.ObjectId,
+                            chatBelong: CHAT_BELONG.FILE_SERVICE,
+                            customer: customer._id as Types.ObjectId,
+                            message: prepareSolutionDto.comments,
+                            receiver: admin as Types.ObjectId,
+                            service: newFileService._id as Types.ObjectId,
+                            sender: customer.user as Types.ObjectId,
+                            messageSenderGroup: CHAT_MESSAGE_SENDER_GROUP.CUSTOMER,
+                        },
+                        null,
+                        session,
+                    ),
                 );
+            }
+
+            //set solution information data as initial admin/super admin chat message
+            const solutionInformation = await this.solutionInformationService.getSolutionInformationByProperty(
+                newFileService.controller,
+                allSolution,
+            );
+
+            if (solutionInformation.length) {
+                let contents = 'INFO: ';
+                solutionInformation.forEach((item) => {
+                    if (item.content) {
+                        contents += '\n' + item.content;
+                    }
+                });
+                if (contents) {
+                    chatPayload.push(
+                        this.chatService.create(
+                            {
+                                admin: admin as Types.ObjectId,
+                                chatBelong: CHAT_BELONG.FILE_SERVICE,
+                                customer: customer._id as Types.ObjectId,
+                                message: contents,
+                                receiver: customer._id as Types.ObjectId,
+                                service: newFileService._id as Types.ObjectId,
+                                sender: adminData.user as Types.ObjectId,
+                                messageSenderGroup: this.isSuperAdminId(admin)
+                                    ? CHAT_MESSAGE_SENDER_GROUP.SUPER_ADMIN_GROUP
+                                    : CHAT_MESSAGE_SENDER_GROUP.ADMIN_GROUP,
+                            },
+                            null,
+                            session,
+                        ),
+                    );
+                }
+            }
+
+            if (chatPayload.length) {
+                await Promise.all(chatPayload);
             }
 
             const result = await newFileService.save({ session });
