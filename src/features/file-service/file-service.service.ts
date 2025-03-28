@@ -691,7 +691,7 @@ ResellerCredits= 10
                         contents += '\n' + item.content;
                     }
                 });
-                if (contents) {
+                if (contents.length > 6) {
                     chatPayload.push(
                         this.chatService.create(
                             {
