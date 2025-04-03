@@ -135,6 +135,12 @@ export class AdminService {
             data.autoFlasher = false;
         }
 
+        if (credentials.flexSlave) {
+            data.flexSlave = !!credentials.flexSlave.apiKey;
+        } else {
+            data.autoFlasher = false;
+        }
+
         return data;
     }
 

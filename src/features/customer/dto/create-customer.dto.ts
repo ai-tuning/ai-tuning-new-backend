@@ -4,82 +4,85 @@ import { UserStatusEnum } from 'src/features/constant';
 import { Types } from 'mongoose';
 
 export class CreateCustomerDto {
-  @IsOptional()
-  @IsMongoId()
-  admin: Types.ObjectId;
+    @IsOptional()
+    @IsMongoId()
+    admin: Types.ObjectId;
 
-  @IsNotEmpty()
-  @IsString()
-  firstName: string;
+    @IsNotEmpty()
+    @IsString()
+    firstName: string;
 
-  @IsNotEmpty()
-  @IsString()
-  lastName: string;
+    @IsNotEmpty()
+    @IsString()
+    lastName: string;
 
-  @IsNotEmpty()
-  @IsEmail()
-  email: string;
+    @IsNotEmpty()
+    @IsEmail()
+    email: string;
 
-  @IsNotEmpty()
-  @IsString()
-  password: string;
+    @IsNotEmpty()
+    @IsString()
+    password: string;
 
-  @IsNotEmpty()
-  @IsString(null) // Use specific locale if needed, e.g., 'US'
-  phone: string;
+    @IsNotEmpty()
+    @IsString(null) // Use specific locale if needed, e.g., 'US'
+    phone: string;
 
-  @IsNotEmpty()
-  @IsString()
-  country: string;
+    @IsNotEmpty()
+    @IsString()
+    country: string;
 
-  @IsNotEmpty()
-  @IsString()
-  city: string;
+    @IsNotEmpty()
+    @IsString()
+    city: string;
 
-  @IsNotEmpty()
-  @IsString()
-  address: string;
+    @IsNotEmpty()
+    @IsString()
+    address: string;
 
-  @IsNotEmpty()
-  @Matches(/^\d{4,6}$/, { message: 'Postcode must be between 4 and 6 digits' })
-  postcode: string;
+    @IsNotEmpty()
+    @Matches(/^\d{4,6}$/, { message: 'Postcode must be between 4 and 6 digits' })
+    postcode: string;
 
-  @IsOptional()
-  @IsString()
-  companyName?: string;
+    @IsOptional()
+    @IsString()
+    companyName?: string;
 
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  credits?: number;
+    @IsOptional()
+    @Type(() => Number)
+    @IsNumber()
+    credits?: number;
 
-  @IsOptional()
-  @IsString()
-  avatar?: string;
+    @IsOptional()
+    @IsString()
+    avatar?: string;
 
-  @IsOptional()
-  @IsMongoId()
-  customerType: Types.ObjectId;
+    @IsOptional()
+    @IsMongoId()
+    customerType: Types.ObjectId;
 
-  @IsOptional()
-  @IsEnum(UserStatusEnum)
-  status: UserStatusEnum;
+    @IsOptional()
+    @IsEnum(UserStatusEnum)
+    status: UserStatusEnum;
 
-  @IsOptional()
-  @IsString()
-  evcNumber?: string;
+    @IsOptional()
+    @IsString()
+    evcNumber?: string;
 
-  @IsOptional()
-  @IsString()
-  vatNumber?: string;
+    @IsOptional()
+    @IsString()
+    vatNumber?: string;
 
-  @IsNotEmpty()
-  @IsString()
-  countryCode?: string;
+    @IsNotEmpty()
+    @IsString()
+    countryCode?: string;
 
-  @IsOptional()
-  @IsString()
-  street?: string;
+    @IsOptional()
+    @IsString()
+    street?: string;
 
-  mysqlId?: number;
+    mysqlId?: number;
+
+    @IsOptional()
+    flexSlaveSn?: string;
 }

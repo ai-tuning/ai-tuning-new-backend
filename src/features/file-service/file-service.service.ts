@@ -46,6 +46,7 @@ import { PRICING_TYPE_ENUM } from '../constant/enums/pricing-type.enum';
 import { CatapushMessageProducer } from '../queue-manager/producers/catapush-message.producer';
 import { SolutionInformation } from '../solution/schema/solution-information.schema';
 import { SolutionInformationService } from '../solution/solution-information.service';
+import { FlexSlaveService } from '../flex-slave/flex-slave.service';
 
 const timeOutAsync = promisify(setTimeout);
 
@@ -73,6 +74,7 @@ export class FileServiceService {
         private readonly emailQueueProducers: EmailQueueProducers,
         private readonly fileProcessProducer: FileProcessQueueProducers,
         private readonly catapushMessageProducer: CatapushMessageProducer,
+        private readonly flexSlaveService: FlexSlaveService,
     ) {}
 
     async findById(id: Types.ObjectId): Promise<FileService> {
@@ -238,6 +240,10 @@ export class FileServiceService {
             throw new BadRequestException('Customer not found');
         }
 
+        if (automatisationDto.slaveType === SLAVE_TYPE.FLEX_SLAVE) {
+            if (!customer.flexSlaveSn) throw new BadRequestException('You need to add flex slave serial number');
+        }
+
         const tempFileData = new this.tempFileServiceModel(automatisationDto);
 
         const fileServicePath = path.join(
@@ -295,6 +301,19 @@ export class FileServiceService {
             tempFileData.autoFlasher = autoFlasher;
             tempFileData.decodedFile = autoFlasher.decodedFileName;
             filePath = autoFlasher.decodedFilePath;
+        } else if (automatisationDto.slaveType === SLAVE_TYPE.FLEX_SLAVE) {
+            const flexSlave = await this.flexSlaveService.decrypt({
+                adminId: automatisationDto.admin,
+                tempFileId: tempFileData._id as Types.ObjectId,
+                sn: customer.flexSlaveSn,
+                filePath,
+            });
+            tempFileData.flexSlave = {
+                ...flexSlave,
+                sn: customer.flexSlaveSn,
+            };
+            tempFileData.decodedFile = flexSlave.decodedFileName;
+            filePath = flexSlave.decodedFilePath;
         }
 
         //get complete script path
@@ -479,6 +498,10 @@ export class FileServiceService {
                         isCVNCorrectionPossible: tempFileService.kess3.isCVNCorrectionPossible,
                         mode: tempFileService.kess3.mode,
                         uniqueId: tempFileService.kess3.uniqueId,
+                    };
+                } else if (tempFileService.slaveType === SLAVE_TYPE.FLEX_SLAVE) {
+                    newFileService.flexSlave = {
+                        sn: tempFileService.flexSlave.sn,
                     };
                 }
             }
@@ -678,38 +701,40 @@ ResellerCredits= 10
                 );
             }
 
-            //set solution information data as initial admin/super admin chat message
-            const solutionInformation = await this.solutionInformationService.getSolutionInformationByProperty(
-                newFileService.controller,
-                allSolution,
-            );
+            if (!requestedSolutions.length) {
+                //set solution information data as initial admin/super admin chat message
+                const solutionInformation = await this.solutionInformationService.getSolutionInformationByProperty(
+                    newFileService.controller,
+                    allSolution,
+                );
 
-            if (solutionInformation.length) {
-                let contents = 'INFO: ';
-                solutionInformation.forEach((item) => {
-                    if (item.content) {
-                        contents += '\n' + item.content;
+                if (solutionInformation.length) {
+                    let contents = 'INFO: ';
+                    solutionInformation.forEach((item) => {
+                        if (item.content) {
+                            contents += '\n' + item.solution.name + ': ' + item.content;
+                        }
+                    });
+                    if (contents.length > 6) {
+                        chatPayload.push(
+                            this.chatService.create(
+                                {
+                                    admin: admin as Types.ObjectId,
+                                    chatBelong: CHAT_BELONG.FILE_SERVICE,
+                                    customer: customer._id as Types.ObjectId,
+                                    message: contents,
+                                    receiver: customer._id as Types.ObjectId,
+                                    service: newFileService._id as Types.ObjectId,
+                                    sender: adminData.user as Types.ObjectId,
+                                    messageSenderGroup: this.isSuperAdminId(admin)
+                                        ? CHAT_MESSAGE_SENDER_GROUP.SUPER_ADMIN_GROUP
+                                        : CHAT_MESSAGE_SENDER_GROUP.ADMIN_GROUP,
+                                },
+                                null,
+                                session,
+                            ),
+                        );
                     }
-                });
-                if (contents.length > 6) {
-                    chatPayload.push(
-                        this.chatService.create(
-                            {
-                                admin: admin as Types.ObjectId,
-                                chatBelong: CHAT_BELONG.FILE_SERVICE,
-                                customer: customer._id as Types.ObjectId,
-                                message: contents,
-                                receiver: customer._id as Types.ObjectId,
-                                service: newFileService._id as Types.ObjectId,
-                                sender: adminData.user as Types.ObjectId,
-                                messageSenderGroup: this.isSuperAdminId(admin)
-                                    ? CHAT_MESSAGE_SENDER_GROUP.SUPER_ADMIN_GROUP
-                                    : CHAT_MESSAGE_SENDER_GROUP.ADMIN_GROUP,
-                            },
-                            null,
-                            session,
-                        ),
-                    );
                 }
             }
 
@@ -803,6 +828,13 @@ ResellerCredits= 10
                 filePath: modifiedFilePath,
                 memory_type: fileService.autoFlasher.memory_type,
                 serialNumber: fileService.autoFlasher.serialNumber,
+            });
+        } else if (fileService.slaveType === SLAVE_TYPE.FLEX_SLAVE) {
+            return this.flexSlaveService.encrypt({
+                adminId: fileService.admin,
+                fileServiceId: fileService._id as Types.ObjectId,
+                filePath: modifiedFilePath,
+                sn: fileService.flexSlave.sn,
             });
         }
     }
@@ -1038,11 +1070,15 @@ ResellerCredits= 10
             const outFiles = await fs.promises.readdir(outputPath);
             currentFileCount = outFiles.length;
 
-            if (previousFileCount !== currentFileCount) {
+            if (previousFileCount < currentFileCount) {
                 console.log('got new file');
+                console.log('outFiles', outFiles);
+
                 attempts = 0;
                 previousFileCount = currentFileCount;
             } else {
+                console.log('no new file');
+                console.log('outFiles', outFiles);
                 attempts += 1;
             }
         }
@@ -1306,6 +1342,42 @@ ResellerCredits= 10
             );
             fileService.paymentStatus = PAYMENT_STATUS.PAID;
             fileService.status = FILE_SERVICE_STATUS.COMPLETED;
+
+            //set solution information data as initial admin/super admin chat message
+            const solutionInformation = await this.solutionInformationService.getSolutionInformationByProperty(
+                fileService.controller,
+                fileService.solutions.requested.concat(fileService.solutions.automatic),
+            );
+
+            const admin = await this.adminService.findByIdAndSelect(fileService.admin, ['user']);
+            const customer = await this.customerService.findByIdAndSelect(fileService.customer, ['_id']);
+
+            if (solutionInformation.length) {
+                let contents = 'INFO: ';
+                solutionInformation.forEach((item) => {
+                    if (item.content) {
+                        contents += '\n' + item.solution.name + ': ' + item.content;
+                    }
+                });
+                if (contents.length > 6) {
+                    await this.chatService.create(
+                        {
+                            admin: admin._id as Types.ObjectId,
+                            chatBelong: CHAT_BELONG.FILE_SERVICE,
+                            customer: customer._id as Types.ObjectId,
+                            message: contents,
+                            receiver: customer._id as Types.ObjectId,
+                            service: fileService._id as Types.ObjectId,
+                            sender: admin.user as Types.ObjectId,
+                            messageSenderGroup: this.isSuperAdminId(admin._id)
+                                ? CHAT_MESSAGE_SENDER_GROUP.SUPER_ADMIN_GROUP
+                                : CHAT_MESSAGE_SENDER_GROUP.ADMIN_GROUP,
+                        },
+                        null,
+                        session,
+                    );
+                }
+            }
         }
 
         // Upload modified file
@@ -1356,13 +1428,13 @@ ResellerCredits= 10
                 throw new BadRequestException('Please provide modFile');
             }
 
-            const fileService = await this.fileServiceModel.findById(fileServiceId).session(session);
+            const fileService = await this.fileServiceModel.findById(fileServiceId);
 
             if (!fileService) {
                 throw new NotFoundException('File not found');
             }
 
-            const admin = await this.adminService.findByIdAndSelect(fileService.admin, ['email']);
+            const admin = await this.adminService.findByIdAndSelect(fileService.admin, ['email', 'user']);
 
             const customer = await this.customerService.findByIdAndSelect(fileService.customer, [
                 'firstName',
@@ -1424,6 +1496,39 @@ ResellerCredits= 10
             }
             fileService.status = FILE_SERVICE_STATUS.COMPLETED;
             fileService.paymentStatus = PAYMENT_STATUS.PAID;
+
+            //set solution information data as initial admin/super admin chat message
+            const solutionInformation = await this.solutionInformationService.getSolutionInformationByProperty(
+                fileService.controller,
+                fileService.solutions.requested.concat(fileService.solutions.automatic),
+            );
+
+            if (solutionInformation.length) {
+                let contents = 'INFO: ';
+                solutionInformation.forEach((item) => {
+                    if (item.content) {
+                        contents += '\n' + item.solution.name + ': ' + item.content;
+                    }
+                });
+                if (contents.length > 6) {
+                    await this.chatService.create(
+                        {
+                            admin: admin._id as Types.ObjectId,
+                            chatBelong: CHAT_BELONG.FILE_SERVICE,
+                            customer: customer._id as Types.ObjectId,
+                            message: contents,
+                            receiver: customer._id as Types.ObjectId,
+                            service: fileService._id as Types.ObjectId,
+                            sender: admin.user as Types.ObjectId,
+                            messageSenderGroup: this.isSuperAdminId(admin._id)
+                                ? CHAT_MESSAGE_SENDER_GROUP.SUPER_ADMIN_GROUP
+                                : CHAT_MESSAGE_SENDER_GROUP.ADMIN_GROUP,
+                        },
+                        null,
+                        session,
+                    );
+                }
+            }
 
             fileService.modUpload = {
                 date: new Date(),
@@ -1500,7 +1605,7 @@ ResellerCredits= 10
                 oldModWithOutEncodedKey = fileService.modWithoutEncoded.key;
             }
 
-            const admin = await this.adminService.findByIdAndSelect(fileService.admin, ['email']);
+            const admin = await this.adminService.findByIdAndSelect(fileService.admin, ['email', 'user']);
 
             const customer = await this.customerService.findByIdAndSelect(fileService.customer, [
                 'firstName',
@@ -1594,6 +1699,39 @@ ResellerCredits= 10
                     emailType: EMAIL_TYPE.fileReady,
                     uniqueId: fileService.uniqueId,
                 });
+
+                //set solution information data as initial admin/super admin chat message
+                const solutionInformation = await this.solutionInformationService.getSolutionInformationByProperty(
+                    fileService.controller,
+                    fileService.solutions.requested.concat(fileService.solutions.automatic),
+                );
+
+                if (solutionInformation.length) {
+                    let contents = 'INFO: ';
+                    solutionInformation.forEach((item) => {
+                        if (item.content) {
+                            contents += '\n' + item.solution.name + ': ' + item.content;
+                        }
+                    });
+                    if (contents.length > 6) {
+                        await this.chatService.create(
+                            {
+                                admin: admin._id as Types.ObjectId,
+                                chatBelong: CHAT_BELONG.FILE_SERVICE,
+                                customer: customer._id as Types.ObjectId,
+                                message: contents,
+                                receiver: customer._id as Types.ObjectId,
+                                service: fileService._id as Types.ObjectId,
+                                sender: admin.user as Types.ObjectId,
+                                messageSenderGroup: this.isSuperAdminId(admin._id)
+                                    ? CHAT_MESSAGE_SENDER_GROUP.SUPER_ADMIN_GROUP
+                                    : CHAT_MESSAGE_SENDER_GROUP.ADMIN_GROUP,
+                            },
+                            null,
+                            session,
+                        );
+                    }
+                }
             }
 
             //for avoid already committing error of transaction we wrap this deleting process using try catch, so that if it give any error then it doesn't pass to the parent function

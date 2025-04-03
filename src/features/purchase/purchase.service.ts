@@ -159,9 +159,60 @@ export class PurchaseService {
             const order = await this.createOrder(
                 adminId,
                 invoice._id as Types.ObjectId,
+                unitPrice,
+                purchaseCreditDto.quantity,
                 totalPrice,
                 origin,
                 description,
+            );
+
+            await session.commitTransaction();
+            return order.links[1].href;
+        } catch (error) {
+            await session.abortTransaction();
+            throw error;
+        } finally {
+            await session.endSession();
+        }
+    }
+
+    //=================admin credit purchase service=================================
+    async purchaseAdminCredits(adminId: Types.ObjectId, purchaseCreditDto: PurchaseAdminCreditDto, origin: string) {
+        const session = await this.connection.startSession();
+        try {
+            session.startTransaction();
+            const adminCreditPricing = await this.adminPricingService.getAdminAllPricing();
+            const unitPrice = adminCreditPricing.creditPrice;
+
+            const totalPrice = unitPrice * purchaseCreditDto.quantity;
+            const vat = 0;
+            const grandTotal = totalPrice;
+
+            const invoiceDto: CreateInvoiceDto = {
+                admin: adminId,
+                invoiceNumber: Date.now().toString(),
+                description: 'Software Development Credits',
+                quantity: purchaseCreditDto.quantity,
+                unitPrice: unitPrice,
+                totalPrice,
+                vat,
+                grandTotal,
+                reverseCharge: false,
+                isEvcCredit: false,
+            };
+
+            //create invoice
+            const invoice = await this.invoiceService.create(invoiceDto, session);
+            const superAdminId = new Types.ObjectId(process.env.SUPER_ADMIN_ID);
+            //generate payment link
+            const order = await this.createOrder(
+                superAdminId,
+                invoice._id as Types.ObjectId,
+                unitPrice,
+                purchaseCreditDto.quantity,
+                totalPrice,
+                origin,
+                'Software Development Credits',
             );
 
             await session.commitTransaction();
@@ -210,157 +261,7 @@ export class PurchaseService {
             return invoice;
         } catch (error) {
             await session.abortTransaction();
-            throw error;
-        } finally {
-            await session.endSession();
-        }
-    }
-
-    /**
-     * Generate access token
-     * @returns access token
-     */
-    async getAccessToken(adminId: Types.ObjectId) {
-        const getCredential = await this.credentialService.findByAdmin(adminId, 'paypal');
-        // Encode the credentials in Base64 for Basic Authentication
-        if (!getCredential.paypal) throw new BadRequestException('Paypal Credential not found');
-
-        const credentials = btoa(`${getCredential.paypal.clientId}:${getCredential.paypal.clientSecret}`);
-
-        try {
-            const { data } = await this.httpService.axiosRef(`${this.paypal_url}/v1/oauth2/token`, {
-                method: 'post',
-                headers: {
-                    Authorization: `Basic ${credentials}`,
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                data: 'grant_type=client_credentials',
-            });
-            return data.access_token;
-        } catch (error) {
-            console.error('Request failed:', error);
-        }
-    }
-
-    /**
-     *
-     * @param {Types.ObjectId} adminId
-     * @param {Types.ObjectId} invoiceId
-     * @param {number} amount
-     * @returns object with payment link
-     */
-    async createOrder(
-        adminId: Types.ObjectId,
-        invoiceId: Types.ObjectId,
-        amount: number,
-        origin: string,
-        itemName: string,
-    ) {
-        const token = await this.getAccessToken(adminId);
-        const { data } = await this.httpService.axiosRef(`${this.paypal_url}/v2/checkout/orders`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'PayPal-Request-Id': Date.now().toString(), //generate random id,
-                Authorization: `Bearer ${token}`,
-            },
-            data: {
-                intent: 'CAPTURE',
-                purchase_units: [
-                    {
-                        reference_id: invoiceId.toString(),
-                        amount: {
-                            currency_code: 'EUR',
-                            value: amount,
-                            breakdown: {
-                                item_total: { currency_code: 'EUR', value: amount },
-                            },
-                        },
-                        items: [
-                            {
-                                name: itemName,
-                                unit_amount: { currency_code: 'EUR', value: amount },
-                                quantity: '1',
-                            },
-                        ],
-                    },
-                ],
-                payment_source: {
-                    paypal: {
-                        experience_context: {
-                            payment_method_preference: 'IMMEDIATE_PAYMENT_REQUIRED',
-                            locale: 'en-US',
-                            landing_page: 'LOGIN',
-                            user_action: 'PAY_NOW',
-                            return_url: `${this.returnUrl}?invoiceId=${invoiceId}&origin=${origin}`,
-                            cancel_url: `${decodeURIComponent(origin)}/payment/cancel`,
-                        },
-                    },
-                },
-            },
-        });
-        return data;
-    }
-
-    /**
-     * Capture an order for verify the payment payment will not completed without capture
-     * @param {string} orderId
-     * @returns
-     */
-    async captureOrder(adminId: Types.ObjectId, orderId: string) {
-        const token = await this.getAccessToken(adminId);
-        const { data } = await this.httpService.axiosRef(`${this.paypal_url}/v2/checkout/orders/${orderId}/capture`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'PayPal-Request-Id': Date.now().toString(),
-                Authorization: `Bearer ${token}`,
-            },
-        });
-        return data;
-    }
-
-    //=================admin credit purchase service=================================
-    async purchaseAdminCredits(adminId: Types.ObjectId, purchaseCreditDto: PurchaseAdminCreditDto, origin: string) {
-        const session = await this.connection.startSession();
-        try {
-            session.startTransaction();
-            const adminCreditPricing = await this.adminPricingService.getAdminAllPricing();
-            const unitPrice = adminCreditPricing.creditPrice;
-
-            const totalPrice = unitPrice * purchaseCreditDto.quantity;
-            const vat = 0;
-            const grandTotal = totalPrice;
-
-            const invoiceDto: CreateInvoiceDto = {
-                admin: adminId,
-                invoiceNumber: Date.now().toString(),
-                description: 'Software Development Credits',
-                quantity: purchaseCreditDto.quantity,
-                unitPrice: unitPrice,
-                totalPrice,
-                vat,
-                grandTotal,
-                reverseCharge: false,
-                isEvcCredit: false,
-            };
-
-            //create invoice
-            const invoice = await this.invoiceService.create(invoiceDto, session);
-            const superAdminId = new Types.ObjectId(process.env.SUPER_ADMIN_ID);
-            //generate payment link
-            const order = await this.createOrder(
-                superAdminId,
-                invoice._id as Types.ObjectId,
-                totalPrice,
-                origin,
-                'Software Development Credits',
-            );
-
-            await session.commitTransaction();
-            return order.links[1].href;
-        } catch (error) {
-            await session.abortTransaction();
+            console.log(error);
             throw error;
         } finally {
             await session.endSession();
@@ -412,5 +313,115 @@ export class PurchaseService {
             const grandTotal = price + vatAmount;
             return { totalPrice: price, vatAmount: vatAmount, grandTotal: grandTotal };
         }
+    }
+
+    /**
+     * Generate access token
+     * @returns access token
+     */
+    async getAccessToken(adminId: Types.ObjectId) {
+        const getCredential = await this.credentialService.findByAdmin(adminId, 'paypal');
+        // Encode the credentials in Base64 for Basic Authentication
+        if (!getCredential.paypal) throw new BadRequestException('Paypal Credential not found');
+
+        const credentials = btoa(`${getCredential.paypal.clientId}:${getCredential.paypal.clientSecret}`);
+
+        try {
+            const { data } = await this.httpService.axiosRef(`${this.paypal_url}/v1/oauth2/token`, {
+                method: 'post',
+                headers: {
+                    Authorization: `Basic ${credentials}`,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                data: 'grant_type=client_credentials',
+            });
+            return data.access_token;
+        } catch (error) {
+            console.error('Request failed:', error);
+        }
+    }
+
+    /**
+     *
+     * @param {Types.ObjectId} adminId
+     * @param {Types.ObjectId} invoiceId
+     * @param {number} unitPrice
+     * @param {number} quantity
+     * @param {number} totalPrice
+     * @param {string} origin
+     * @param {string} itemName
+     * @returns object with payment link
+     */
+    async createOrder(
+        adminId: Types.ObjectId,
+        invoiceId: Types.ObjectId,
+        unitPrice: number,
+        quantity: number,
+        totalPrice: number,
+        origin: string,
+        itemName: string,
+    ) {
+        const token = await this.getAccessToken(adminId);
+        const { data } = await this.httpService.axiosRef(`${this.paypal_url}/v2/checkout/orders`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'PayPal-Request-Id': Date.now().toString(), //generate random id,
+                Authorization: `Bearer ${token}`,
+            },
+            data: {
+                intent: 'CAPTURE',
+                purchase_units: [
+                    {
+                        reference_id: invoiceId.toString(),
+                        amount: {
+                            currency_code: 'EUR',
+                            value: totalPrice,
+                            breakdown: {
+                                item_total: { currency_code: 'EUR', value: totalPrice },
+                            },
+                        },
+                        items: [
+                            {
+                                name: itemName,
+                                unit_amount: { currency_code: 'EUR', value: unitPrice },
+                                quantity: quantity.toString(),
+                            },
+                        ],
+                    },
+                ],
+                payment_source: {
+                    paypal: {
+                        experience_context: {
+                            payment_method_preference: 'IMMEDIATE_PAYMENT_REQUIRED',
+                            locale: 'en-US',
+                            landing_page: 'LOGIN',
+                            user_action: 'PAY_NOW',
+                            return_url: `${this.returnUrl}?invoiceId=${invoiceId}&origin=${origin}`,
+                            cancel_url: `${decodeURIComponent(origin)}/payment/cancel`,
+                        },
+                    },
+                },
+            },
+        });
+        return data;
+    }
+
+    /**
+     * Capture an order for verify the payment payment will not completed without capture
+     * @param {string} orderId
+     * @returns
+     */
+    async captureOrder(adminId: Types.ObjectId, orderId: string) {
+        const token = await this.getAccessToken(adminId);
+        const { data } = await this.httpService.axiosRef(`${this.paypal_url}/v2/checkout/orders/${orderId}/capture`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'PayPal-Request-Id': Date.now().toString(),
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return data;
     }
 }

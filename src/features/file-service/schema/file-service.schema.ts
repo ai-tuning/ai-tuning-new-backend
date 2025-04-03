@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
 import { AutoFlasher, AutoTuner, FileSchema, Kess3 } from 'src/features/common';
 import { FileModel } from 'src/features/common/schema/file.schema';
+import { FlexSlave } from 'src/features/common/schema/slave.schema';
 import { collectionsName, FILE_SERVICE_STATUS, PAYMENT_STATUS, SLAVE_TYPE, WinOLS_STATUS } from 'src/features/constant';
 
 //solution which are requested by the customer
@@ -118,6 +119,9 @@ export class FileService extends Document {
 
     @Prop({ type: AutoFlasher })
     autoFlasher: AutoFlasher;
+
+    @Prop({ type: FlexSlave })
+    flexSlave: FlexSlave;
 
     @Prop({ type: String, enum: SLAVE_TYPE })
     slaveType: SLAVE_TYPE;

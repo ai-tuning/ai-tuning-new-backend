@@ -28,11 +28,16 @@ export class SolutionInformationService {
         return solutionInformation;
     }
 
-    async getSolutionInformationByProperty(controllerId: Types.ObjectId, solutionsIds: Types.ObjectId[]) {
-        const solutionInformation = await this.solutionInformationModel.find({
-            controller: controllerId,
-            solution: { $in: solutionsIds },
-        });
-        return solutionInformation;
+    async getSolutionInformationByProperty(
+        controllerId: Types.ObjectId,
+        solutionsIds: Types.ObjectId[],
+    ): Promise<(SolutionInformation & { solution: { name: string; _id: Types.ObjectId } })[]> {
+        const solutionInformation = await this.solutionInformationModel
+            .find({
+                controller: controllerId,
+                solution: { $in: solutionsIds },
+            })
+            .populate({ path: 'solution', select: 'name' });
+        return solutionInformation as any;
     }
 }

@@ -6,7 +6,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { collectionsName } from '../constant';
 import { Script } from './schema/script.schema';
 import { Model, Types } from 'mongoose';
-import { FileSchema, PathService } from '../common';
+import { PathService } from '../common';
 import { StorageService } from '../storage-service/storage-service.service';
 import { CarControllerService } from '../car-controller/car-controller.service';
 import { CarService } from '../car/car.service';

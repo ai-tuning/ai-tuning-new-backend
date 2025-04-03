@@ -20,35 +20,37 @@ import { ChatModule } from '../chat/chat.module';
 import { AdminModule } from '../admin/admin.module';
 import { ScriptModule } from '../script/script.module';
 import { AdminPricingModule } from '../admin-pricing/admin-pricing.module';
+import { FlexSlaveModule } from '../flex-slave/flex-slave.module';
 
 @Module({
-  imports: [
-    MulterModule.register({
-      acceptedMimeTypes: [],
-      destination: './public/uploads/files',
-      errorMessages: 'Please upload a valid file',
-    }),
-    MongooseModule.forFeature([
-      { name: collectionsName.fileService, schema: FileServiceSchema },
-      { name: collectionsName.tempFileService, schema: TempFileServiceSchema },
-    ]),
-    CustomerModule,
-    AdminModule,
-    CarModule,
-    CarControllerModule,
-    SolutionModule,
-    Kess3Module,
-    AutoTunerModule,
-    AutoFlasherModule,
-    PricingModule,
-    StorageServiceModule,
-    forwardRef(() => QueueManagerModule),
-    ChatModule,
-    ScriptModule,
-    AdminPricingModule,
-  ],
-  controllers: [FileServiceController],
-  providers: [FileServiceService, PathService],
-  exports: [FileServiceService],
+    imports: [
+        MulterModule.register({
+            acceptedMimeTypes: [],
+            destination: './public/uploads/files',
+            errorMessages: 'Please upload a valid file',
+        }),
+        MongooseModule.forFeature([
+            { name: collectionsName.fileService, schema: FileServiceSchema },
+            { name: collectionsName.tempFileService, schema: TempFileServiceSchema },
+        ]),
+        CustomerModule,
+        AdminModule,
+        CarModule,
+        CarControllerModule,
+        SolutionModule,
+        Kess3Module,
+        AutoTunerModule,
+        AutoFlasherModule,
+        PricingModule,
+        StorageServiceModule,
+        forwardRef(() => QueueManagerModule),
+        ChatModule,
+        ScriptModule,
+        AdminPricingModule,
+        FlexSlaveModule,
+    ],
+    controllers: [FileServiceController],
+    providers: [FileServiceService, PathService],
+    exports: [FileServiceService],
 })
 export class FileServiceModule {}
