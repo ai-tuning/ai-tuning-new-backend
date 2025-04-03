@@ -88,7 +88,7 @@ export class DtcService {
     }
 
     async dtcProcess(dtcId: Types.ObjectId) {
-        const dtc = await this.dtcModel.findByIdAndUpdate(dtcId, { status: DTC_STATUS.IN_PROGRESS });
+        const dtc = await this.dtcModel.findByIdAndUpdate(dtcId, { status: DTC_STATUS.PROGRESS });
 
         // const inPath=this.pathService.
         const parseFile = parse(dtc.originalFile);

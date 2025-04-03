@@ -135,7 +135,7 @@ export class FileServiceService {
                             branches: [
                                 { case: { $eq: ['$status', FILE_SERVICE_STATUS.NEW] }, then: 1 },
                                 { case: { $eq: ['$status', FILE_SERVICE_STATUS.OPEN] }, then: 2 },
-                                { case: { $eq: ['$status', FILE_SERVICE_STATUS.IN_PROGRESS] }, then: 3 },
+                                { case: { $eq: ['$status', FILE_SERVICE_STATUS.PROGRESS] }, then: 3 },
                             ],
                             default: 4,
                         },
@@ -1792,7 +1792,7 @@ ResellerCredits= 10
         }
 
         return await this.fileServiceModel
-            .findByIdAndUpdate(fileServiceId, { $set: { status: FILE_SERVICE_STATUS.IN_PROGRESS } }, { new: true })
+            .findByIdAndUpdate(fileServiceId, { $set: { status: FILE_SERVICE_STATUS.PROGRESS } }, { new: true })
             .populate({
                 path: 'customer',
                 select: 'firstName lastName customerType',
