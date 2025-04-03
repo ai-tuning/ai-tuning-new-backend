@@ -278,7 +278,7 @@ export class ScriptService {
     }
 
     async replaceScript(replaceScriptDto: ReplaceScriptDto, modFile: Express.Multer.File) {
-        let filePath = '';
+        let binFilePath = '';
         try {
             if (!modFile) {
                 throw new BadRequestException('File Not found');
@@ -317,31 +317,50 @@ export class ScriptService {
                 throw new BadRequestException('Script not found');
             }
 
-            //download the file from mega
-            if (fileService.slaveType) {
-                filePath = this.pathService.getTempFilePath(fileService.decodedFile.uniqueName);
-            } else {
-                filePath = this.pathService.getTempFilePath(fileService.originalFile.uniqueName);
-            }
-            //download the original file
-            const fileData = await this.storageService.download(fileService.originalFile.key);
-            await fs.promises.writeFile(filePath, fileData);
+            // fileService.originalFile = originalFile as FileSchema;
+            const fileServicePath = this.pathService.getFileServicePath(
+                fileService.admin,
+                fileService._id as Types.ObjectId,
+            );
 
-            if (!fs.existsSync(filePath)) {
+            let key = '';
+
+            if (!fs.existsSync(fileServicePath)) {
+                await fs.promises.mkdir(fileServicePath);
+            }
+
+            //download the original file
+            if (fileService.slaveType) {
+                binFilePath = path.join(fileServicePath, fileService.decodedFile.uniqueName);
+
+                key = fileService.decodedFile.key;
+            } else {
+                // binFilePath = this.pathService.getTempFilePath(fileService.originalFile.uniqueName);
+                binFilePath = path.join(fileServicePath, fileService.originalFile.uniqueName);
+                key = fileService.originalFile.key;
+            }
+
+            if (!fs.existsSync(binFilePath)) {
+                const fileData = await this.storageService.download(key);
+                await fs.promises.writeFile(binFilePath, fileData);
+                console.log('file downloaded', replaceScriptDto.fileService);
+            } else {
+                console.log('file downloaded not needed', replaceScriptDto.fileService);
+            }
+
+            if (!fs.existsSync(binFilePath)) {
                 throw new BadRequestException('Original File not found');
             }
 
-            if (!fileService.slaveType) {
-                const originalFileDetails = await fs.promises.stat(filePath);
+            const originalFileDetails = await fs.promises.stat(binFilePath);
 
-                const modFileDetails = await fs.promises.stat(modFile.path);
+            const modFileDetails = await fs.promises.stat(modFile.path);
 
-                if (originalFileDetails.size !== modFileDetails.size) {
-                    throw new BadRequestException('Mod files must be same size as original file');
-                }
+            if (originalFileDetails.size !== modFileDetails.size) {
+                throw new BadRequestException('Mod files must be same size as original file');
             }
 
-            const originalContent = await fs.promises.readFile(filePath);
+            const originalContent = await fs.promises.readFile(binFilePath);
             const modContent = await fs.promises.readFile(modFile.path);
             const differences = this.compareFiles(originalContent, modContent);
             const hexDifferences = this.convertDifferencesToHex(differences);
@@ -361,9 +380,6 @@ export class ScriptService {
         } finally {
             if (fs.existsSync(modFile.path)) {
                 fs.rmSync(modFile.path, { recursive: true, force: true });
-            }
-            if (filePath && fs.existsSync(filePath)) {
-                fs.rmSync(filePath, { recursive: true, force: true });
             }
         }
     }
