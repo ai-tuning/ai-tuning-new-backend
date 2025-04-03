@@ -1,9 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Types } from 'mongoose';
+import { collectionsName } from 'src/features/constant';
 
 @Schema({ timestamps: true, versionKey: false })
 export class SolutionInformation {
-    @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+    @Prop({ type: mongoose.Schema.Types.ObjectId, ref: collectionsName.solution, required: true })
     solution: Types.ObjectId;
 
     @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
