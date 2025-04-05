@@ -38,6 +38,17 @@ export class AdminController {
         return this.adminService.getAdminDetails(id);
     }
 
+    /**
+     * For admins/super-admins and employees
+     * @param id
+     * @returns
+     */
+    @AccessRole([RolesEnum.ADMIN, RolesEnum.SUPER_ADMIN, RolesEnum.EMPLOYEE])
+    @Get('slave-settings/:adminId')
+    slaveSettings(@Param('adminId') id: Types.ObjectId) {
+        return this.adminService.slaveSettings(id);
+    }
+
     @Patch(':id')
     async update(@Param('id') id: Types.ObjectId, @Body() updateAdminDto: UpdateAdminDto) {
         const updatedAdmin = await this.adminService.update(id, updateAdminDto);

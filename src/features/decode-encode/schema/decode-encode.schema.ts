@@ -1,36 +1,41 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
-import { AutoFlasher, AutoTuner, Kess3 } from 'src/features/common';
+import { AutoFlasher, AutoTuner, FileSchema, Kess3 } from 'src/features/common';
+import { FileModel } from 'src/features/common/schema/file.schema';
+import { FlexSlave } from 'src/features/common/schema/slave.schema';
 import { SLAVE_TYPE } from 'src/features/constant';
 
 @Schema({ timestamps: true, versionKey: false })
 class DecodeEncode extends Document {
-  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
-  admin: Types.ObjectId;
+    @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+    admin: Types.ObjectId;
 
-  @Prop({ type: String, enum: SLAVE_TYPE, required: true })
-  slaveType: SLAVE_TYPE;
+    @Prop({ type: String, enum: SLAVE_TYPE, required: true })
+    slaveType: SLAVE_TYPE;
 
-  @Prop({ type: String, required: true })
-  originalFile: string;
+    @Prop({ type: FileSchema, required: true })
+    originalFile: FileModel;
 
-  @Prop({ type: String, required: true })
-  decodedFile: string;
+    @Prop({ type: FileSchema, required: true })
+    decodedFile: FileModel;
 
-  @Prop({ type: String })
-  encodedFile: string;
+    @Prop({ type: FileSchema })
+    encodedFile: FileModel;
 
-  @Prop({ type: String, default: 1000, required: true })
-  documentId: string;
+    @Prop({ type: String, required: true })
+    uniqueId: string;
 
-  @Prop({ type: Kess3 })
-  kess3: Kess3;
+    @Prop({ type: Kess3 })
+    kess3: Kess3;
 
-  @Prop({ type: AutoTuner })
-  autoTuner: AutoTuner;
+    @Prop({ type: AutoTuner })
+    autoTuner: AutoTuner;
 
-  @Prop({ type: AutoFlasher })
-  autoFlasher: AutoFlasher;
+    @Prop({ type: AutoFlasher })
+    autoFlasher: AutoFlasher;
+
+    @Prop({ type: FlexSlave })
+    flexSlave: FlexSlave;
 }
 
 const DecodeEncodeSchema = SchemaFactory.createForClass(DecodeEncode);

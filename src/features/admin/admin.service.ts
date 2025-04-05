@@ -144,6 +144,40 @@ export class AdminService {
         return data;
     }
 
+    async slaveSettings(adminId: Types.ObjectId) {
+        const credentials = await this.credentialService.findByAdmin(adminId);
+
+        const data = {
+            alienTech: false,
+            evc: false,
+            autoTuner: false,
+            autoFlasher: false,
+            flexSlave: false,
+        };
+
+        if (credentials.alienTech) {
+            data.alienTech = !!credentials.alienTech.clientId;
+        }
+
+        if (credentials.evc) {
+            data.evc = !!credentials.evc.apiId;
+        }
+
+        if (credentials.autoTuner) {
+            data.autoTuner = !!credentials.autoTuner.tunerId;
+        }
+
+        if (credentials.autoFlasher) {
+            data.autoFlasher = !!credentials.autoFlasher.apiKey;
+        }
+
+        if (credentials.flexSlave) {
+            data.flexSlave = !!credentials.flexSlave.apiKey;
+        }
+
+        return data;
+    }
+
     async updateCredit(adminId: Types.ObjectId, amount: number, session: ClientSession) {
         return await this.adminModel
             .findOneAndUpdate({ _id: adminId }, { $inc: { credits: amount } }, { new: true, session })

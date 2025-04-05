@@ -15,7 +15,7 @@ interface AutoTunerEncodePayload {
     mcu_id: string;
     filePath: string;
     adminId: Types.ObjectId;
-    fileServiceId: Types.ObjectId;
+    documentId: Types.ObjectId;
 }
 
 @Injectable()
@@ -32,10 +32,13 @@ export class AutoTunerService {
      */
     async decode(decodeAutoTunerFileDto: DecodeAutoTunerFileDto) {
         const parsed = path.parse(decodeAutoTunerFileDto.filePath);
-        const decodedFilePath = path.join(
-            this.pathService.getFileServicePath(decodeAutoTunerFileDto.adminId, decodeAutoTunerFileDto.tempFileId),
-            parsed.name + '-decoded.bin',
+
+        const rootpath = this.pathService.getFileServicePath(
+            decodeAutoTunerFileDto.adminId,
+            decodeAutoTunerFileDto.documentId,
         );
+
+        const decodedFilePath = path.join(rootpath, parsed.name + '-decoded.bin');
         try {
             const buffer = fs.readFileSync(decodeAutoTunerFileDto.filePath);
             const base64Data = buffer.toString('base64');
@@ -56,6 +59,8 @@ export class AutoTunerService {
                 if (hash !== data.hash) {
                     throw new BadRequestException('Hash not match');
                 } else {
+                    if (!fs.existsSync(rootpath)) await fs.promises.mkdir(rootpath);
+
                     await fs.promises.writeFile(decodedFilePath, mapsData);
                     return {
                         mode: data.mode,
@@ -88,7 +93,7 @@ export class AutoTunerService {
         const name = parseFile.name.replace(/decoded/gi, 'modified');
 
         const basePath = path.join(
-            this.pathService.getFileServicePath(autoTunerEncodeDto.adminId, autoTunerEncodeDto.fileServiceId),
+            this.pathService.getFileServicePath(autoTunerEncodeDto.adminId, autoTunerEncodeDto.documentId),
         );
 
         if (!fs.existsSync(basePath)) fs.mkdirSync(basePath);

@@ -1,5 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import unzipper from 'unzipper';
+
 import { HttpService } from '@nestjs/axios';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Types } from 'mongoose';
@@ -12,7 +14,7 @@ interface FlexEncryptPayload {
     sn: string;
     filePath: string;
     adminId: Types.ObjectId;
-    fileServiceId: Types.ObjectId;
+    documentId: Types.ObjectId;
 }
 
 @Injectable()
@@ -29,23 +31,32 @@ export class FlexSlaveService {
      * @returns
      */
     async decrypt(decryptFlexDto: DecryptFlexDto) {
+        const rootpath = this.pathService.getFileServicePath(decryptFlexDto.adminId, decryptFlexDto.documentId);
+
         const parsed = path.parse(decryptFlexDto.filePath);
-        const decodedFilePath = path.join(
-            this.pathService.getFileServicePath(decryptFlexDto.adminId, decryptFlexDto.tempFileId),
-            parsed.name + '-decoded.bin',
-        );
+
+        let unzippedFilePath = path.join(rootpath, 'extracted_files' + decryptFlexDto.uniqueId);
+
+        const decodedFilePath = path.join(rootpath, parsed.name + '-decoded.zip');
+
         try {
+            //create root path if not exists
+            if (!fs.existsSync(rootpath)) await fs.promises.mkdir(rootpath);
+
+            if (fs.existsSync(unzippedFilePath)) {
+                await fs.promises.rm(unzippedFilePath, { recursive: true });
+            }
+
             const readFileStream = fs.createReadStream(decryptFlexDto.filePath);
 
             const formData = new FormData();
             formData.append('sn', decryptFlexDto.sn);
             formData.append('input_file', readFileStream);
-            console.log(decryptFlexDto.sn);
+
             const apiService = await this.apiService(decryptFlexDto.adminId);
             // Send the request using axios
             const { data } = await apiService.post('/master/api/v1/slave_manager/decrypt', formData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data',
                     Accept: 'application/json',
                 },
             }); // Modified API endpoint
@@ -54,9 +65,43 @@ export class FlexSlaveService {
                 const mapsData = Buffer.from(data.output_file_base64, 'base64');
 
                 await fs.promises.writeFile(decodedFilePath, mapsData);
+
+                //extract zip
+                await this.extractZip(decodedFilePath, unzippedFilePath);
+                console.log('unzipped to ' + unzippedFilePath);
+
+                //delete the zip file
+                if (fs.existsSync(decodedFilePath)) {
+                    await fs.promises.rm(decodedFilePath);
+                }
+
+                console.log('deleted the zip file ' + unzippedFilePath);
+
+                //read directory
+                const files = await fs.promises.readdir(unzippedFilePath);
+                console.log('files', files);
+                if (!files.length) {
+                    throw new BadRequestException('No files found in the zip file.');
+                }
+
+                const decodedFile = files[0];
+
+                const newFileName = parsed.name + '-decoded.bin';
+
+                const newDecodedFilePath = path.join(rootpath, newFileName);
+                console.log('newDecodedFilePath', newDecodedFilePath);
+
+                await fs.promises.rename(path.join(unzippedFilePath, decodedFile), newDecodedFilePath);
+                console.log('file moved to ' + newDecodedFilePath);
+
+                if (fs.existsSync(unzippedFilePath)) {
+                    await fs.promises.rm(unzippedFilePath, { recursive: true });
+                    console.log('deleted the directory ' + unzippedFilePath);
+                }
+
                 return {
-                    decodedFilePath: decodedFilePath,
-                    decodedFileName: path.basename(decodedFilePath),
+                    decodedFilePath: newDecodedFilePath,
+                    decodedFileName: path.basename(newDecodedFilePath),
                 };
             } else {
                 throw new BadRequestException('Something went wrong with AutoTuner ');
@@ -64,7 +109,10 @@ export class FlexSlaveService {
         } catch (error) {
             console.log(error);
             if (decodedFilePath && fs.existsSync(decodedFilePath)) {
-                fs.unlinkSync(decodedFilePath);
+                await fs.promises.rm(decodedFilePath, { recursive: true });
+            }
+            if (unzippedFilePath && fs.existsSync(unzippedFilePath)) {
+                await fs.promises.rm(unzippedFilePath, { recursive: true });
             }
             throw error;
         }
@@ -80,7 +128,7 @@ export class FlexSlaveService {
         const name = parseFile.name.replace(/decoded/gi, 'modified');
 
         const basePath = path.join(
-            this.pathService.getFileServicePath(flexEncryptDto.adminId, flexEncryptDto.fileServiceId),
+            this.pathService.getFileServicePath(flexEncryptDto.adminId, flexEncryptDto.documentId),
         );
 
         if (!fs.existsSync(basePath)) fs.mkdirSync(basePath);
@@ -100,7 +148,6 @@ export class FlexSlaveService {
             // Send the request to encrypt the data
             const { data } = await apiService.post('/master/api/v1/slave_manager/encrypt', formData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data',
                     Accept: 'application/json',
                 },
             }); // Modified API endpoint
@@ -142,5 +189,12 @@ export class FlexSlaveService {
             },
         );
         return this.httpService.axiosRef;
+    }
+    private async extractZip(filePath: string, outputDir: string) {
+        await fs
+            .createReadStream(filePath)
+            .pipe(unzipper.Extract({ path: outputDir }))
+            .promise();
+        console.log('Extraction complete');
     }
 }

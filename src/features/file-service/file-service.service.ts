@@ -272,7 +272,7 @@ export class FileServiceService {
 
             const kess3 = await this.kess3Service.decodeFile({
                 adminId: automatisationDto.admin,
-                tempFileId: tempFileData._id as Types.ObjectId,
+                documentId: tempFileData._id as Types.ObjectId,
                 uniqueId: customerUnique,
                 email: customer.email,
                 name: customer.firstName + ' ' + customer.lastName,
@@ -285,7 +285,7 @@ export class FileServiceService {
         } else if (automatisationDto.slaveType === SLAVE_TYPE.AUTO_TUNER) {
             const autoTuner = await this.autoTunerService.decode({
                 adminId: automatisationDto.admin,
-                tempFileId: tempFileData._id as Types.ObjectId,
+                documentId: tempFileData._id as Types.ObjectId,
                 filePath,
             });
             tempFileData.autoTuner = autoTuner;
@@ -294,19 +294,21 @@ export class FileServiceService {
         } else if (automatisationDto.slaveType === SLAVE_TYPE.AUTO_FLASHER) {
             const autoFlasher = await this.autoFlasherService.decode({
                 adminId: automatisationDto.admin,
-                customerId: automatisationDto.customer,
-                tempFileId: tempFileData._id as Types.ObjectId,
+                uniqueId: automatisationDto.customer.toString(),
+                documentId: tempFileData._id as Types.ObjectId,
                 filePath,
             });
             tempFileData.autoFlasher = autoFlasher;
             tempFileData.decodedFile = autoFlasher.decodedFileName;
             filePath = autoFlasher.decodedFilePath;
         } else if (automatisationDto.slaveType === SLAVE_TYPE.FLEX_SLAVE) {
+            const uniqueId = shortid.generate();
             const flexSlave = await this.flexSlaveService.decrypt({
                 adminId: automatisationDto.admin,
-                tempFileId: tempFileData._id as Types.ObjectId,
+                documentId: tempFileData._id as Types.ObjectId,
                 sn: customer.flexSlaveSn,
                 filePath,
+                uniqueId,
             });
             tempFileData.flexSlave = {
                 ...flexSlave,
@@ -802,7 +804,7 @@ ResellerCredits= 10
             return this.kess3Service.encodeFile(
                 {
                     uniqueId: fileService.kess3.uniqueId,
-                    fileServiceId: fileService._id as Types.ObjectId,
+                    documentId: fileService._id as Types.ObjectId,
                     filePath: modifiedFilePath,
                     fileSlotGUID: fileService.kess3.fileSlotGUID,
                     fileType: fileService.kess3.fileType,
@@ -813,7 +815,7 @@ ResellerCredits= 10
             );
         } else if (fileService.slaveType === SLAVE_TYPE.AUTO_TUNER) {
             return this.autoTunerService.encode({
-                fileServiceId: fileService._id as Types.ObjectId,
+                documentId: fileService._id as Types.ObjectId,
                 adminId: fileService.admin,
                 ecu_id: fileService.autoTuner.ecu_id,
                 filePath: modifiedFilePath,
@@ -823,7 +825,7 @@ ResellerCredits= 10
             });
         } else if (fileService.slaveType === SLAVE_TYPE.AUTO_FLASHER) {
             return this.autoFlasherService.encode({
-                fileServiceId: fileService._id as Types.ObjectId,
+                documentId: fileService._id as Types.ObjectId,
                 adminId: fileService.admin,
                 filePath: modifiedFilePath,
                 memory_type: fileService.autoFlasher.memory_type,
@@ -832,7 +834,7 @@ ResellerCredits= 10
         } else if (fileService.slaveType === SLAVE_TYPE.FLEX_SLAVE) {
             return this.flexSlaveService.encrypt({
                 adminId: fileService.admin,
-                fileServiceId: fileService._id as Types.ObjectId,
+                documentId: fileService._id as Types.ObjectId,
                 filePath: modifiedFilePath,
                 sn: fileService.flexSlave.sn,
             });

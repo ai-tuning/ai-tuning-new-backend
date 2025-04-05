@@ -2,97 +2,101 @@ import { IsBoolean, IsMongoId, IsNotEmpty, IsOptional, IsString, ValidateNested 
 import { Types } from 'mongoose';
 
 export class Permission {
-  _id: Types.ObjectId;
+    _id: Types.ObjectId;
 
-  admin: Types.ObjectId;
+    admin: Types.ObjectId;
 
-  @IsNotEmpty()
-  @IsBoolean()
-  dashboard: boolean;
+    @IsNotEmpty()
+    @IsBoolean()
+    dashboard: boolean;
 
-  @IsNotEmpty()
-  @IsBoolean()
-  fileServices: boolean;
+    @IsNotEmpty()
+    @IsBoolean()
+    fileServices: boolean;
 
-  @IsNotEmpty()
-  @IsBoolean()
-  tickets: boolean;
+    @IsNotEmpty()
+    @IsBoolean()
+    tickets: boolean;
 
-  @IsNotEmpty()
-  @IsBoolean()
-  addSolution: boolean;
+    @IsNotEmpty()
+    @IsBoolean()
+    addSolution: boolean;
 
-  @IsNotEmpty()
-  @IsBoolean()
-  solutions: boolean;
+    @IsNotEmpty()
+    @IsBoolean()
+    solutions: boolean;
 
-  @IsNotEmpty()
-  @IsBoolean()
-  scripts: boolean;
+    @IsNotEmpty()
+    @IsBoolean()
+    scripts: boolean;
 
-  @IsNotEmpty()
-  @IsBoolean()
-  customerTypes: boolean;
+    @IsNotEmpty()
+    @IsBoolean()
+    customerTypes: boolean;
 
-  @IsNotEmpty()
-  @IsBoolean()
-  customers: boolean;
+    @IsNotEmpty()
+    @IsBoolean()
+    customers: boolean;
 
-  @IsNotEmpty()
-  @IsBoolean()
-  employees: boolean;
+    @IsNotEmpty()
+    @IsBoolean()
+    employees: boolean;
 
-  @IsNotEmpty()
-  @IsBoolean()
-  roles: boolean;
+    @IsNotEmpty()
+    @IsBoolean()
+    roles: boolean;
 
-  @IsNotEmpty()
-  @IsBoolean()
-  prices: boolean;
+    @IsNotEmpty()
+    @IsBoolean()
+    prices: boolean;
 
-  @IsNotEmpty()
-  @IsBoolean()
-  invoices: boolean;
+    @IsNotEmpty()
+    @IsBoolean()
+    invoices: boolean;
 
-  @IsNotEmpty()
-  @IsBoolean()
-  schedule: boolean;
+    @IsNotEmpty()
+    @IsBoolean()
+    schedule: boolean;
 
-  @IsNotEmpty()
-  @IsBoolean()
-  notice: boolean;
+    @IsNotEmpty()
+    @IsBoolean()
+    notice: boolean;
 
-  @IsNotEmpty()
-  @IsBoolean()
-  credentials: boolean;
+    @IsNotEmpty()
+    @IsBoolean()
+    credentials: boolean;
 
-  @IsOptional()
-  @IsBoolean()
-  adminPricing: boolean;
+    @IsOptional()
+    @IsBoolean()
+    adminPricing: boolean;
 
-  @IsOptional()
-  @IsBoolean()
-  admins: boolean;
+    @IsOptional()
+    @IsBoolean()
+    admins: boolean;
 
-  @IsOptional()
-  @IsBoolean()
-  adminsInvoices: boolean;
+    @IsOptional()
+    @IsBoolean()
+    adminsInvoices: boolean;
+
+    @IsOptional()
+    @IsBoolean()
+    slaveDecodeEncode: boolean;
 }
 
 export class CreateEmployeeRoleDto {
-  @IsNotEmpty()
-  @IsMongoId()
-  admin: Types.ObjectId;
+    @IsNotEmpty()
+    @IsMongoId()
+    admin: Types.ObjectId;
 
-  @IsNotEmpty()
-  @IsString()
-  name: string;
+    @IsNotEmpty()
+    @IsString()
+    name: string;
 
-  @IsOptional()
-  @IsString()
-  description: string;
+    @IsOptional()
+    @IsString()
+    description: string;
 
-  @IsNotEmpty()
-  @ValidateNested()
-  permission: Permission;
+    @IsNotEmpty()
+    @ValidateNested()
+    permission: Permission;
 }

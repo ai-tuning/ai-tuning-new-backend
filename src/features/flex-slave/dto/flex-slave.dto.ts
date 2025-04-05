@@ -12,7 +12,11 @@ export class DecryptFlexDto {
 
     @IsNotEmpty()
     @IsString()
-    tempFileId: Types.ObjectId;
+    documentId: Types.ObjectId;
+
+    @IsNotEmpty()
+    @IsString()
+    uniqueId: string;
 
     @IsNotEmpty()
     @IsString()

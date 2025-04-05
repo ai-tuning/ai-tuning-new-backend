@@ -25,4 +25,5 @@ export const collectionsName = {
     permission: 'permission',
     adminPricing: 'admin-pricing',
     dtc: 'dtc',
+    decodeEncode: 'decode_encode',
 };
