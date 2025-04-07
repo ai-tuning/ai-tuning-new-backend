@@ -228,12 +228,15 @@ export class ScriptService {
             throw new NotFoundException('Script not found');
         }
 
-        const scriptBasePath = this.pathService.getCompleteScriptPath(
+        let scriptBasePath = this.pathService.getCompleteScriptPath(
             script.admin,
             script.makeType,
             script.car.name,
             script.controller.name,
         );
+        if (script.admin.toString() === process.env.SUPER_ADMIN_ID) {
+            scriptBasePath = this.pathService.getAiScriptPath(script.makeType, script.car.name, script.controller.name);
+        }
 
         const filePath = path.join(scriptBasePath, script.file);
 

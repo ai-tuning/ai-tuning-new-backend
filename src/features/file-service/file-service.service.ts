@@ -1055,7 +1055,7 @@ ResellerCredits= 10
         }
 
         console.log('out file is exist');
-        const outFiles = await fs.promises.readdir(outputPath);
+        let outFiles = await fs.promises.readdir(outputPath);
 
         console.log('outFiles=====>', outFiles);
 
@@ -1069,7 +1069,7 @@ ResellerCredits= 10
             }
             //wait for 5 seconds
             await timeOutAsync(5000);
-            const outFiles = await fs.promises.readdir(outputPath);
+            outFiles = await fs.promises.readdir(outputPath);
             currentFileCount = outFiles.length;
 
             if (previousFileCount < currentFileCount) {
@@ -1123,7 +1123,6 @@ ResellerCredits= 10
             const solutionWithoutAutomatic = await this.findSolutionWithoutAutomaticSolution(
                 automatic.map((s) => s.toString()),
             );
-            console.log('solutionWithoutAutomatic=====>', solutionWithoutAutomatic);
             //declare modFiles
             const modFiles = [];
 
@@ -1134,7 +1133,6 @@ ResellerCredits= 10
                 //get matched file
                 const matchSolution = this.getMatchSolution(file, solutionWithoutAutomatic);
                 if (matchSolution) {
-                    console.log('matchSolution', matchSolution);
                     //if matched then push into mod file
                     modFiles.push({
                         name: file,
