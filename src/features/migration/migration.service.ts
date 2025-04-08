@@ -23,6 +23,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { CreateCustomerDto } from '../customer/dto/create-customer.dto';
 import { SolutionInformation } from '../solution/schema/solution-information.schema';
+import countriesObject from './countries-object';
 
 @Injectable()
 export class MigrationService {
@@ -283,7 +284,7 @@ export class MigrationService {
         // }
         // await this.userModel.bulkWrite(userUpdatePayload);
 
-        await this.migrateSolutionInformation();
+        // await this.migrateSolutionInformation();
 
         return 'completed';
     }
@@ -336,101 +337,98 @@ export class MigrationService {
     //   await this.solutionModel.insertMany(solutionPayload);
     // }
 
-    async insertCsvUserData() {
-        const csvPath = path.join(process.cwd(), 'kunder.csv');
-        //create read stream of the csv file
-        const results = [];
-        const customers = await this.customerModel.find();
-        fs.createReadStream(csvPath)
-            .pipe(csv())
-            .on('data', (data) => {
-                const obj = {};
-                for (const key in data) {
-                    let cleanedKey = key.replace(/\t/g, ''); //remove tabs
-                    if (cleanedKey.charCodeAt(0) === 0xfeff) {
-                        // Check for BOM
-                        cleanedKey = cleanedKey.slice(1); // Remove BOM
-                    }
-                    obj[cleanedKey.toLowerCase()] = data[key];
-                }
-                results.push(obj);
-            })
-            .on('end', async () => {
-                for (const customer of results) {
-                    const [firstName, ...lastNameArr] = customer.name.split(' ');
-                    const lastName = lastNameArr.join(' ');
+    // async insertCsvUserData() {
+    //     const csvPath = path.join(process.cwd(), 'users.csv');
+    //     //create read stream of the csv file
+    //     const results = [];
+    //     const customers = await this.customerModel.find();
+    //     fs.createReadStream(csvPath)
+    //         .pipe(csv())
+    //         .on('data', (data) => {
+    //             results.push(data);
+    //             // console.log(data);
+    //         })
+    //         .on('end', async () => {
+    //             let count = 0;
+    //             console.log(results.length);
+    //             for (const customer of results) {
+    //                 const findExisting = customers.find(
+    //                     (item) => item.email.toLowerCase() === customer.email.toLowerCase(),
+    //                 );
+    //                 if (findExisting) {
+    //                     console.log(customer.email, findExisting.admin);
+    //                     continue;
+    //                 }
+    //                 const countryCode = countriesObject[customer.country];
 
-                    const findExisting = customers.find((item) => item.email === customer.email);
-                    if (findExisting) {
-                        if (findExisting.admin.toString() !== '67d2f76b05303a1adbdad2dd') {
-                            console.log(customer.email, findExisting.admin);
-                        }
-                        continue;
-                    }
+    //                 const customerObj: CreateCustomerDto = {
+    //                     admin: new Types.ObjectId('67f113a2cb49e3c8da048474'),
+    //                     email: customer.email.toLowerCase(),
+    //                     password: customer.password || 'test123',
+    //                     firstName: customer.name,
+    //                     lastName: customer.last_name,
+    //                     phone:
+    //                         customer.phone_number && customer.phone_number !== 'NULL'
+    //                             ? customer.phone_number.trim().replaceAll(' ', '')
+    //                             : '1234567890',
+    //                     address: customer.address || 'demo address',
+    //                     city: customer.city || 'demo city',
+    //                     country: customer.country || 'demo country',
+    //                     postcode: customer.zipcode || '1234',
+    //                     credits: customer.credits ? Number(customer.credits) : 0,
+    //                     // companyName: customer.company || 'demo company',
+    //                     countryCode: countryCode.phone,
+    //                     status: UserStatusEnum.ACTIVE,
+    //                     street: customer.address || 'demo street',
+    //                 };
+    //                 console.log(customerObj);
+    //                 await this.customerService.create(customerObj);
+    //                 // console.log('customer created===>', customerObj.email);
+    //                 count++;
+    //             }
+    //             console.log(count);
+    //         });
+    //     return 'completed';
+    // }
 
-                    const customerObj: CreateCustomerDto = {
-                        admin: new Types.ObjectId('67d2f76b05303a1adbdad2dd'),
-                        email: customer.email,
-                        password: customer.password || '123456',
-                        firstName,
-                        lastName,
-                        phone: '1234567890',
-                        address: 'demo address',
-                        city: 'demo city',
-                        country: 'demo country',
-                        postcode: '1234',
-                        credits: 0,
-                        companyName: customer.company || 'demo company',
-                        countryCode: 'NO',
-                        status: UserStatusEnum.ACTIVE,
-                        customerType: new Types.ObjectId('67d2f76b05303a1adbdad2e6'),
-                        street: 'demo streen',
-                    };
-                    // console.log(customerObj);
-                    await this.customerService.create(customerObj);
-                    console.log('customer created===>', customerObj.email);
-                }
-            });
-    }
+    // async migrateSolutionInformation() {
+    //     const [solutionInformation] = (await this.connection.query('SELECT * from solution_information')) as any;
+    //     const payload = [];
 
-    async migrateSolutionInformation() {
-        const [solutionInformation] = (await this.connection.query('SELECT * from solution_information')) as any;
-        const payload = [];
+    //     const controllers = await this.carControllerModel.find();
+    //     const solutions = await this.solutionModel.find();
 
-        const controllers = await this.carControllerModel.find();
-        const solutions = await this.solutionModel.find();
+    //     for (const item of solutionInformation) {
+    //         if (item.information) {
+    //             const controller = controllers.find((c) => {
+    //                 if (c.mysqlId) {
+    //                     return c.mysqlId.toString() === item.controllerId.toString();
+    //                 }
+    //             });
+    //             const solution = solutions.find((c) => {
+    //                 if (c.mysqlId) {
+    //                     return c.mysqlId.toString() === item.solutionId.toString();
+    //                 }
+    //             });
 
-        for (const item of solutionInformation) {
-            if (item.information) {
-                const controller = controllers.find((c) => {
-                    if (c.mysqlId) {
-                        return c.mysqlId.toString() === item.controllerId.toString();
-                    }
-                });
-                const solution = solutions.find((c) => {
-                    if (c.mysqlId) {
-                        return c.mysqlId.toString() === item.solutionId.toString();
-                    }
-                });
-
-                if (controller && solution) {
-                    const content = item.information.trim();
-                    if (content) {
-                        payload.push({
-                            solution: solution._id,
-                            controller: controller._id,
-                            content,
-                            mysqlId: item.Id,
-                        });
-                    } else {
-                        console.log(content);
-                    }
-                } else {
-                    // console.log(item);
-                }
-            }
-        }
-        console.log(payload);
-        await this.solutionInformation.create(payload);
-    }
+    //             if (controller && solution) {
+    //                 const content = item.information.trim();
+    //                 if (content) {
+    //                     payload.push({
+    //                         solution: solution._id,
+    //                         controller: controller._id,
+    //                         content,
+    //                         mysqlId: item.Id,
+    //                     });
+    //                 } else {
+    //                     console.log(content);
+    //                 }
+    //             } else {
+    //                 // console.log(item);
+    //             }
+    //         }
+    //     }
+    //     console.log(payload);
+    //     await this.solutionInformation.create(payload);
+    // }
 }

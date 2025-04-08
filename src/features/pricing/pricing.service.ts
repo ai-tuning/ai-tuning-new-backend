@@ -10,6 +10,7 @@ import { Solution } from '../solution/schema/solution.schema';
 import { PRICING_TYPE_ENUM } from '../constant/enums/pricing-type.enum';
 import { CustomerType } from '../customer/schema/customer-type.schema';
 import { UpdatePricingLimitDto } from './dto/update-pricing-limit.dto';
+import { Admin } from '../admin/schema/admin.schema';
 
 @Injectable()
 export class PricingService {
@@ -18,6 +19,7 @@ export class PricingService {
         @InjectModel(collectionsName.creditPricing) private readonly creditPricingModel: Model<CreditPricing>,
         @InjectModel(collectionsName.solution) private readonly solutionModel: Model<Solution>,
         @InjectModel(collectionsName.customerType) private readonly customerTypeModel: Model<CustomerType>,
+        @InjectModel(collectionsName.admin) private readonly adminModel: Model<Admin>,
     ) {}
 
     // async onModuleInit() {
@@ -365,47 +367,52 @@ export class PricingService {
     }
 
     async pushSolutionBasedItemsBySolutionId(solutionId: Types.ObjectId, session: ClientSession) {
-        const customerTypes = await this.customerTypeModel
-            .find()
-            .distinct('_id')
-            .session(session)
-            .lean<Types.ObjectId[]>();
+        const adminIds = await this.adminModel.find().distinct('_id').session(session).lean<Types.ObjectId[]>();
 
-        const solutionItems = [];
-        customerTypes.forEach((customerType) => {
-            solutionItems.push({
-                customerType: customerType,
-                price: 0,
-                makeType: MAKE_TYPE_ENUM.CAR,
-                solution: solutionId,
-            });
-            solutionItems.push({
-                customerType: customerType,
-                price: 0,
-                makeType: MAKE_TYPE_ENUM.BIKE,
-                solution: solutionId,
-            });
-            solutionItems.push({
-                customerType: customerType,
-                price: 0,
-                makeType: MAKE_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
-                solution: solutionId,
-            });
-        });
+        const bulkWritePayload = [];
 
-        return this.pricingModel
-            .updateMany(
-                {},
-                {
-                    $push: {
-                        solutionItems: {
-                            $each: solutionItems,
+        for (const adminId of adminIds) {
+            const customerTypes = await this.customerTypeModel
+                .find({ admin: adminId })
+                .distinct('_id')
+                .session(session)
+                .lean<Types.ObjectId[]>();
+
+            const solutionItems = [];
+            customerTypes.forEach((customerType) => {
+                solutionItems.push(
+                    ...[
+                        {
+                            customerType: customerType,
+                            price: 0,
+                            makeType: MAKE_TYPE_ENUM.CAR,
+                            solution: solutionId,
                         },
-                    },
+                        {
+                            customerType: customerType,
+                            price: 0,
+                            makeType: MAKE_TYPE_ENUM.BIKE,
+                            solution: solutionId,
+                        },
+                        {
+                            customerType: customerType,
+                            price: 0,
+                            makeType: MAKE_TYPE_ENUM.TRUCK_AGRI_CONSTRUCTION,
+                            solution: solutionId,
+                        },
+                    ],
+                );
+            });
+
+            bulkWritePayload.push({
+                updateOne: {
+                    filter: { admin: adminId },
+                    update: { $push: { solutionItems: { $each: solutionItems } } },
                 },
-                { new: true, session },
-            )
-            .lean<Pricing>();
+            });
+        }
+
+        await this.pricingModel.bulkWrite(bulkWritePayload, { session });
     }
 
     async pullSolutionBasedItemsBySolutionId(solutionId: Types.ObjectId, session: ClientSession) {

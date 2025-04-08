@@ -59,7 +59,7 @@ export class CreateCustomerDto {
 
     @IsOptional()
     @IsMongoId()
-    customerType: Types.ObjectId;
+    customerType?: Types.ObjectId;
 
     @IsOptional()
     @IsEnum(UserStatusEnum)

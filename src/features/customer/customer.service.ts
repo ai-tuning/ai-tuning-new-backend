@@ -52,7 +52,8 @@ export class CustomerService {
 
             // get Default Customer Type
             const customerType = await this.customerTypeModel
-                .findOne({ admin: createCustomerDto.admin, name: 'DEFAULT' })
+                .findOne({ admin: createCustomerDto.admin })
+                .sort({ createdAt: 1 })
                 .lean<CustomerType>();
 
             rest.customerType = customerType._id as Types.ObjectId;
