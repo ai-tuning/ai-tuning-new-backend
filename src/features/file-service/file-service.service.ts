@@ -714,7 +714,7 @@ ResellerCredits= 10
                     let contents = 'INFO: ';
                     solutionInformation.forEach((item) => {
                         if (item.content) {
-                            contents += '\n' + item.solution.name + ': ' + item.content;
+                            contents += '\n' + item.solution.aliasName + ': ' + item.content;
                         }
                     });
                     if (contents.length > 6) {
@@ -1356,7 +1356,7 @@ ResellerCredits= 10
                 let contents = 'INFO: ';
                 solutionInformation.forEach((item) => {
                     if (item.content) {
-                        contents += '\n' + item.solution.name + ': ' + item.content;
+                        contents += '\n' + item.solution.aliasName + ': ' + item.content;
                     }
                 });
                 if (contents.length > 6) {
@@ -1507,7 +1507,7 @@ ResellerCredits= 10
                 let contents = 'INFO: ';
                 solutionInformation.forEach((item) => {
                     if (item.content) {
-                        contents += '\n' + item.solution.name + ': ' + item.content;
+                        contents += '\n' + item.solution.aliasName + ': ' + item.content;
                     }
                 });
                 if (contents.length > 6) {
@@ -1710,7 +1710,7 @@ ResellerCredits= 10
                     let contents = 'INFO: ';
                     solutionInformation.forEach((item) => {
                         if (item.content) {
-                            contents += '\n' + item.solution.name + ': ' + item.content;
+                            contents += '\n' + item.solution.aliasName + ': ' + item.content;
                         }
                     });
                     if (contents.length > 6) {

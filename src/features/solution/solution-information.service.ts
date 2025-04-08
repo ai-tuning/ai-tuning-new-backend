@@ -31,13 +31,13 @@ export class SolutionInformationService {
     async getSolutionInformationByProperty(
         controllerId: Types.ObjectId,
         solutionsIds: Types.ObjectId[],
-    ): Promise<(SolutionInformation & { solution: { name: string; _id: Types.ObjectId } })[]> {
+    ): Promise<(SolutionInformation & { solution: { name: string; _id: Types.ObjectId; aliasName: string } })[]> {
         const solutionInformation = await this.solutionInformationModel
             .find({
                 controller: controllerId,
                 solution: { $in: solutionsIds },
             })
-            .populate({ path: 'solution', select: 'name' });
+            .populate({ path: 'solution', select: 'name aliasName' });
         return solutionInformation as any;
     }
 }
