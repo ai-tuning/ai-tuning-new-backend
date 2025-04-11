@@ -56,6 +56,32 @@ export class EvcCredentialDto {
     password: string;
 }
 
+export class SMTPCredentialDto {
+    @IsNotEmpty()
+    @IsString()
+    host: string;
+
+    @IsNotEmpty()
+    @IsString()
+    port: string;
+
+    @IsNotEmpty()
+    @IsString()
+    username: string;
+
+    @IsNotEmpty()
+    @IsString()
+    password: string;
+
+    @IsNotEmpty()
+    @IsString()
+    from: string;
+
+    @IsNotEmpty()
+    @IsString()
+    support: string;
+}
+
 export class CreateCredentialDto {
     @IsNotEmpty()
     @IsMongoId()
@@ -90,4 +116,9 @@ export class CreateCredentialDto {
     @ValidateNested()
     @Type(() => FlexSlaveDto)
     flexSlave?: FlexSlaveDto;
+
+    @IsOptional()
+    @ValidateNested()
+    @Type(() => SMTPCredentialDto)
+    smtp?: SMTPCredentialDto;
 }

@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { InjectModel } from '@nestjs/mongoose';
 import { collectionsName } from '../constant';
@@ -15,6 +15,7 @@ import {
     EvcCredentialDto,
     FlexSlaveDto,
     PaypalCredentialDto,
+    SMTPCredentialDto,
 } from './dto/create-credential.dto';
 
 @Injectable()
@@ -55,6 +56,15 @@ export class CredentialService {
             updateCredentialDto.autoTuner.tunerId = this.encryptData(updateCredentialDto.autoTuner.tunerId);
         }
 
+        if (updateCredentialDto.smtp) {
+            updateCredentialDto.smtp.host = this.encryptData(updateCredentialDto.smtp.host);
+            updateCredentialDto.smtp.port = updateCredentialDto.smtp.port;
+            updateCredentialDto.smtp.username = this.encryptData(updateCredentialDto.smtp.username);
+            updateCredentialDto.smtp.password = this.encryptData(updateCredentialDto.smtp.password);
+            updateCredentialDto.smtp.from = updateCredentialDto.smtp.from;
+            updateCredentialDto.smtp.support = updateCredentialDto.smtp.support;
+        }
+
         const credential = await this.credentialModel.findOneAndUpdate(
             {
                 admin: adminId,
@@ -78,7 +88,8 @@ export class CredentialService {
             | AutoTunerCredentialDto
             | AlienTechCredentialDto
             | AutoFlasherCredentialDto
-            | FlexSlaveDto,
+            | FlexSlaveDto
+            | SMTPCredentialDto,
     ) {
         const credential = await this.credentialModel.findOneAndUpdate(
             {
@@ -154,6 +165,19 @@ export class CredentialService {
         return credential;
     }
 
+    async updateSmtpCredential(adminId: Types.ObjectId, smtpCredentialDto: SMTPCredentialDto) {
+        const payload = {
+            host: this.encryptData(smtpCredentialDto.host),
+            port: smtpCredentialDto.port,
+            username: this.encryptData(smtpCredentialDto.username),
+            password: this.encryptData(smtpCredentialDto.password),
+            from: smtpCredentialDto.from,
+            support: smtpCredentialDto.support,
+        };
+        const credential = this.updateCredential(adminId, payload);
+        return credential;
+    }
+
     async findByAdmin(adminId: Types.ObjectId, select?: keyof Credential): Promise<Credential> {
         const credential = await this.credentialModel.findOne({ admin: adminId }).select(select).lean();
 
@@ -189,6 +213,19 @@ export class CredentialService {
             }
         }
 
+        if (select === 'smtp') {
+            if (
+                !credential.smtp.host ||
+                !credential.smtp.port ||
+                !credential.smtp.username ||
+                !credential.smtp.password ||
+                !credential.smtp.from ||
+                !credential.smtp.support
+            ) {
+                return null;
+            }
+        }
+
         //decrypt all before return
         if (credential.paypal) {
             credential.paypal.clientId = this.decryptData(credential.paypal.clientId);
@@ -220,6 +257,14 @@ export class CredentialService {
         if (credential.autoFlasher) credential.autoFlasher.apiKey = this.decryptData(credential.autoFlasher.apiKey);
 
         if (credential.flexSlave) credential.flexSlave.apiKey = this.decryptData(credential.flexSlave.apiKey);
+        if (credential.smtp) {
+            credential.smtp.host = this.decryptData(credential.smtp.host);
+            credential.smtp.port = credential.smtp.port;
+            credential.smtp.username = this.decryptData(credential.smtp.username);
+            credential.smtp.password = this.decryptData(credential.smtp.password);
+            credential.smtp.from = credential.smtp.from;
+            credential.smtp.support = credential.smtp.support;
+        }
 
         return credential;
     }

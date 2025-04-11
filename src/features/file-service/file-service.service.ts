@@ -44,7 +44,6 @@ import { AdminPricingService } from '../admin-pricing/admin-pricing.service';
 import { AdminPrices } from '../admin-pricing/schema/admin-pricing.schema';
 import { PRICING_TYPE_ENUM } from '../constant/enums/pricing-type.enum';
 import { CatapushMessageProducer } from '../queue-manager/producers/catapush-message.producer';
-import { SolutionInformation } from '../solution/schema/solution-information.schema';
 import { SolutionInformationService } from '../solution/solution-information.service';
 import { FlexSlaveService } from '../flex-slave/flex-slave.service';
 
@@ -764,6 +763,7 @@ ResellerCredits= 10
             if (!requestedSolutions.length) {
                 //Send email for file confirmation
                 this.emailQueueProducers.sendMail({
+                    adminId: adminData._id,
                     receiver: customer.email,
                     name: customer.firstName + ' ' + customer.lastName,
                     emailType: EMAIL_TYPE.fileReady,
@@ -772,6 +772,7 @@ ResellerCredits= 10
             } else {
                 //Send to customer
                 this.emailQueueProducers.sendMail({
+                    adminId: adminData._id,
                     receiver: customer.email,
                     name: customer.firstName + ' ' + customer.lastName,
                     emailType: EMAIL_TYPE.requestSolution,
@@ -779,6 +780,7 @@ ResellerCredits= 10
                 });
                 //send to admin
                 this.emailQueueProducers.sendMail({
+                    adminId: adminData._id,
                     receiver: adminData.email,
                     name: customer.firstName + ' ' + customer.lastName,
                     emailType: EMAIL_TYPE.newFileNotification,
@@ -1208,6 +1210,7 @@ ResellerCredits= 10
                 const buildData = await this.buildSolution(fileService, data.binFilePath, completeScriptPath, session);
                 //Send email for file confirmation
                 this.emailQueueProducers.sendMail({
+                    adminId: admin._id,
                     receiver: customer.email,
                     name: customer.firstName + ' ' + customer.lastName,
                     emailType: EMAIL_TYPE.fileReady,
@@ -1542,6 +1545,7 @@ ResellerCredits= 10
 
             //send email after all the job done
             this.emailQueueProducers.sendMail({
+                adminId: admin._id,
                 receiver: customer.email,
                 name: customer.firstName + ' ' + customer.lastName,
                 emailType: EMAIL_TYPE.fileReady,
@@ -1691,6 +1695,7 @@ ResellerCredits= 10
 
                 //send email after all the job done
                 this.emailQueueProducers.sendMail({
+                    adminId: admin._id,
                     receiver: customer.email,
                     name: customer.firstName + ' ' + customer.lastName,
                     emailType: EMAIL_TYPE.fileReady,
@@ -1756,11 +1761,33 @@ ResellerCredits= 10
     }
 
     async closeFileService(fileServiceId: Types.ObjectId) {
-        return await this.fileServiceModel.findByIdAndUpdate(
-            fileServiceId,
-            { $set: { status: FILE_SERVICE_STATUS.CLOSED } },
-            { new: true },
-        );
+        const fileService = await this.fileServiceModel
+            .findByIdAndUpdate(fileServiceId, {
+                $set: { status: FILE_SERVICE_STATUS.CLOSED },
+            })
+            .lean<FileService>();
+        console.log(fileService);
+        //don't return the new value so that we can check the status of previous
+        if (fileService.status === FILE_SERVICE_STATUS.OPEN) {
+            const customer = await this.customerService.findByIdAndSelect(fileService.customer, [
+                'firstName',
+                'lastName',
+                'email',
+            ]);
+
+            //Send email for file confirmation
+            this.emailQueueProducers.sendMail({
+                adminId: fileService.admin,
+                receiver: customer.email,
+                name: customer.firstName + ' ' + customer.lastName,
+                emailType: EMAIL_TYPE.closedFileService,
+                uniqueId: fileService.uniqueId,
+            });
+        }
+
+        // update file service for response
+        fileService.status = FILE_SERVICE_STATUS.CLOSED;
+        return fileService;
     }
 
     async progressFileService(fileServiceId: Types.ObjectId) {
@@ -1837,6 +1864,7 @@ ResellerCredits= 10
 
             //Send email for file confirmation
             this.emailQueueProducers.sendMail({
+                adminId: fileService.admin,
                 receiver: customer.email,
                 name: customer.firstName + ' ' + customer.lastName,
                 emailType: EMAIL_TYPE.refundFileService,

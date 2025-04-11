@@ -4,38 +4,64 @@ import SMTPTransport from 'nodemailer/lib/smtp-transport';
 
 import { appConfig } from '../config';
 import { AppConfig } from '../config/app.config';
+import { Types } from 'mongoose';
+import { CredentialService } from '../credential/credential.service';
+import { Credential } from '../credential/schema/credential.schema';
 
 @Injectable()
 export class MailService {
-    private readonly transporter: (user: string, password: string) => nodemailer.Transporter;
+    private readonly transporter: (
+        host: string,
+        port: string,
+        user: string,
+        password: string,
+    ) => nodemailer.Transporter;
     private readonly config: AppConfig;
-    constructor() {
+    constructor(private readonly credentialService: CredentialService) {
         const config = appConfig();
         this.config = config;
-        this.transporter = (user: string, pass: string) =>
+        this.transporter = (host: string, port: string, user: string, pass: string) =>
             nodemailer.createTransport({
-                host: config.smtp_host,
-                port: config.smtp_port,
+                host,
+                port,
                 secure: true,
                 auth: { user, pass },
             } as unknown as SMTPTransport.Options);
     }
 
-    private authTransporter() {
-        return this.transporter(this.config.smtp_auth_email, this.config.smtp_auth_password);
+    private mailTransporter(smtpCredential: Credential) {
+        if (smtpCredential) {
+            return this.transporter(
+                smtpCredential.smtp.host,
+                smtpCredential.smtp.port,
+                smtpCredential.smtp.username,
+                smtpCredential.smtp.password,
+            );
+        }
+        //default email config
+        return this.transporter(
+            this.config.smtp_host,
+            this.config.smtp_port,
+            this.config.smtp_info_email,
+            this.config.smtp_info_password,
+        );
     }
 
-    private infoTransporter() {
-        return this.transporter(this.config.smtp_info_email, this.config.smtp_info_password);
-    }
+    // private authTransporter() {
+    //     return this.transporter(this.config.smtp_auth_email, this.config.smtp_auth_password);
+    // }
 
-    private supportTransporter() {
-        return this.transporter(this.config.smtp_support_email, this.config.smtp_support_password);
-    }
+    // private infoTransporter() {
+    //     return this.transporter(this.config.smtp_info_email, this.config.smtp_info_password);
+    // }
 
-    private invoiceTransporter() {
-        return this.transporter(this.config.smtp_invoice_email, this.config.smtp_invoice_password);
-    }
+    // private supportTransporter() {
+    //     return this.transporter(this.config.smtp_support_email, this.config.smtp_support_password);
+    // }
+
+    // private invoiceTransporter() {
+    //     return this.transporter(this.config.smtp_invoice_email, this.config.smtp_invoice_password);
+    // }
 
     private emailTemplate(title: string, supportMail: string, content: string) {
         return `<!DOCTYPE html>
@@ -327,14 +353,19 @@ export class MailService {
 `;
     }
 
-    async sendLoginCode(data: { receiver: string; code: string; name: string }) {
+    async sendLoginCode(data: { adminId: Types.ObjectId; receiver: string; code: string; name: string }) {
+        const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
+
+        const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const supportEmail = credential.smtp.support || this.config.smtp_support_email;
+
         const mailOptions = {
-            from: `AI Tuning Files <${this.config.smtp_auth_email}>`,
+            from: `AI Tuning Files <${senderEmail}>`,
             to: data.receiver,
             subject: 'Verify your email address',
             html: this.emailTemplate(
                 'Verify your email address',
-                'support@ai-tuningfiles.com',
+                supportEmail,
                 `<td class="email-content">
                 <h2>Hello, ${data.name}!</h2>
                 <p>Thank you for signing up with AI Tuning Files. To ensure the security of your account, we require you to verify your email address.</p>
@@ -347,16 +378,22 @@ export class MailService {
             </td>`,
             ),
         };
-        await this.authTransporter().sendMail(mailOptions);
+
+        await this.mailTransporter(credential).sendMail(mailOptions);
     }
-    async resetPassword(data: { receiver: string; code: string; name: string }) {
+    async resetPassword(data: { adminId: Types.ObjectId; receiver: string; code: string; name: string }) {
+        const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
+
+        const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const supportEmail = credential.smtp.support || this.config.smtp_support_email;
+
         const mailOptions = {
-            from: `AI Tuning Files <${this.config.smtp_auth_email}>`,
+            from: `AI Tuning Files <${senderEmail}>`,
             to: data.receiver,
             subject: 'Reset your password',
             html: this.emailTemplate(
                 'Password Reset Request',
-                'support@ai-tuningfiles.com',
+                supportEmail,
                 `<td class="email-content">
                 <h2>Hello, ${data.name}!</h2>
                 <div class="highlight">
@@ -368,17 +405,22 @@ export class MailService {
             </td>`,
             ),
         };
-        await this.authTransporter().sendMail(mailOptions);
+        await this.mailTransporter(credential).sendMail(mailOptions);
     }
 
-    async sendWelcomeMail(data: { receiver: string; name: string }) {
+    async sendWelcomeMail(data: { adminId: Types.ObjectId; receiver: string; name: string }) {
+        const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
+
+        const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const supportEmail = credential.smtp.support || this.config.smtp_support_email;
+
         const mailOptions = {
-            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            from: `AI Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
             to: data.receiver,
             subject: 'Welcome to AI Tuning Files',
             html: this.emailTemplate(
                 'Welcome to AI Tuning Files',
-                'support@ai-tuningfiles.com',
+                supportEmail,
                 `<td class="email-content">
                   <h2>Hello,${data.name}!</h2>
                   <p>Thank you for signing up with AI Tuning Files. </p>
@@ -388,16 +430,21 @@ export class MailService {
               </td>`,
             ),
         };
-        await this.authTransporter().sendMail(mailOptions);
+        await this.mailTransporter(credential).sendMail(mailOptions);
     }
-    async fileReady(data: { receiver: string; name: string; uniqueId: string }) {
+    async fileReady(data: { adminId: Types.ObjectId; receiver: string; name: string; uniqueId: string }) {
+        const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
+
+        const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const supportEmail = credential.smtp.support || this.config.smtp_support_email;
+
         const mailOptions = {
-            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            from: `AI Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
             to: data.receiver,
             subject: 'Your file is ready',
             html: this.emailTemplate(
                 'Your file is ready',
-                'support@ai-tuningfiles.com',
+                supportEmail,
                 `<td class="email-content">
                   <h2>Hello,${data.name}!</h2>
                   <p>Thank you for your uploaded file ID: ${data.uniqueId}. Your file is ready to download.</p>
@@ -407,16 +454,21 @@ export class MailService {
               </td>`,
             ),
         };
-        await this.authTransporter().sendMail(mailOptions);
+        await this.mailTransporter(credential).sendMail(mailOptions);
     }
-    async requestedForSolution(data: { receiver: string; name: string; uniqueId: string }) {
+    async requestedForSolution(data: { adminId: Types.ObjectId; receiver: string; name: string; uniqueId: string }) {
+        const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
+
+        const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const supportEmail = credential.smtp.support || this.config.smtp_support_email;
+
         const mailOptions = {
-            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            from: `AI Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
             to: data.receiver,
             subject: 'New File uploaded',
             html: this.emailTemplate(
                 'New File uploaded',
-                'support@ai-tuningfiles.com',
+                supportEmail,
                 `<td class="email-content">
                   <h2>Hello,${data.name}!</h2>
                   <p>Thank you for your uploaded file ID: ${data.uniqueId}. we will start asap with your ModFile.</p>
@@ -426,12 +478,16 @@ export class MailService {
               </td>`,
             ),
         };
-        await this.authTransporter().sendMail(mailOptions);
+        await this.mailTransporter(credential).sendMail(mailOptions);
     }
 
-    async newFileUploadAdmin(data: { receiver: string; name: string; uniqueId: string }) {
+    async newFileUploadAdmin(data: { adminId: Types.ObjectId; receiver: string; name: string; uniqueId: string }) {
+        const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
+
+        const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+
         const mailOptions = {
-            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            from: `AI Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
             to: data.receiver,
             subject: 'New File uploaded',
             html: this.adminEmailTemplate(
@@ -445,16 +501,28 @@ export class MailService {
               </td>`,
             ),
         };
-        await this.authTransporter().sendMail(mailOptions);
+        await this.mailTransporter(credential).sendMail(mailOptions);
     }
 
-    async refundFileService(data: { receiver: string; credits: number; name: string; uniqueId: string }) {
+    async refundFileService(data: {
+        adminId: Types.ObjectId;
+        receiver: string;
+        credits: number;
+        name: string;
+        uniqueId: string;
+    }) {
+        const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
+
+        const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const supportEmail = credential.smtp.support || this.config.smtp_support_email;
+
         const mailOptions = {
-            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            from: `AI Tuning Files <${senderEmail}>`,
             to: data.receiver,
             subject: 'File Service Refunded',
-            html: this.adminEmailTemplate(
+            html: this.emailTemplate(
                 'File Service Refunded',
+                supportEmail,
                 `<td class="email-content">
                   <h2>Hello ${data.name}</h2>
                   <p>${data.credits} credits was refunded for the file service.</p>
@@ -464,16 +532,47 @@ export class MailService {
               </td>`,
             ),
         };
-        await this.infoTransporter().sendMail(mailOptions);
+        await this.mailTransporter(credential).sendMail(mailOptions);
     }
 
-    async fileServiceReopen(data: { receiver: string; name: string; uniqueId: string }) {
+    async closeFileService(data: { adminId: Types.ObjectId; receiver: string; name: string; uniqueId: string }) {
+        const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
+
+        const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const supportEmail = credential.smtp.support || this.config.smtp_support_email;
+
         const mailOptions = {
-            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            from: `AI Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
+            to: data.receiver,
+            subject: 'File Service Closed',
+            html: this.emailTemplate(
+                'File Service Closed',
+                supportEmail,
+                `<td class="email-content">
+                  <h2>Hello ${data.name}</h2>
+                  <p>File service was closed </p>
+                  <div class="highlight">
+                    <p>ID : ${data.uniqueId}</p>
+                </div>
+              </td>`,
+            ),
+        };
+        await this.mailTransporter(credential).sendMail(mailOptions);
+    }
+
+    async fileServiceReopen(data: { adminId: Types.ObjectId; receiver: string; name: string; uniqueId: string }) {
+        const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
+
+        const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const supportEmail = credential.smtp.support || this.config.smtp_support_email;
+
+        const mailOptions = {
+            from: `AI Tuning Files <${senderEmail}>`,
             to: data.receiver,
             subject: 'File Service ReOpen',
-            html: this.adminEmailTemplate(
+            html: this.emailTemplate(
                 'File Service ReOpen',
+                supportEmail,
                 `<td class="email-content">
                   <h2>Hello ${data.name}</h2>
                   <p>File service was re-opened </p>
@@ -483,16 +582,22 @@ export class MailService {
               </td>`,
             ),
         };
-        await this.infoTransporter().sendMail(mailOptions);
+        await this.mailTransporter(credential).sendMail(mailOptions);
     }
 
-    async ticketOpen(data: { receiver: string; name: string; uniqueId: string }) {
+    async ticketOpen(data: { adminId: Types.ObjectId; receiver: string; name: string; uniqueId: string }) {
+        const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
+
+        const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const supportEmail = credential.smtp.support || this.config.smtp_support_email;
+
         const mailOptions = {
-            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            from: `AI Tuning Files <${senderEmail}>`,
             to: data.receiver,
             subject: 'Ticket Open',
-            html: this.adminEmailTemplate(
+            html: this.emailTemplate(
                 'Support Ticket Open',
+                supportEmail,
                 `<td class="email-content">
                   <h2>Hello ${data.name}</h2>
                   <p>A Support ticket was opened </p>
@@ -502,12 +607,16 @@ export class MailService {
               </td>`,
             ),
         };
-        await this.infoTransporter().sendMail(mailOptions);
+        await this.mailTransporter(credential).sendMail(mailOptions);
     }
 
-    async newTicketOpenForAdmin(data: { receiver: string; name: string; uniqueId: string }) {
+    async newTicketOpenForAdmin(data: { adminId: Types.ObjectId; receiver: string; name: string; uniqueId: string }) {
+        const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
+
+        const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+
         const mailOptions = {
-            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            from: `AI Tuning Files <${senderEmail}>`,
             to: data.receiver,
             subject: 'New Support Ticket Open',
             html: this.adminEmailTemplate(
@@ -521,16 +630,22 @@ export class MailService {
               </td>`,
             ),
         };
-        await this.authTransporter().sendMail(mailOptions);
+        await this.mailTransporter(credential).sendMail(mailOptions);
     }
 
-    async closeSupportTicket(data: { receiver: string; name: string; uniqueId: string }) {
+    async closeSupportTicket(data: { adminId: Types.ObjectId; receiver: string; name: string; uniqueId: string }) {
+        const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
+
+        const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const supportEmail = credential.smtp.support || this.config.smtp_support_email;
+
         const mailOptions = {
-            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            from: `AI Tuning Files <${senderEmail}>`,
             to: data.receiver,
             subject: 'Ticket Closed',
-            html: this.adminEmailTemplate(
+            html: this.emailTemplate(
                 'Your ticket was closed',
+                supportEmail,
                 `<td class="email-content">
                   <h2>Hello ${data.name}</h2>
                   <p>Your support ticket was closed</p>
@@ -540,15 +655,22 @@ export class MailService {
               </td>`,
             ),
         };
-        await this.infoTransporter().sendMail(mailOptions);
+        await this.mailTransporter(credential).sendMail(mailOptions);
     }
-    async ticketReopen(data: { receiver: string; name: string; uniqueId: string }) {
+
+    async ticketReopen(data: { adminId: Types.ObjectId; receiver: string; name: string; uniqueId: string }) {
+        const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
+
+        const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const supportEmail = credential.smtp.support || this.config.smtp_support_email;
+
         const mailOptions = {
-            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            from: `AI Tuning Files <${senderEmail}>`,
             to: data.receiver,
             subject: 'Ticket Re-Open',
-            html: this.adminEmailTemplate(
+            html: this.emailTemplate(
                 'Support Ticket Re-Open',
+                supportEmail,
                 `<td class="email-content">
                   <h2>Hello ${data.name}</h2>
                   <p>A ticket was re-opened </p>
@@ -558,6 +680,6 @@ export class MailService {
               </td>`,
             ),
         };
-        await this.infoTransporter().sendMail(mailOptions);
+        await this.mailTransporter(credential).sendMail(mailOptions);
     }
 }

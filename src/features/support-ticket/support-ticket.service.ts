@@ -76,6 +76,7 @@ export class SupportTicketService {
 
             //send email for open to admin file
             this.emailQueueProducers.sendMail({
+                adminId: admin._id,
                 receiver: admin.email,
                 emailType: EMAIL_TYPE.openSupportTicketAdmin,
                 name: customer.firstName + ' ' + customer.lastName,
@@ -84,6 +85,7 @@ export class SupportTicketService {
 
             //send email for open ticket
             this.emailQueueProducers.sendMail({
+                adminId: admin._id,
                 receiver: customer.email,
                 emailType: EMAIL_TYPE.openSupportTicket,
                 name: customer.firstName + ' ' + customer.lastName,
@@ -142,11 +144,12 @@ export class SupportTicketService {
 
         const customer = await this.customerModel
             .findById(data.customer)
-            .select('firstName lastName email')
+            .select('firstName lastName email admin')
             .lean<Customer>();
 
         //send email for re-open file
         this.emailQueueProducers.sendMail({
+            adminId: customer.admin,
             receiver: customer.email,
             name: customer.firstName + ' ' + customer.lastName,
             emailType: EMAIL_TYPE.closedSupportTicket,

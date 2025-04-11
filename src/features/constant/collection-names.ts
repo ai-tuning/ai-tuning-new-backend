@@ -26,4 +26,5 @@ export const collectionsName = {
     adminPricing: 'admin-pricing',
     dtc: 'dtc',
     decodeEncode: 'decode_encode',
+    logo: 'logo',
 };

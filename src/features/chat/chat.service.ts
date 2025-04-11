@@ -57,7 +57,6 @@ export class ChatService {
             originalName = file.originalname;
         }
 
-        console.log('createChatDto', createChatDto);
         const session = sessionParams || (await this.connection.startSession());
 
         try {
@@ -123,8 +122,6 @@ export class ChatService {
             }
             const newChat = await chat.save({ session });
 
-            console.log('newChat', newChat);
-
             //catapush notification
             if (fileService || supportTicket) {
                 const idNumber = fileService ? fileService.uniqueId : supportTicket.ticketId;
@@ -163,6 +160,7 @@ export class ChatService {
                     .select('email firstName lastName');
                 //send email for re-open file
                 this.emailQueueProducers.sendMail({
+                    adminId: createChatDto.admin,
                     receiver: customer.email,
                     name: customer.firstName + ' ' + customer.lastName,
                     emailType: EMAIL_TYPE.reopenSupportTicket,
@@ -176,6 +174,7 @@ export class ChatService {
                     .select('email firstName lastName');
                 //send email for re-open file
                 this.emailQueueProducers.sendMail({
+                    adminId: createChatDto.admin,
                     receiver: customer.email,
                     name: customer.firstName + ' ' + customer.lastName,
                     emailType: EMAIL_TYPE.reopenFileService,
