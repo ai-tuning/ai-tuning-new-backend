@@ -7,38 +7,38 @@ import { AppConfig } from '../config/app.config';
 
 @Injectable()
 export class MailService {
-  private readonly transporter: (user: string, password: string) => nodemailer.Transporter;
-  private readonly config: AppConfig;
-  constructor() {
-    const config = appConfig();
-    this.config = config;
-    this.transporter = (user: string, pass: string) =>
-      nodemailer.createTransport({
-        host: config.smtp_host,
-        port: config.smtp_port,
-        secure: true,
-        auth: { user, pass },
-      } as unknown as SMTPTransport.Options);
-  }
+    private readonly transporter: (user: string, password: string) => nodemailer.Transporter;
+    private readonly config: AppConfig;
+    constructor() {
+        const config = appConfig();
+        this.config = config;
+        this.transporter = (user: string, pass: string) =>
+            nodemailer.createTransport({
+                host: config.smtp_host,
+                port: config.smtp_port,
+                secure: true,
+                auth: { user, pass },
+            } as unknown as SMTPTransport.Options);
+    }
 
-  private authTransporter() {
-    return this.transporter(this.config.smtp_auth_email, this.config.smtp_auth_password);
-  }
+    private authTransporter() {
+        return this.transporter(this.config.smtp_auth_email, this.config.smtp_auth_password);
+    }
 
-  private infoTransporter() {
-    return this.transporter(this.config.smtp_info_email, this.config.smtp_info_password);
-  }
+    private infoTransporter() {
+        return this.transporter(this.config.smtp_info_email, this.config.smtp_info_password);
+    }
 
-  private supportTransporter() {
-    return this.transporter(this.config.smtp_support_email, this.config.smtp_support_password);
-  }
+    private supportTransporter() {
+        return this.transporter(this.config.smtp_support_email, this.config.smtp_support_password);
+    }
 
-  private invoiceTransporter() {
-    return this.transporter(this.config.smtp_invoice_email, this.config.smtp_invoice_password);
-  }
+    private invoiceTransporter() {
+        return this.transporter(this.config.smtp_invoice_email, this.config.smtp_invoice_password);
+    }
 
-  private emailTemplate(title: string, supportMail: string, content: string) {
-    return `<!DOCTYPE html>
+    private emailTemplate(title: string, supportMail: string, content: string) {
+        return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -182,10 +182,10 @@ export class MailService {
 </body>
 </html>
 `;
-  }
+    }
 
-  private adminEmailTemplate(title: string, content: string) {
-    return `<!DOCTYPE html>
+    private adminEmailTemplate(title: string, content: string) {
+        return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -325,17 +325,17 @@ export class MailService {
 </body>
 </html>
 `;
-  }
+    }
 
-  async sendLoginCode(data: { receiver: string; code: string; name: string }) {
-    const mailOptions = {
-      from: `AI Tuning Files <${this.config.smtp_auth_email}>`,
-      to: data.receiver,
-      subject: 'Verify your email address',
-      html: this.emailTemplate(
-        'Verify your email address',
-        'support@ai-tuningfiles.com',
-        `<td class="email-content">
+    async sendLoginCode(data: { receiver: string; code: string; name: string }) {
+        const mailOptions = {
+            from: `AI Tuning Files <${this.config.smtp_auth_email}>`,
+            to: data.receiver,
+            subject: 'Verify your email address',
+            html: this.emailTemplate(
+                'Verify your email address',
+                'support@ai-tuningfiles.com',
+                `<td class="email-content">
                 <h2>Hello, ${data.name}!</h2>
                 <p>Thank you for signing up with AI Tuning Files. To ensure the security of your account, we require you to verify your email address.</p>
                 <div class="highlight">
@@ -345,19 +345,19 @@ export class MailService {
                 </div>
                 <p>If you didn’t sign up for this account, please ignore this email or contact our support team.</p>
             </td>`,
-      ),
-    };
-    await this.authTransporter().sendMail(mailOptions);
-  }
-  async resetPassword(data: { receiver: string; code: string; name: string }) {
-    const mailOptions = {
-      from: `AI Tuning Files <${this.config.smtp_auth_email}>`,
-      to: data.receiver,
-      subject: 'Reset your password',
-      html: this.emailTemplate(
-        'Password Reset Request',
-        'support@ai-tuningfiles.com',
-        `<td class="email-content">
+            ),
+        };
+        await this.authTransporter().sendMail(mailOptions);
+    }
+    async resetPassword(data: { receiver: string; code: string; name: string }) {
+        const mailOptions = {
+            from: `AI Tuning Files <${this.config.smtp_auth_email}>`,
+            to: data.receiver,
+            subject: 'Reset your password',
+            html: this.emailTemplate(
+                'Password Reset Request',
+                'support@ai-tuningfiles.com',
+                `<td class="email-content">
                 <h2>Hello, ${data.name}!</h2>
                 <div class="highlight">
                     <strong>Details:</strong>
@@ -366,198 +366,198 @@ export class MailService {
                 </div>
                 <p>If you didn't request a password reset, please ignore this email or contact our support team.</p>
             </td>`,
-      ),
-    };
-    await this.authTransporter().sendMail(mailOptions);
-  }
+            ),
+        };
+        await this.authTransporter().sendMail(mailOptions);
+    }
 
-  async sendWelcomeMail(data: { receiver: string; name: string }) {
-    const mailOptions = {
-      from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
-      to: data.receiver,
-      subject: 'Welcome to AI Tuning Files',
-      html: this.emailTemplate(
-        'Welcome to AI Tuning Files',
-        'support@ai-tuningfiles.com',
-        `<td class="email-content">
+    async sendWelcomeMail(data: { receiver: string; name: string }) {
+        const mailOptions = {
+            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            to: data.receiver,
+            subject: 'Welcome to AI Tuning Files',
+            html: this.emailTemplate(
+                'Welcome to AI Tuning Files',
+                'support@ai-tuningfiles.com',
+                `<td class="email-content">
                   <h2>Hello,${data.name}!</h2>
                   <p>Thank you for signing up with AI Tuning Files. </p>
                   <div class="highlight">
                     <p>Enjoy the best service from AI Tuning Files</p>
                 </div>
               </td>`,
-      ),
-    };
-    await this.authTransporter().sendMail(mailOptions);
-  }
-  async fileReady(data: { receiver: string; name: string; uniqueId: string }) {
-    const mailOptions = {
-      from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
-      to: data.receiver,
-      subject: 'Your file is ready',
-      html: this.emailTemplate(
-        'Your file is ready',
-        'support@ai-tuningfiles.com',
-        `<td class="email-content">
+            ),
+        };
+        await this.authTransporter().sendMail(mailOptions);
+    }
+    async fileReady(data: { receiver: string; name: string; uniqueId: string }) {
+        const mailOptions = {
+            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            to: data.receiver,
+            subject: 'Your file is ready',
+            html: this.emailTemplate(
+                'Your file is ready',
+                'support@ai-tuningfiles.com',
+                `<td class="email-content">
                   <h2>Hello,${data.name}!</h2>
                   <p>Thank you for your uploaded file ID: ${data.uniqueId}. Your file is ready to download.</p>
                   <div class="highlight">
                     <p>Enjoy the best service from AI Tuning Files</p>
                 </div>
               </td>`,
-      ),
-    };
-    await this.authTransporter().sendMail(mailOptions);
-  }
-  async requestedForSolution(data: { receiver: string; name: string; uniqueId: string }) {
-    const mailOptions = {
-      from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
-      to: data.receiver,
-      subject: 'New File uploaded',
-      html: this.emailTemplate(
-        'New File uploaded',
-        'support@ai-tuningfiles.com',
-        `<td class="email-content">
+            ),
+        };
+        await this.authTransporter().sendMail(mailOptions);
+    }
+    async requestedForSolution(data: { receiver: string; name: string; uniqueId: string }) {
+        const mailOptions = {
+            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            to: data.receiver,
+            subject: 'New File uploaded',
+            html: this.emailTemplate(
+                'New File uploaded',
+                'support@ai-tuningfiles.com',
+                `<td class="email-content">
                   <h2>Hello,${data.name}!</h2>
                   <p>Thank you for your uploaded file ID: ${data.uniqueId}. we will start asap with your ModFile.</p>
                   <div class="highlight">
                     <p>Enjoy the best service from AI Tuning Files</p>
                 </div>
               </td>`,
-      ),
-    };
-    await this.authTransporter().sendMail(mailOptions);
-  }
+            ),
+        };
+        await this.authTransporter().sendMail(mailOptions);
+    }
 
-  async newFileUploadAdmin(data: { receiver: string; name: string; uniqueId: string }) {
-    const mailOptions = {
-      from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
-      to: data.receiver,
-      subject: 'New File uploaded',
-      html: this.adminEmailTemplate(
-        'New File uploaded',
-        `<td class="email-content">
+    async newFileUploadAdmin(data: { receiver: string; name: string; uniqueId: string }) {
+        const mailOptions = {
+            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            to: data.receiver,
+            subject: 'New File uploaded',
+            html: this.adminEmailTemplate(
+                'New File uploaded',
+                `<td class="email-content">
                   <h2>Hello There</h2>
                   <p>A new file was uploaded from ${data.name}</p>
                   <div class="highlight">
                     <p>ID : ${data.uniqueId}</p>
                 </div>
               </td>`,
-      ),
-    };
-    await this.authTransporter().sendMail(mailOptions);
-  }
+            ),
+        };
+        await this.authTransporter().sendMail(mailOptions);
+    }
 
-  async refundFileService(data: { receiver: string; credits: number; name: string; uniqueId: string }) {
-    const mailOptions = {
-      from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
-      to: data.receiver,
-      subject: 'File Service Refunded',
-      html: this.adminEmailTemplate(
-        'File Service Refunded',
-        `<td class="email-content">
+    async refundFileService(data: { receiver: string; credits: number; name: string; uniqueId: string }) {
+        const mailOptions = {
+            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            to: data.receiver,
+            subject: 'File Service Refunded',
+            html: this.adminEmailTemplate(
+                'File Service Refunded',
+                `<td class="email-content">
                   <h2>Hello ${data.name}</h2>
                   <p>${data.credits} credits was refunded for the file service.</p>
                   <div class="highlight">
                     <p>ID : ${data.uniqueId}</p>
                 </div>
               </td>`,
-      ),
-    };
-    await this.infoTransporter().sendMail(mailOptions);
-  }
+            ),
+        };
+        await this.infoTransporter().sendMail(mailOptions);
+    }
 
-  async fileServiceReopen(data: { receiver: string; name: string; uniqueId: string }) {
-    const mailOptions = {
-      from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
-      to: data.receiver,
-      subject: 'File Service ReOpen',
-      html: this.adminEmailTemplate(
-        'File Service ReOpen',
-        `<td class="email-content">
+    async fileServiceReopen(data: { receiver: string; name: string; uniqueId: string }) {
+        const mailOptions = {
+            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            to: data.receiver,
+            subject: 'File Service ReOpen',
+            html: this.adminEmailTemplate(
+                'File Service ReOpen',
+                `<td class="email-content">
                   <h2>Hello ${data.name}</h2>
                   <p>File service was re-opened </p>
                   <div class="highlight">
                     <p>ID : ${data.uniqueId}</p>
                 </div>
               </td>`,
-      ),
-    };
-    await this.infoTransporter().sendMail(mailOptions);
-  }
+            ),
+        };
+        await this.infoTransporter().sendMail(mailOptions);
+    }
 
-  async ticketOpen(data: { receiver: string; name: string; uniqueId: string }) {
-    const mailOptions = {
-      from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
-      to: data.receiver,
-      subject: 'Ticket Open',
-      html: this.adminEmailTemplate(
-        'Support Ticket Open',
-        `<td class="email-content">
+    async ticketOpen(data: { receiver: string; name: string; uniqueId: string }) {
+        const mailOptions = {
+            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            to: data.receiver,
+            subject: 'Ticket Open',
+            html: this.adminEmailTemplate(
+                'Support Ticket Open',
+                `<td class="email-content">
                   <h2>Hello ${data.name}</h2>
                   <p>A Support ticket was opened </p>
                   <div class="highlight">
                     <p>ID : ${data.uniqueId}</p>
                 </div>
               </td>`,
-      ),
-    };
-    await this.infoTransporter().sendMail(mailOptions);
-  }
+            ),
+        };
+        await this.infoTransporter().sendMail(mailOptions);
+    }
 
-  async newTicketOpenForAdmin(data: { receiver: string; name: string; uniqueId: string }) {
-    const mailOptions = {
-      from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
-      to: data.receiver,
-      subject: 'New Support Ticket Open',
-      html: this.adminEmailTemplate(
-        'New Support Ticket Open',
-        `<td class="email-content">
+    async newTicketOpenForAdmin(data: { receiver: string; name: string; uniqueId: string }) {
+        const mailOptions = {
+            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            to: data.receiver,
+            subject: 'New Support Ticket Open',
+            html: this.adminEmailTemplate(
+                'New Support Ticket Open',
+                `<td class="email-content">
                   <h2>Hello There</h2>
                   <p>A support ticket was opened from ${data.name}</p>
                   <div class="highlight">
                     <p>ID : ${data.uniqueId}</p>
                 </div>
               </td>`,
-      ),
-    };
-    await this.authTransporter().sendMail(mailOptions);
-  }
+            ),
+        };
+        await this.authTransporter().sendMail(mailOptions);
+    }
 
-  async closeSupportTicket(data: { receiver: string; name: string; uniqueId: string }) {
-    const mailOptions = {
-      from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
-      to: data.receiver,
-      subject: 'Ticket Closed',
-      html: this.adminEmailTemplate(
-        'Your ticket was closed',
-        `<td class="email-content">
+    async closeSupportTicket(data: { receiver: string; name: string; uniqueId: string }) {
+        const mailOptions = {
+            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            to: data.receiver,
+            subject: 'Ticket Closed',
+            html: this.adminEmailTemplate(
+                'Your ticket was closed',
+                `<td class="email-content">
                   <h2>Hello ${data.name}</h2>
                   <p>Your support ticket was closed</p>
                   <div class="highlight">
                     <p>ID : ${data.uniqueId}</p>
                 </div>
               </td>`,
-      ),
-    };
-    await this.infoTransporter().sendMail(mailOptions);
-  }
-  async ticketReopen(data: { receiver: string; name: string; uniqueId: string }) {
-    const mailOptions = {
-      from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
-      to: data.receiver,
-      subject: 'Ticket Re-Open',
-      html: this.adminEmailTemplate(
-        'Support Ticket Re-Open',
-        `<td class="email-content">
+            ),
+        };
+        await this.infoTransporter().sendMail(mailOptions);
+    }
+    async ticketReopen(data: { receiver: string; name: string; uniqueId: string }) {
+        const mailOptions = {
+            from: `AI Tuning Files <${this.config.smtp_support_email}>`, // this.config.smtp_auth_email,
+            to: data.receiver,
+            subject: 'Ticket Re-Open',
+            html: this.adminEmailTemplate(
+                'Support Ticket Re-Open',
+                `<td class="email-content">
                   <h2>Hello ${data.name}</h2>
                   <p>A ticket was re-opened </p>
                   <div class="highlight">
                     <p>ID : ${data.uniqueId}</p>
                 </div>
               </td>`,
-      ),
-    };
-    await this.infoTransporter().sendMail(mailOptions);
-  }
+            ),
+        };
+        await this.infoTransporter().sendMail(mailOptions);
+    }
 }

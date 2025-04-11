@@ -1023,7 +1023,7 @@ ResellerCredits= 10
         }
 
         //copy the binfile to the winols input folder
-        await fs.promises.copyFile(binFilePath, path.join(inputPath, parsedName.name));
+        await fs.promises.copyFile(binFilePath, path.join(inputPath, parsedName.name + parsedName.ext));
         console.log('copped to the winols in folder done');
 
         console.log('waiting for 70 seconds');
