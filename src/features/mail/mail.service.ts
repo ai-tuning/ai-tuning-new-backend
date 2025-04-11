@@ -64,6 +64,7 @@ export class MailService {
     // }
 
     private emailTemplate(title: string, supportMail: string, content: string) {
+        // <img src="https://admin.ai-tuningfiles.com/Assets/logo.png" alt="Tuning Logo">
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -190,7 +191,7 @@ export class MailService {
     <table class="email-container" align="center">
         <tr>
             <td class="email-header">
-                <img src="https://admin.ai-tuningfiles.com/Assets/logo.png" alt="AI Tuning Logo">
+
                 <h1>${title}</h1>
             </td>
         </tr>
@@ -201,7 +202,7 @@ export class MailService {
                     Need help? Contact us at 
                     <a href="mailto:${supportMail}">${supportMail}</a>.
                 </p>
-                <p>© 2024 AI Tuning Files. All Rights Reserved.</p>
+                <p>© 2025 All Rights Reserved.</p>
             </td>
         </tr>
     </table>
@@ -211,6 +212,7 @@ export class MailService {
     }
 
     private adminEmailTemplate(title: string, content: string) {
+        // <img src="https://admin.ai-tuningfiles.com/Assets/logo.png" alt="Tuning Logo">
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -337,14 +339,14 @@ export class MailService {
     <table class="email-container" align="center">
         <tr>
             <td class="email-header">
-                <img src="https://admin.ai-tuningfiles.com/Assets/logo.png" alt="AI Tuning Logo">
+            
                 <h1>${title}</h1>
             </td>
         </tr>
         <tr>${content}</tr>
         <tr>
             <td class="email-footer">
-                <p>© 2025 AI Tuning Files. All Rights Reserved.</p>
+                <p>© 2025 All Rights Reserved.</p>
             </td>
         </tr>
     </table>
@@ -360,7 +362,7 @@ export class MailService {
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `AI Tuning Files <${senderEmail}>`,
+            from: `Tuning Files <${senderEmail}>`,
             to: data.receiver,
             subject: 'Verify your email address',
             html: this.emailTemplate(
@@ -368,7 +370,7 @@ export class MailService {
                 supportEmail,
                 `<td class="email-content">
                 <h2>Hello, ${data.name}!</h2>
-                <p>Thank you for signing up with AI Tuning Files. To ensure the security of your account, we require you to verify your email address.</p>
+                <p>Thank you for signing up with Tuning Files. To ensure the security of your account, we require you to verify your email address.</p>
                 <div class="highlight">
                     <strong>Details:</strong>
                     <p>Please use the code provided in below to verify your email address and activate your account.</p>
@@ -388,7 +390,7 @@ export class MailService {
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `AI Tuning Files <${senderEmail}>`,
+            from: `Tuning Files <${senderEmail}>`,
             to: data.receiver,
             subject: 'Reset your password',
             html: this.emailTemplate(
@@ -415,17 +417,17 @@ export class MailService {
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `AI Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
+            from: `Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
             to: data.receiver,
-            subject: 'Welcome to AI Tuning Files',
+            subject: 'Welcome to Tuning Files',
             html: this.emailTemplate(
-                'Welcome to AI Tuning Files',
+                'Welcome to Tuning Files',
                 supportEmail,
                 `<td class="email-content">
                   <h2>Hello,${data.name}!</h2>
-                  <p>Thank you for signing up with AI Tuning Files. </p>
+                  <p>Thank you for signing up with Tuning Files. </p>
                   <div class="highlight">
-                    <p>Enjoy the best service from AI Tuning Files</p>
+                    <p>Enjoy the best service from Tuning Files</p>
                 </div>
               </td>`,
             ),
@@ -439,7 +441,7 @@ export class MailService {
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `AI Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
+            from: `Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
             to: data.receiver,
             subject: 'Your file is ready',
             html: this.emailTemplate(
@@ -449,7 +451,7 @@ export class MailService {
                   <h2>Hello,${data.name}!</h2>
                   <p>Thank you for your uploaded file ID: ${data.uniqueId}. Your file is ready to download.</p>
                   <div class="highlight">
-                    <p>Enjoy the best service from AI Tuning Files</p>
+                    <p>Enjoy the best service from Tuning Files</p>
                 </div>
               </td>`,
             ),
@@ -463,7 +465,7 @@ export class MailService {
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `AI Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
+            from: `Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
             to: data.receiver,
             subject: 'New File uploaded',
             html: this.emailTemplate(
@@ -473,7 +475,7 @@ export class MailService {
                   <h2>Hello,${data.name}!</h2>
                   <p>Thank you for your uploaded file ID: ${data.uniqueId}. we will start asap with your ModFile.</p>
                   <div class="highlight">
-                    <p>Enjoy the best service from AI Tuning Files</p>
+                    <p>Enjoy the best service from Tuning Files</p>
                 </div>
               </td>`,
             ),
@@ -487,7 +489,7 @@ export class MailService {
         const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
 
         const mailOptions = {
-            from: `AI Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
+            from: `Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
             to: data.receiver,
             subject: 'New File uploaded',
             html: this.adminEmailTemplate(
@@ -517,7 +519,7 @@ export class MailService {
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `AI Tuning Files <${senderEmail}>`,
+            from: `Tuning Files <${senderEmail}>`,
             to: data.receiver,
             subject: 'File Service Refunded',
             html: this.emailTemplate(
@@ -542,7 +544,7 @@ export class MailService {
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `AI Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
+            from: `Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
             to: data.receiver,
             subject: 'File Service Closed',
             html: this.emailTemplate(
@@ -567,7 +569,7 @@ export class MailService {
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `AI Tuning Files <${senderEmail}>`,
+            from: `Tuning Files <${senderEmail}>`,
             to: data.receiver,
             subject: 'File Service ReOpen',
             html: this.emailTemplate(
@@ -592,7 +594,7 @@ export class MailService {
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `AI Tuning Files <${senderEmail}>`,
+            from: `Tuning Files <${senderEmail}>`,
             to: data.receiver,
             subject: 'Ticket Open',
             html: this.emailTemplate(
@@ -616,7 +618,7 @@ export class MailService {
         const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
 
         const mailOptions = {
-            from: `AI Tuning Files <${senderEmail}>`,
+            from: `Tuning Files <${senderEmail}>`,
             to: data.receiver,
             subject: 'New Support Ticket Open',
             html: this.adminEmailTemplate(
@@ -640,7 +642,7 @@ export class MailService {
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `AI Tuning Files <${senderEmail}>`,
+            from: `Tuning Files <${senderEmail}>`,
             to: data.receiver,
             subject: 'Ticket Closed',
             html: this.emailTemplate(
@@ -665,7 +667,7 @@ export class MailService {
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `AI Tuning Files <${senderEmail}>`,
+            from: `Tuning Files <${senderEmail}>`,
             to: data.receiver,
             subject: 'Ticket Re-Open',
             html: this.emailTemplate(
