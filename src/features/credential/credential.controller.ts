@@ -1,7 +1,7 @@
-import { Controller, Get, Body, Patch } from '@nestjs/common';
+import { Controller, Get, Body, Patch, Post } from '@nestjs/common';
 import { CredentialService } from './credential.service';
 import { Credential } from './schema/credential.schema';
-import { CreateCredentialDto } from './dto/create-credential.dto';
+import { CreateCredentialDto, SMTPCredentialDto } from './dto/create-credential.dto';
 import { AuthUser } from '../common/decorator/get-auth-user.decorator';
 import { IAuthUser } from '../common';
 
@@ -12,6 +12,12 @@ export class CredentialController {
     @Get()
     async findOneByAdmin(@AuthUser() authUser: IAuthUser): Promise<Credential> {
         return await this.credentialService.findByAdmin(authUser.admin);
+    }
+
+    @Post('test')
+    async testCredential(@Body() smtpCredentialDto: SMTPCredentialDto) {
+        const data = await this.credentialService.testSMTPCredential(smtpCredentialDto);
+        return { data, message: 'Your credential is valid' };
     }
 
     @Patch()

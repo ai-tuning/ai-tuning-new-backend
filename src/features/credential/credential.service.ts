@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
-
-import { Injectable } from '@nestjs/common';
+import { createTransport, Transporter, TransportOptions } from 'nodemailer';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
 import { InjectModel } from '@nestjs/mongoose';
 import { collectionsName } from '../constant';
@@ -17,6 +17,7 @@ import {
     PaypalCredentialDto,
     SMTPCredentialDto,
 } from './dto/create-credential.dto';
+import SMTPTransport from 'nodemailer/lib/smtp-transport';
 
 @Injectable()
 export class CredentialService {
@@ -63,6 +64,7 @@ export class CredentialService {
             updateCredentialDto.smtp.password = this.encryptData(updateCredentialDto.smtp.password);
             updateCredentialDto.smtp.from = updateCredentialDto.smtp.from;
             updateCredentialDto.smtp.support = updateCredentialDto.smtp.support;
+            updateCredentialDto.smtp.senderName = updateCredentialDto.smtp.senderName;
         }
 
         const credential = await this.credentialModel.findOneAndUpdate(
@@ -173,6 +175,7 @@ export class CredentialService {
             password: this.encryptData(smtpCredentialDto.password),
             from: smtpCredentialDto.from,
             support: smtpCredentialDto.support,
+            senderName: smtpCredentialDto.senderName,
         };
         const credential = this.updateCredential(adminId, payload);
         return credential;
@@ -220,7 +223,8 @@ export class CredentialService {
                 !credential.smtp.username ||
                 !credential.smtp.password ||
                 !credential.smtp.from ||
-                !credential.smtp.support
+                !credential.smtp.support ||
+                !credential.smtp.senderName
             ) {
                 return null;
             }
@@ -264,6 +268,7 @@ export class CredentialService {
             credential.smtp.password = this.decryptData(credential.smtp.password);
             credential.smtp.from = credential.smtp.from;
             credential.smtp.support = credential.smtp.support;
+            credential.smtp.senderName = credential.smtp.senderName;
         }
 
         return credential;
@@ -281,6 +286,24 @@ export class CredentialService {
 
         // Convert key to a Buffer (assuming stored as a string)
         return Buffer.from(key, 'hex');
+    }
+
+    async testSMTPCredential(smtpCredentialDto: SMTPCredentialDto) {
+        console.log(smtpCredentialDto);
+        const transporter: Transporter = createTransport({
+            host: smtpCredentialDto.host,
+            port: smtpCredentialDto.port,
+            secure: true,
+            auth: { user: smtpCredentialDto.username, pass: smtpCredentialDto.password },
+        } as unknown as SMTPTransport.Options);
+
+        const isVerified = await transporter.verify();
+
+        if (!isVerified) {
+            throw new BadRequestException('Invalid SMTP credentials');
+        }
+        console.log(isVerified);
+        return isVerified;
     }
 
     private encryptData(data: string): string {
@@ -309,9 +332,5 @@ export class CredentialService {
             console.error('Decryption error:', error);
             throw error; // Rethrow the error for proper handling
         }
-    }
-
-    remove(id: number) {
-        return `This action removes a #${id} credential`;
     }
 }

@@ -79,6 +79,10 @@ export class SMTPCredentialDto {
 
     @IsNotEmpty()
     @IsString()
+    senderName: string;
+
+    @IsNotEmpty()
+    @IsString()
     support: string;
 }
 

@@ -66,6 +66,9 @@ export class SMTPCredential {
     @Prop({ type: String, required: true, default: '', lowercase: true })
     from: string;
 
+    @Prop({ type: String, required: true, default: '', maxlength: 50 })
+    senderName: string;
+
     @Prop({ type: String, required: true, default: '', lowercase: true })
     support: string;
 }

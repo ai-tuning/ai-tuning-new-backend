@@ -24,7 +24,7 @@ export class MailService {
             nodemailer.createTransport({
                 host,
                 port,
-                secure: true,
+                secure: port === '465' ? true : false,
                 auth: { user, pass },
             } as unknown as SMTPTransport.Options);
     }
@@ -42,8 +42,8 @@ export class MailService {
         return this.transporter(
             this.config.smtp_host,
             this.config.smtp_port,
-            this.config.smtp_info_email,
-            this.config.smtp_info_password,
+            this.config.smtp_support_email,
+            this.config.smtp_support_password,
         );
     }
 
@@ -355,14 +355,37 @@ export class MailService {
 `;
     }
 
+    async testCredential(data: { adminId: Types.ObjectId; receiver: string }) {
+        const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
+
+        const senderEmail = credential.smtp.from;
+        const senderName = credential.smtp.senderName;
+
+        const mailOptions = {
+            from: `${senderName} <${senderEmail}>`,
+            to: data.receiver,
+            subject: 'Test Mail',
+            html: this.adminEmailTemplate(
+                'Test Mail',
+                `<td class="email-content">
+                <h2>Hello, There!</h2>
+                <p>Your email configuration is ready to use.</p>
+            </td>`,
+            ),
+        };
+
+        await this.mailTransporter(credential).sendMail(mailOptions);
+    }
+
     async sendLoginCode(data: { adminId: Types.ObjectId; receiver: string; code: string; name: string }) {
         const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
 
         const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const senderName = credential.smtp.senderName || 'Tuning Files';
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `Tuning Files <${senderEmail}>`,
+            from: `${senderName} <${senderEmail}>`,
             to: data.receiver,
             subject: 'Verify your email address',
             html: this.emailTemplate(
@@ -387,10 +410,12 @@ export class MailService {
         const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
 
         const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const senderName = credential.smtp.senderName || 'Tuning Files';
+
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `Tuning Files <${senderEmail}>`,
+            from: `${senderName} <${senderEmail}>`,
             to: data.receiver,
             subject: 'Reset your password',
             html: this.emailTemplate(
@@ -414,10 +439,12 @@ export class MailService {
         const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
 
         const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const senderName = credential.smtp.senderName || 'Tuning Files';
+
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
+            from: `${senderName} <${senderEmail}>`, // this.config.smtp_auth_email,
             to: data.receiver,
             subject: 'Welcome to Tuning Files',
             html: this.emailTemplate(
@@ -438,10 +465,12 @@ export class MailService {
         const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
 
         const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const senderName = credential.smtp.senderName || 'Tuning Files';
+
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
+            from: `${senderName} <${senderEmail}>`, // this.config.smtp_auth_email,
             to: data.receiver,
             subject: 'Your file is ready',
             html: this.emailTemplate(
@@ -462,10 +491,12 @@ export class MailService {
         const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
 
         const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const senderName = credential.smtp.senderName || 'Tuning Files';
+
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
+            from: `${senderName} <${senderEmail}>`, // this.config.smtp_auth_email,
             to: data.receiver,
             subject: 'New File uploaded',
             html: this.emailTemplate(
@@ -487,9 +518,10 @@ export class MailService {
         const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
 
         const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const senderName = credential.smtp.senderName || 'Tuning Files';
 
         const mailOptions = {
-            from: `Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
+            from: `${senderName} <${senderEmail}>`, // this.config.smtp_auth_email,
             to: data.receiver,
             subject: 'New File uploaded',
             html: this.adminEmailTemplate(
@@ -516,10 +548,12 @@ export class MailService {
         const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
 
         const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const senderName = credential.smtp.senderName || 'Tuning Files';
+
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `Tuning Files <${senderEmail}>`,
+            from: `${senderName} <${senderEmail}>`,
             to: data.receiver,
             subject: 'File Service Refunded',
             html: this.emailTemplate(
@@ -541,10 +575,12 @@ export class MailService {
         const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
 
         const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const senderName = credential.smtp.senderName || 'Tuning Files';
+
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `Tuning Files <${senderEmail}>`, // this.config.smtp_auth_email,
+            from: `${senderName} <${senderEmail}>`, // this.config.smtp_auth_email,
             to: data.receiver,
             subject: 'File Service Closed',
             html: this.emailTemplate(
@@ -566,10 +602,12 @@ export class MailService {
         const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
 
         const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const senderName = credential.smtp.senderName || 'Tuning Files';
+
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `Tuning Files <${senderEmail}>`,
+            from: `${senderName} <${senderEmail}>`,
             to: data.receiver,
             subject: 'File Service ReOpen',
             html: this.emailTemplate(
@@ -591,10 +629,12 @@ export class MailService {
         const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
 
         const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const senderName = credential.smtp.senderName || 'Tuning Files';
+
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `Tuning Files <${senderEmail}>`,
+            from: `${senderName} <${senderEmail}>`,
             to: data.receiver,
             subject: 'Ticket Open',
             html: this.emailTemplate(
@@ -616,9 +656,10 @@ export class MailService {
         const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
 
         const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const senderName = credential.smtp.senderName || 'Tuning Files';
 
         const mailOptions = {
-            from: `Tuning Files <${senderEmail}>`,
+            from: `${senderName} <${senderEmail}>`,
             to: data.receiver,
             subject: 'New Support Ticket Open',
             html: this.adminEmailTemplate(
@@ -639,10 +680,12 @@ export class MailService {
         const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
 
         const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const senderName = credential.smtp.senderName || 'Tuning Files';
+
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `Tuning Files <${senderEmail}>`,
+            from: `${senderName} <${senderEmail}>`,
             to: data.receiver,
             subject: 'Ticket Closed',
             html: this.emailTemplate(
@@ -664,10 +707,12 @@ export class MailService {
         const credential = await this.credentialService.findByAdmin(data.adminId, 'smtp');
 
         const senderEmail = credential.smtp.from || this.config.smtp_auth_email;
+        const senderName = credential.smtp.senderName || 'Tuning Files';
+
         const supportEmail = credential.smtp.support || this.config.smtp_support_email;
 
         const mailOptions = {
-            from: `Tuning Files <${senderEmail}>`,
+            from: `${senderName} <${senderEmail}>`,
             to: data.receiver,
             subject: 'Ticket Re-Open',
             html: this.emailTemplate(

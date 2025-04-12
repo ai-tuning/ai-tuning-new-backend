@@ -1766,7 +1766,6 @@ ResellerCredits= 10
                 $set: { status: FILE_SERVICE_STATUS.CLOSED },
             })
             .lean<FileService>();
-        console.log(fileService);
         //don't return the new value so that we can check the status of previous
         if (fileService.status === FILE_SERVICE_STATUS.OPEN) {
             const customer = await this.customerService.findByIdAndSelect(fileService.customer, [
