@@ -968,6 +968,18 @@ ResellerCredits= 10
         for (const service of services) {
             totalCredits += adminPricing[service.toLowerCase()];
         }
+
+        if (totalCredits > adminPricing.maxPrice) {
+            console.log('totalCredits', totalCredits, 'maxPrice', adminPricing.maxPrice);
+            totalCredits = adminPricing.maxPrice;
+        }
+
+        if (totalCredits < adminPricing.minPrice) {
+            console.log('totalCredits', totalCredits, 'min', adminPricing.minPrice);
+
+            totalCredits = adminPricing.minPrice;
+        }
+
         return totalCredits;
     }
 
