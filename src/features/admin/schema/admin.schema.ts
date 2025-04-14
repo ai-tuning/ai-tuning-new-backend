@@ -14,6 +14,9 @@ class Admin extends Document<Types.ObjectId> {
     @Prop({ type: String })
     username: string;
 
+    @Prop({ type: [String] })
+    domains: string[];
+
     @Prop({ type: String })
     companyName: string;
 
@@ -76,6 +79,7 @@ const AdminSchema = SchemaFactory.createForClass(Admin);
 export class AdminDocument {
     _id: Types.ObjectId;
     username: string;
+    domains: string[];
     user: Types.ObjectId;
     category: ADMIN_CATEGORY;
     companyName: string;

@@ -1,58 +1,42 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Logo } from './schema/logo.schema';
-import { Model, Types } from 'mongoose';
-import { collectionsName } from '../constant';
-import * as path from 'path';
 import * as fs from 'fs';
+import * as path from 'path';
+import { Model, Types } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { Logo } from './schema/logo.schema';
+import { collectionsName } from '../constant';
+import { Admin, AdminDocument } from '../admin/schema/admin.schema';
 
 @Injectable()
 export class LogoService {
     logoPath = path.join(process.cwd(), 'public', 'images');
-    constructor(@InjectModel(collectionsName.logo) private readonly logoModel: Model<Logo>) {}
+    constructor(
+        @InjectModel(collectionsName.logo) private readonly logoModel: Model<Logo>,
+        @InjectModel(collectionsName.admin) private readonly adminModel: Model<Admin>,
+    ) {}
 
-    async uploadLightLogo(adminId: Types.ObjectId, origin: string, file: Express.Multer.File) {
+    async uploadLogo(adminId: Types.ObjectId, logoType: string, file: Express.Multer.File) {
         if (!file) throw new BadRequestException('Logo is required');
-        const existingLogo = await this.logoModel.findOne({ admin: adminId, domain: origin });
-        if (existingLogo.logoLight) {
-            const imagePath = path.join(this.logoPath, existingLogo.logoLight);
+
+        const admin = await this.adminModel.findById(adminId).select('domains').lean<AdminDocument>();
+        const existingLogo = await this.logoModel.findOne({ admin: adminId });
+
+        if (existingLogo && existingLogo[logoType]) {
+            const imagePath = path.join(this.logoPath, existingLogo[logoType]);
             if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
         }
         const logo = this.logoModel.findOneAndUpdate(
             { admin: adminId },
-            { $set: { admin: adminId, domain: origin, logoLight: file.filename } },
+            { $set: { admin: adminId, domains: admin.domains, [logoType]: file.filename } },
             { upsert: true, new: true },
         );
         return logo;
     }
 
-    async uploadDarkLogo(adminId: Types.ObjectId, origin: string, file: Express.Multer.File) {
-        if (!file) throw new BadRequestException('Logo is required');
-        const existingLogo = await this.logoModel.findOne({ admin: adminId, domain: origin });
-        if (existingLogo.logoDark) {
-            const imagePath = path.join(this.logoPath, existingLogo.logoDark);
-            if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
-        }
-        const logo = this.logoModel.findOneAndUpdate(
-            { admin: adminId },
-            { $set: { admin: adminId, domain: origin, logoDark: file.filename } },
-            { upsert: true, new: true },
-        );
-        return logo;
-    }
-
-    async uploadInvoiceLogo(adminId: Types.ObjectId, origin: string, file: Express.Multer.File) {
-        if (!file) throw new BadRequestException('Logo is required');
-        const existingLogo = await this.logoModel.findOne({ admin: adminId, domain: origin });
-        if (existingLogo.invoiceLogo) {
-            const imagePath = path.join(this.logoPath, existingLogo.invoiceLogo);
-            if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
-        }
-        const logo = this.logoModel.findOneAndUpdate(
-            { admin: adminId },
-            { $set: { admin: adminId, domain: origin, invoiceLogo: file.filename } },
-            { upsert: true, new: true },
-        );
-        return logo;
+    async getLogo(domain: string) {
+        return this.logoModel
+            .findOne({ domains: { $in: [domain] } })
+            .select('logoLight logoDark invoiceLogo logoIconLight logoIconDark')
+            .lean<Logo>();
     }
 }

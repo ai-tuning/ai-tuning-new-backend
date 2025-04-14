@@ -6,14 +6,20 @@ export class Logo {
     @Prop({ type: mongoose.Schema.Types.ObjectId })
     admin: Types.ObjectId;
 
-    @Prop({ type: String, required: true })
-    domain: string;
+    @Prop({ type: [String], required: true })
+    domains: string[];
 
     @Prop({ type: String })
     logoDark: string;
 
     @Prop({ type: String })
     logoLight: string;
+
+    @Prop({ type: String })
+    logoIconDark: string;
+
+    @Prop({ type: String })
+    logoIconLight: string;
 
     @Prop({ type: String })
     invoiceLogo: string;

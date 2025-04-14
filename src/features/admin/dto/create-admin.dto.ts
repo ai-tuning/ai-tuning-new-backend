@@ -1,61 +1,67 @@
 import { Type } from 'class-transformer';
-import { IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { ArrayMinSize, IsArray, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateAdminDto {
-  @IsNotEmpty({ message: 'Username is required' })
-  @IsString()
-  username: string;
+    @IsNotEmpty({ message: 'Username is required' })
+    @IsString()
+    username: string;
 
-  @IsOptional()
-  @IsString()
-  companyName?: string;
+    @IsNotEmpty({ message: 'Admin and Portal Domain is required' })
+    @IsArray()
+    @ArrayMinSize(2, { message: 'Admin and Portal Domain is required' })
+    @IsString({ each: true })
+    domains: string[];
 
-  @IsNotEmpty()
-  @IsString()
-  firstName: string;
+    @IsOptional()
+    @IsString()
+    companyName?: string;
 
-  @IsNotEmpty()
-  @IsString()
-  lastName: string;
+    @IsNotEmpty()
+    @IsString()
+    firstName: string;
 
-  @IsNotEmpty()
-  @IsEmail()
-  email: string;
+    @IsNotEmpty()
+    @IsString()
+    lastName: string;
 
-  @IsNotEmpty()
-  @IsString()
-  password: string;
+    @IsNotEmpty()
+    @IsEmail()
+    email: string;
 
-  @IsNotEmpty()
-  @IsString(null)
-  phone: string;
+    @IsNotEmpty()
+    @IsString()
+    password: string;
 
-  @IsNotEmpty()
-  @IsString()
-  postcode: string;
+    @IsNotEmpty()
+    @IsString(null)
+    phone: string;
 
-  @IsOptional()
-  @IsString()
-  avatar?: string;
+    @IsNotEmpty()
+    @IsString()
+    postcode: string;
 
-  @IsNotEmpty()
-  @IsString()
-  countryCode?: string;
+    @IsOptional()
+    @IsString()
+    avatar?: string;
 
-  @IsNotEmpty()
-  @IsString()
-  country?: string;
+    @IsNotEmpty()
+    @IsString()
+    countryCode?: string;
 
-  @IsOptional()
-  @IsString()
-  street?: string;
+    @IsNotEmpty()
+    @IsString()
+    country?: string;
 
-  @IsOptional()
-  @IsString()
-  vatNumber?: string;
+    @IsOptional()
+    @IsString()
+    street?: string;
 
-  @IsOptional()
-  @IsNumber()
-  @Type(() => Number)
-  vatRate?: number;
+    @IsOptional()
+    @IsString()
+    vatNumber?: string;
+
+    @IsOptional()
+    @IsNumber()
+    @Type(() => Number)
+    vatRate?: number;
 }

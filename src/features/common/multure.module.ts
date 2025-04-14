@@ -101,7 +101,6 @@ export class MulterModule {
                             }
                             const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
                             const parsed = path.parse(file.originalname);
-                            console.log(parsed);
                             const name = replaceSpecialCharacters(parsed.name);
                             const filename = `${name}-${uniqueSuffix}${parsed.ext}`;
                             callback(null, filename);
