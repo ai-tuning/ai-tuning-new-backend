@@ -3,16 +3,15 @@ import * as path from 'path';
 import * as FormData from 'form-data';
 import { Types } from 'mongoose';
 import { AxiosResponse } from 'axios';
-import { HttpService } from '@nestjs/axios';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CredentialService } from '../credential/credential.service';
 import { DecodeKess3FileDto, EncodeKess3FileDto } from './dto/kess3-encode-decode.dto';
 import { PathService } from '../common';
+import axios from 'axios';
 
 @Injectable()
 export class Kess3Service {
     constructor(
-        private readonly httpService: HttpService,
         private readonly credentialService: CredentialService,
         private readonly pathService: PathService,
     ) {}
@@ -434,22 +433,22 @@ export class Kess3Service {
         //throw error if credential not found
         if (!credential) throw new BadRequestException('Alien Tech Credential not found');
 
-        const response = await this.httpService.axiosRef.post('/api/access-tokens/request', {
+        const response = await axios.post('/api/access-tokens/request', {
             clientApplicationGUID: credential.alienTech.clientId,
             secretKey: credential.alienTech.clientSecret,
         });
 
-        this.httpService.axiosRef.interceptors.request.use(
-            async (config) => {
-                // Get the token from a secure store (could be a database, environment variable, etc.)
-                config.headers['X-Alientech-ReCodAPI-LLC'] = response.data.accessToken;
+        // this.httpService.axiosRef.interceptors.request.use(
+        //     async (config) => {
+        //         // Get the token from a secure store (could be a database, environment variable, etc.)
+        //         config.headers['X-Alientech-ReCodAPI-LLC'] = response.data.accessToken;
 
-                return config;
-            },
-            (error) => {
-                return Promise.reject(error);
-            },
-        );
+        //         return config;
+        //     },
+        //     (error) => {
+        //         return Promise.reject(error);
+        //     },
+        // );
 
         await this.credentialService.updateAlienTechAccessToken(adminId, response.data.accessToken);
         return response.data.accessToken;
@@ -469,22 +468,12 @@ export class Kess3Service {
     //axios instances
     private apiService(adminId: Types.ObjectId, token: string) {
         // Add a request interceptor to attach the access token to requests
-
-        this.httpService.axiosRef.interceptors.request.use(
-            async (config) => {
-                // Get the token from a secure store (could be a database, environment variable, etc.)
-                if (token) {
-                    config.headers['X-Alientech-ReCodAPI-LLC'] = token;
-                }
-                return config;
-            },
-            (error) => {
-                return Promise.reject(error);
-            },
-        );
-
+        const axiosInstance = axios.create({
+            baseURL: 'https://encodingapi.alientech.to',
+            headers: { 'Content-Type': 'application/json', 'X-Alientech-ReCodAPI-LLC': token },
+        });
         // Add a response interceptor to handle 401 errors
-        this.httpService.axiosRef.interceptors.response.use(
+        axiosInstance.interceptors.response.use(
             (response) => {
                 return response;
             },
@@ -513,7 +502,7 @@ export class Kess3Service {
                         // Update the Authorization header and retry the original request
                         originalRequest.headers['X-Alientech-ReCodAPI-LLC'] = newToken;
 
-                        return this.httpService.axiosRef(originalRequest);
+                        return axiosInstance(originalRequest);
                     } catch (refreshError) {
                         return Promise.reject(refreshError);
                     }
@@ -522,6 +511,6 @@ export class Kess3Service {
             },
         );
 
-        return this.httpService.axiosRef;
+        return axiosInstance;
     }
 }

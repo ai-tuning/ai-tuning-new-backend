@@ -1,12 +1,12 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { HttpService } from '@nestjs/axios';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { CredentialService } from '../credential/credential.service';
 import { DecodeAutoTunerFileDto } from './dto/autotuner.dto';
 import { PathService } from '../common';
+import axios from 'axios';
 
 interface AutoTunerEncodePayload {
     slave_id: string;
@@ -21,7 +21,6 @@ interface AutoTunerEncodePayload {
 @Injectable()
 export class AutoTunerService {
     constructor(
-        private readonly httpService: HttpService,
         private readonly credentialService: CredentialService,
         private readonly pathService: PathService,
     ) {}
@@ -153,19 +152,16 @@ export class AutoTunerService {
         if (!credential.autoTuner) {
             throw new BadRequestException('Auto Tuner Credential not found');
         }
-        console.log('autotuner credential', credential);
-        this.httpService.axiosRef.interceptors.request.use(
-            async (config) => {
-                config.headers['X-Autotuner-Id'] = credential.autoTuner.tunerId;
-                config.headers['X-Autotuner-API-Key'] = credential.autoTuner.apiKey;
-                config.headers['Content-Type'] = 'application/json';
 
-                return config;
+        console.log('autotuner credential', credential);
+
+        return axios.create({
+            baseURL: 'https://api.autotuner-tool.com/v2/api/v1/master',
+            headers: {
+                'X-Autotuner-Id': credential.autoTuner.tunerId,
+                'X-Autotuner-API-Key': credential.autoTuner.apiKey,
+                'Content-Type': 'application/json',
             },
-            (error) => {
-                return Promise.reject(error);
-            },
-        );
-        return this.httpService.axiosRef;
+        });
     }
 }

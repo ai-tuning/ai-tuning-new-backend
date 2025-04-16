@@ -2,13 +2,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import unzipper from 'unzipper';
 
-import { HttpService } from '@nestjs/axios';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { CredentialService } from '../credential/credential.service';
 import { PathService } from '../common';
 import { DecryptFlexDto } from './dto/flex-slave.dto';
 import * as FormData from 'form-data';
+import axios from 'axios';
 
 interface FlexEncryptPayload {
     sn: string;
@@ -20,7 +20,6 @@ interface FlexEncryptPayload {
 @Injectable()
 export class FlexSlaveService {
     constructor(
-        private readonly httpService: HttpService,
         private readonly credentialService: CredentialService,
         private readonly pathService: PathService,
     ) {}
@@ -179,16 +178,14 @@ export class FlexSlaveService {
             throw new BadRequestException('Flex Slave Credential not found');
         }
         console.log('flex-slave credential', credential);
-        this.httpService.axiosRef.interceptors.request.use(
-            async (config) => {
-                config.headers['X-Api-Key'] = credential.flexSlave.apiKey;
-                return config;
+
+        return axios.create({
+            baseURL: 'https://api.magicmotorsport.com',
+            headers: {
+                Accept: 'application/json',
+                'X-Api-Key': credential.flexSlave.apiKey,
             },
-            (error) => {
-                return Promise.reject(error);
-            },
-        );
-        return this.httpService.axiosRef;
+        });
     }
     private async extractZip(filePath: string, outputDir: string) {
         await fs

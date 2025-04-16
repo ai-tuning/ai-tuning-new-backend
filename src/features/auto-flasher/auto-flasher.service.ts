@@ -2,11 +2,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import unzipper from 'unzipper';
 import FormData from 'form-data';
-import { HttpService } from '@nestjs/axios';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { CredentialService } from '../credential/credential.service';
 import { PathService } from '../common';
+import axios from 'axios';
 
 interface AutoFlasherDecodeDto {
     filePath: string;
@@ -26,7 +26,6 @@ interface AutoFlasherEncodeDto {
 @Injectable()
 export class AutoFlasherService {
     constructor(
-        private readonly httpService: HttpService,
         private readonly credentialService: CredentialService,
         private readonly pathService: PathService,
     ) {}
@@ -255,15 +254,12 @@ export class AutoFlasherService {
         if (!credential.autoTuner) {
             throw new BadRequestException('Auto Flasher Credential not found');
         }
-        this.httpService.axiosRef.interceptors.request.use(
-            async (config) => {
-                config.headers['X-API-Key'] = credential.autoFlasher.apiKey;
-                return config;
+        return axios.create({
+            baseURL: 'https://autoflasher-portal.de/api',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': credential.autoFlasher.apiKey,
             },
-            (error) => {
-                return Promise.reject(error);
-            },
-        );
-        return this.httpService.axiosRef;
+        });
     }
 }
