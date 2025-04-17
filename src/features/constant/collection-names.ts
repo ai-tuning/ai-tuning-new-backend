@@ -27,4 +27,5 @@ export const collectionsName = {
     dtc: 'dtc',
     decodeEncode: 'decode_encode',
     logo: 'logo',
+    transaction: 'transaction',
 };

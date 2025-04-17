@@ -46,6 +46,7 @@ import { MigrationModule } from './features/migration/migration.module';
 import { CatapushModule } from './features/catapush/catapush.module';
 import { FlexSlaveModule } from './features/flex-slave/flex-slave.module';
 import { LogoManagerModule } from './features/logo-manager/logo-manager.module';
+import { TransactionModule } from './features/transaction/transaction.module';
 
 @Module({
     imports: [
@@ -177,6 +178,7 @@ import { LogoManagerModule } from './features/logo-manager/logo-manager.module';
         CatapushModule,
         FlexSlaveModule,
         LogoManagerModule,
+        TransactionModule,
     ],
     controllers: [],
     providers: [],

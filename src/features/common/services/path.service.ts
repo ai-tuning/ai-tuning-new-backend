@@ -5,6 +5,14 @@ import { join } from 'path';
 @Injectable()
 export class PathService {
     /**
+     *
+     * @returns ROOT path for images
+     */
+    getImagePath() {
+        return join(process.cwd(), 'public', 'uploads', 'images');
+    }
+
+    /**
      * Get ROOT path for scripts
      * @param adminId
      * @param makeType

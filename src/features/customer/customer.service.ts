@@ -11,18 +11,23 @@ import { CustomBadRequest } from '../common/validation-helper/bad-request.except
 import { CustomerTypeDto } from './dto/customer-type.dto';
 import { CustomerType } from './schema/customer-type.schema';
 import { PricingService } from '../pricing/pricing.service';
-import { IAuthUser } from '../common';
+import { IAuthUser, PathService } from '../common';
 import validateVat, { CountryCodes } from 'validate-vat-ts';
+import { join } from 'path';
+import { existsSync, unlinkSync } from 'fs';
+import { TransactionService } from '../transaction/transaction.service';
 
 @Injectable()
 export class CustomerService {
     constructor(
-        private readonly userService: UserService,
-        private readonly evcService: EvcService,
         @InjectModel(collectionsName.customer) private readonly customerModel: Model<Customer>,
         @InjectModel(collectionsName.customerType) private readonly customerTypeModel: Model<CustomerType>,
         @InjectConnection() private readonly connection: Connection,
+        private readonly userService: UserService,
+        private readonly evcService: EvcService,
         private readonly pricingService: PricingService,
+        private readonly pathService: PathService,
+        private readonly transactionService: TransactionService,
     ) {}
 
     async create(createCustomerDto: CreateCustomerDto) {
@@ -273,6 +278,37 @@ export class CustomerService {
             await session.commitTransaction();
 
             return customerType;
+        } catch (error) {
+            await session.abortTransaction();
+            throw error;
+        } finally {
+            await session.endSession();
+        }
+    }
+
+    async deleteCustomer(id: Types.ObjectId) {
+        const session = await this.connection.startSession();
+        try {
+            session.startTransaction();
+            const customer = await this.customerModel.findByIdAndDelete(id).lean<Customer>();
+            if (!customer) {
+                throw new NotFoundException('Customer not found');
+            }
+
+            await this.userService.deleteUser(customer.user, session);
+
+            await this.transactionService.deleteByCustomerId(customer._id as Types.ObjectId, session);
+
+            await session.commitTransaction();
+
+            if (customer.avatar) {
+                const avatarPath = join(this.pathService.getImagePath(), customer.avatar);
+                if (existsSync(avatarPath)) {
+                    unlinkSync(avatarPath);
+                }
+            }
+
+            return customer;
         } catch (error) {
             await session.abortTransaction();
             throw error;

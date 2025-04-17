@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, Types } from 'mongoose';
-import { FileSchema } from 'src/features/common';
 import { collectionsName, UserStatusEnum } from 'src/features/constant';
 
 @Schema({ timestamps: true, versionKey: false })
@@ -55,7 +54,7 @@ class Customer extends Document {
     credits: number;
 
     @Prop({ type: String })
-    avatar: String;
+    avatar: string;
 
     @Prop({
         type: mongoose.Schema.Types.ObjectId,

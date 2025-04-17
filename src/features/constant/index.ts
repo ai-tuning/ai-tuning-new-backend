@@ -19,3 +19,5 @@ export { ADMIN_CATEGORY } from './enums/admin-category.enum';
 export { NoticeType } from './enums/notice-type.enum';
 export { CHAT_MESSAGE_SENDER_GROUP } from './enums/chat-message-sender-group.enum';
 export { DTC_STATUS } from './enums/dtc-status';
+export { PRICING_TYPE_ENUM } from './enums/pricing-type.enum';
+export { TRANSACTION_TYPE } from './enums/transaction-type.enum';
