@@ -1,0 +1,35 @@
+user deleting not working
+
+if admin Forward a file, upload boxes for files should be locked for admin
+if a user from an admin open a Chat for a forwarded file, it should only displayed as open on our side on admin side not (means if we do the file we do also the support on it)
+
+credit statistic user + admins
+
+decoded files on Chat page storing with timestamp (slaves only)
+
+credit packages with Discounts (2 fields - first number of credits second Price for package)
+
+free dtc module accept only .bin files
+
+if user add vat on his profile, admin should also seen it on admin menu
+
+user VAT on invoice below userdata (Sold To:)
+
+on admin invoices is another logo as on user invoices
+
+
+admin Statistik
+
+new style of file Service page (Chat window)
+
+
+--------------- this later ------------------
+
+Stripe
+
+checkout is not fine
+PayPal logo is showing 2 times after clicking
+
+
+
+

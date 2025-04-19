@@ -230,6 +230,12 @@ export class CredentialService {
             }
         }
 
+        if (select === 'evc') {
+            if (!credential.evc.apiId || !credential.evc.password || !credential.evc.username) {
+                return null;
+            }
+        }
+
         //decrypt all before return
         if (credential.paypal) {
             credential.paypal.clientId = this.decryptData(credential.paypal.clientId);

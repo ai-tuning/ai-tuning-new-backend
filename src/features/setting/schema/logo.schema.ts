@@ -23,6 +23,9 @@ export class Logo {
 
     @Prop({ type: String })
     invoiceLogo: string;
+
+    @Prop({ type: String })
+    authBackground: string;
 }
 
 export const LogoSchema = SchemaFactory.createForClass(Logo);

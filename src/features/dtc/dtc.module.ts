@@ -11,9 +11,9 @@ import { BullModule } from '@nestjs/bull';
 @Module({
     imports: [
         MulterModule.register({
-            acceptedMimeTypes: [],
+            acceptedMimeTypes: ['application/octet-stream'],
             destination: './public/uploads/files',
-            errorMessages: 'Please upload a valid file',
+            errorMessages: 'Only .bin files are allowed',
         }),
         MongooseModule.forFeature([
             {

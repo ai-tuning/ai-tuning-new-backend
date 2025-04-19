@@ -36,7 +36,7 @@ export class LogoService {
     async getLogo(domain: string) {
         return this.logoModel
             .findOne({ domains: { $in: [domain] } })
-            .select('logoLight logoDark invoiceLogo logoIconLight logoIconDark')
+            .select('logoLight logoDark invoiceLogo logoIconLight logoIconDark authBackground')
             .lean<Logo>();
     }
 }
